@@ -1,0 +1,114 @@
+{
+  "lang": "en",
+  "kind": "how",
+  "title": "Shell palette — nodes, groups, edges",
+  "pattern": "You Don't Know · debug surface",
+  "repo": "you-dont-know",
+  "thesis": "One locked shell. Stadium, diamond, Lucide cloud, groups, trees, edge kinds — without restyling :root.",
+  "problem": "Custom polygon shells (parallelogram, wave, cylinder, hexagon, freehand cloud) alias against the grid and miss ortho arrow ports.",
+  "whyNotBasic": "A unique SVG outline per kind breaks ports. Rect / stadium / diamond stay; cloud is Lucide on a stadium, not a blob path.",
+  "cost": "No ISO data / document / store / cpu shells. Aliases (`child`→`process`, `hoc`→`frame`) stay valid.",
+  "asides": [
+    {
+      "id": "color-lock",
+      "title": "Primary is never traffic-light",
+      "body": "`--primary` stays iris / glacier / dusk. `--state-error` on `boundary` does not follow the accent switcher. Node ink is `#f4f2ee` on achromatic fill."
+    },
+    {
+      "id": "group-parent",
+      "title": "How a group is built",
+      "body": "A node with `kind: \"group\"` is a fence. Children set `parent` to that id. The shell sizes the fence around them. The group id still belongs in some `steps[].highlight`."
+    }
+  ],
+  "files": ["references/lesson-contract.md"],
+  "repeats": [],
+  "nodes": [
+    { "id": "g-iso", "label": "ISO flowchart", "kind": "group" },
+    { "id": "start", "label": "start / terminator", "kind": "start", "parent": "g-iso" },
+    { "id": "process", "label": "process", "kind": "process", "parent": "g-iso" },
+    { "id": "decision", "label": "decision", "kind": "decision", "parent": "g-iso" },
+    { "id": "cloud", "label": "cloud", "kind": "cloud", "parent": "g-iso" },
+    { "id": "queue", "label": "queue / delay", "kind": "queue", "parent": "g-iso" },
+    { "id": "g-run", "label": "Runtime / architecture", "kind": "group" },
+    { "id": "provider", "label": "provider", "kind": "provider", "parent": "g-run" },
+    { "id": "host", "label": "host", "kind": "host", "parent": "g-run" },
+    { "id": "frame", "label": "frame (HOC)", "kind": "frame", "parent": "g-run" },
+    { "id": "inbox", "label": "inbox / consumer", "kind": "inbox", "parent": "g-run" },
+    { "id": "action", "label": "action", "kind": "action", "parent": "g-run" },
+    { "id": "boundary", "label": "boundary", "kind": "boundary", "parent": "g-run" },
+    { "id": "junction", "label": "junction", "kind": "junction", "parent": "g-run" },
+    { "id": "subroutine", "label": "subroutine", "kind": "subroutine", "parent": "g-run" },
+    { "id": "g-tree", "label": "Folder tree", "kind": "group" },
+    { "id": "dir-src", "label": "src/", "kind": "folder", "parent": "g-tree" },
+    { "id": "dir-pages", "label": "pages/", "kind": "folder", "parent": "g-tree" },
+    { "id": "file-main", "label": "main.tsx", "kind": "file", "parent": "g-tree" },
+    { "id": "file-types", "label": "types.ts", "kind": "file", "parent": "g-tree" }
+  ],
+  "edges": [
+    { "from": "start", "to": "process", "label": "flow" },
+    { "from": "process", "to": "decision", "label": "then" },
+    { "from": "decision", "to": "queue", "label": "no", "kind": "dashed" },
+    { "from": "decision", "to": "cloud", "label": "yes" },
+    { "from": "cloud", "to": "queue", "label": "retry", "kind": "back" },
+    { "from": "process", "to": "cloud", "label": "sync", "kind": "both" },
+    { "from": "action", "to": "inbox", "label": "via node", "via": "junction" },
+    { "from": "host", "to": "boundary", "label": "isolate" }
+  ],
+  "steps": [
+    {
+      "id": "iso",
+      "title": "ISO shapes",
+      "narration": "Stadium (`start`, `queue`), diamond (`decision`), Lucide cloud on a stadium. Ports stay on the box. Optional [[color-lock]].",
+      "highlight": ["g-iso", "start", "process", "decision", "cloud", "queue"],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"id\": \"cloud\", \"label\": \"cloud\", \"kind\": \"cloud\", \"parent\": \"g-iso\" }"
+      }
+    },
+    {
+      "id": "runtime",
+      "title": "Architecture glyphs",
+      "narration": "Lucide 24×24, `currentColor`, stroke 2. `boundary` keeps `--state-error`. `child` / `other` / `hoc` still alias.",
+      "highlight": ["g-run", "provider", "host", "frame", "inbox", "action", "boundary", "junction", "subroutine"],
+      "code": {
+        "file": "templates/lesson.html",
+        "startLine": 1,
+        "text": "kindOf({ kind: \"hoc\" }) // → \"frame\"\nkindOf({ kind: \"child\" }) // → \"process\""
+      }
+    },
+    {
+      "id": "fence",
+      "title": "Group fence",
+      "narration": "Dashed frame with its own fill. Children set `parent`. [[group-parent]].",
+      "highlight": ["g-iso", "g-run", "g-tree"],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"id\": \"g-iso\", \"label\": \"ISO flowchart\", \"kind\": \"group\" }\n{ \"id\": \"cloud\", \"kind\": \"cloud\", \"parent\": \"g-iso\" }"
+      }
+    },
+    {
+      "id": "tree",
+      "title": "Folder list",
+      "narration": "Folder / file glyphs in a one-column fence. A lesson that is only folders uses `layout: \"tree\"` for indent.",
+      "highlight": ["g-tree", "dir-src", "dir-pages", "file-main", "file-types"],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"layout\": \"tree\" }\n{ \"id\": \"src\", \"kind\": \"folder\", \"label\": \"src/\" }\n{ \"id\": \"app\", \"kind\": \"file\", \"label\": \"app.ts\", \"parent\": \"src\" }"
+      }
+    },
+    {
+      "id": "edges",
+      "title": "Edge kinds",
+      "narration": "`flow` default. `dashed` async. `back` reverse marker. `both` two heads. `via` bends through a junction.",
+      "highlight": ["start", "process", "decision", "cloud", "queue", "action", "junction", "inbox", "host", "boundary"],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"from\": \"cloud\", \"to\": \"queue\", \"kind\": \"back\", \"label\": \"retry\" }\n{ \"from\": \"action\", \"to\": \"inbox\", \"via\": \"junction\" }"
+      }
+    }
+  ]
+}

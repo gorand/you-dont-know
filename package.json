@@ -1,0 +1,29 @@
+{
+  "name": "you-dont-know",
+  "version": "0.2.2",
+  "private": true,
+  "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "SKILL.md",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "templates/",
+    "scripts/",
+    "references/",
+    "examples/"
+  ],
+  "scripts": {
+    "inject": "node scripts/inject-lesson.mjs",
+    "palette": "node scripts/inject-lesson.mjs templates/lesson.html examples/palette/lesson.json examples/palette/index.html",
+    "example": "node scripts/inject-lesson.mjs templates/lesson.html examples/how-promise/lesson.json examples/how-promise/index.html"
+  },
+  "keywords": [
+    "agent-skills",
+    "interactive-lesson",
+    "flowchart",
+    "architecture"
+  ]
+}

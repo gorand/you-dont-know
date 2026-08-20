@@ -1,0 +1,79 @@
+{
+  "lang": "en",
+  "kind": "how",
+  "title": "A Promise does not run later — it queues a microtask",
+  "pattern": "Microtask queue",
+  "repo": "ECMA-262",
+  "thesis": "then callbacks run after the current call stack, before the next macrotask — so they can starve timers if you keep chaining.",
+  "problem": "Thinking Promise is 'async like setTimeout' puts then() after paint and timers. It is not.",
+  "whyNotBasic": "A macrotask delay would let the browser paint between each then. The spec chose a microtask checkpoint instead.",
+  "cost": "A tight then-chain can delay rendering. You pay with queueMicrotask discipline.",
+  "asides": [
+    {
+      "id": "checkpoint",
+      "title": "When the checkpoint runs",
+      "body": "After the running script returns, the engine drains the microtask queue before the next task (timer, I/O, click). `queueMicrotask` and `Promise.then` share that queue. A then that enqueues another then keeps the checkpoint busy."
+    }
+  ],
+  "files": ["spec: Promise"],
+  "repeats": [],
+  "nodes": [
+    { "id": "stack", "label": "Call stack", "kind": "host" },
+    { "id": "promise", "label": "Promise.resolve", "kind": "provider" },
+    { "id": "micro", "label": "Microtask queue", "kind": "hoc" },
+    { "id": "then", "label": "then(onFulfilled)", "kind": "action" },
+    { "id": "macro", "label": "Timer / I/O task", "kind": "boundary" }
+  ],
+  "edges": [
+    { "from": "stack", "to": "promise", "label": "creates" },
+    { "from": "promise", "to": "micro", "label": "enqueue then" },
+    { "from": "micro", "to": "then", "label": "drain" },
+    { "from": "stack", "to": "macro", "label": "later task" }
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "title": "Create while the stack runs",
+      "narration": "Promise.resolve during a script does not call then yet. It only records the reaction. [[checkpoint]]",
+      "highlight": ["stack", "promise"],
+      "code": {
+        "file": "spec: Promise",
+        "startLine": 1,
+        "text": "Promise.resolve(1).then((v) => {\n  console.log('then', v);\n});\nconsole.log('sync');\n// logs: sync → then"
+      }
+    },
+    {
+      "id": "enqueue",
+      "title": "Enqueue a microtask",
+      "narration": "The then reaction is a microtask, not a timer. It sits on the same queue as queueMicrotask.",
+      "highlight": ["promise", "micro", "then"],
+      "code": {
+        "file": "spec: Promise",
+        "startLine": 1,
+        "text": "queueMicrotask(() => console.log('q'));\nPromise.resolve().then(() => console.log('p'));\n// order is insertion order on the microtask queue"
+      }
+    },
+    {
+      "id": "drain",
+      "title": "Drain before the next task",
+      "narration": "When the stack is empty, the engine drains microtasks. Timers wait.",
+      "highlight": ["micro", "then", "macro"],
+      "code": {
+        "file": "spec: Promise",
+        "startLine": 1,
+        "text": "setTimeout(() => console.log('timeout'), 0);\nPromise.resolve().then(() => console.log('then'));\n// logs: then → timeout"
+      }
+    },
+    {
+      "id": "starve",
+      "title": "A chain can starve paint",
+      "narration": "Each then that schedules another then extends the checkpoint. The timer still has not run.",
+      "highlight": ["then", "micro", "macro"],
+      "code": {
+        "file": "spec: Promise",
+        "startLine": 1,
+        "text": "function boom(n) {\n  if (n <= 0) return;\n  Promise.resolve().then(() => boom(n - 1));\n}\nboom(1000); // many microtasks before any timeout"
+      }
+    }
+  ]
+}
