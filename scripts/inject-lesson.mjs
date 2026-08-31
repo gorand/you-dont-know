@@ -36,6 +36,45 @@ if (badVia.length) {
   process.exit(1);
 }
 
+const KNOWN_KINDS = new Set([
+  "process", "child", "other",
+  "start", "decision", "cloud", "queue",
+  "folder", "file", "group", "junction",
+  "provider", "host", "frame", "hoc", "inbox", "consumer",
+  "action", "boundary", "subroutine"
+]);
+const badKind = (data.nodes || []).filter((n) => n.kind && !KNOWN_KINDS.has(n.kind));
+if (badKind.length) {
+  console.error("nodes[].kind not in the shell vocabulary: " + badKind.map((n) => `${n.id} (${n.kind})`).join(", "));
+  process.exit(1);
+}
+
+const KNOWN_ACCENTS = new Set(["iris", "glacier", "dusk"]);
+if (data.accent && !KNOWN_ACCENTS.has(data.accent)) {
+  console.error(`accent "${data.accent}" is not iris | glacier | dusk`);
+  process.exit(1);
+}
+
+const asideIds = new Set((data.asides || []).map((a) => a.id));
+const asideRefRe = /\[\[([A-Za-z0-9_-]+)\]\]/g;
+const textFields = [data.thesis, data.problem, data.whyNotBasic, data.cost]
+  .concat((data.steps || []).map((s) => s.narration));
+const danglingAsides = new Set();
+textFields.forEach((t) => {
+  const s = String(t || "");
+  let m;
+  while ((m = asideRefRe.exec(s))) {
+    if (!asideIds.has(m[1])) danglingAsides.add(m[1]);
+  }
+});
+if (danglingAsides.size) {
+  console.error("[[asideId]] refs with no matching asides[].id: " + [...danglingAsides].join(", "));
+  process.exit(1);
+}
+
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
-fs.writeFileSync(outPath, template.replace("__LESSON_JSON__", JSON.stringify(data, null, 2)));
+// A `</script` anywhere in the JSON (e.g. a `kind: "vuln"` lesson quoting an
+// XSS payload) would otherwise close the surrounding <script> tag early.
+const json = JSON.stringify(data, null, 2).replace(/<\/script/gi, "<\\/script");
+fs.writeFileSync(outPath, template.replace("__LESSON_JSON__", json));
 console.log(outPath);

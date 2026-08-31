@@ -1,6 +1,6 @@
 {
   "name": "you-dont-know",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
   "license": "MIT",

@@ -249,8 +249,7 @@
       fill: color-mix(in srgb, var(--state-error) 30%, var(--node-fill));
       stroke: var(--state-error);
     }
-    .node.kind-frame .node-shell,
-    .node.kind-hoc .node-shell { stroke-dasharray: 4 3; stroke: var(--primary-deep); }
+    .node.kind-frame .node-shell { stroke-dasharray: 4 3; stroke: var(--primary-deep); }
     .node.kind-action .node-shell { stroke: var(--primary); }
     .node.kind-group .node-shell {
       fill: oklch(16% 0 0 / 0.5);
@@ -998,11 +997,6 @@
       junction: '<circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/>',
       subroutine: '<rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/>'
     };
-    KIND_ICON.hoc = KIND_ICON.frame;
-    KIND_ICON.consumer = KIND_ICON.inbox;
-    KIND_ICON.child = KIND_ICON.process;
-    KIND_ICON.other = KIND_ICON.process;
-
     function kindOf(n) {
       const k = (n && n.kind) || "process";
       return KIND_ALIAS[k] || k;
@@ -1528,7 +1522,6 @@
 
     function renderNode(n, live) {
       const on = live.has(n.id) ? "on" : "";
-      const kind = n.kind || "process";
       const k = kindOf(n);
       const group = k === "group";
       const icoY = group ? n.y + 8 : n.y + (n.h - 16) / 2;
@@ -1539,7 +1532,7 @@
             <div xmlns="http://www.w3.org/1999/xhtml" class="node-label" style="color:#f4f2ee;-webkit-text-fill-color:#f4f2ee"><span class="txt">${escapeHtml(n.label)}</span></div>
           </foreignObject>`
         : "";
-      return `<g class="node ${on} kind-${escapeHtml(kind)}" data-id="${n.id}">
+      return `<g class="node ${on} kind-${escapeHtml(k)}" data-id="${n.id}">
         ${nodeShell(n)}
         <svg class="node-ico" x="${n.x + 8}" y="${icoY}" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">${glyph(k)}</svg>
         ${label}

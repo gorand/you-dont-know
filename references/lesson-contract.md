@@ -48,7 +48,7 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 
 ## Rules
 
-- `lang`: `en` | `ru` | … — chrome follows this (`Назад` / `Back`)
+- `lang`: chrome (`Назад` / `Back`, transport labels) ships translations for `en` and `ru` only — set either to match the lesson's prose. Any other value falls back to the English chrome while the lesson content itself may still be authored in that language.
 - `kind`: `how` | `concept` | `api` → **iris**; `architecture` | `repo` → glacier; `security` | `vuln` → dusk. Default iris.
 - Optional `accent` overrides `kind`: `iris` | `glacier` | `dusk` only. Forbidden as primary: red, amber, green (and old names `cinnabar`, `patina`, `kinpaku`).
 - State colors are shell tokens `--state-error` / `--state-warn` / `--state-ok`. JSON must not restyle them. `kind: "boundary"` stays error-red in every accent.
