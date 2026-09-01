@@ -11,9 +11,11 @@ const pkgRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 // bin/ itself.
 const SKILL_ENTRIES = ["SKILL.md", "LICENSE", "README.md", "CHANGELOG.md", "templates", "scripts", "references", "examples"];
 
-const HELP = `Usage: npx you-dont-know [install] [options]
+const HELP = `Usage: npx @gorand/you-dont-know [install] [options]
 
-Copies this skill into an agent skills directory.
+Copies this skill into an agent skills directory. The installed folder and
+the /you-dont-know command are always named "you-dont-know" regardless of
+the npm package scope.
 
 Options:
   -g, --global      Install to the user-level directory instead of the project
@@ -27,10 +29,10 @@ Defaults to the project-scoped Claude Code location:
   ./.claude/skills/you-dont-know
 
 Examples:
-  npx you-dont-know                # ./.claude/skills/you-dont-know
-  npx you-dont-know --global       # ~/.claude/skills/you-dont-know
-  npx you-dont-know --agents       # ./.agents/skills/you-dont-know
-  npx you-dont-know --target ~/tools/you-dont-know
+  npx @gorand/you-dont-know                # ./.claude/skills/you-dont-know
+  npx @gorand/you-dont-know --global       # ~/.claude/skills/you-dont-know
+  npx @gorand/you-dont-know --agents       # ./.agents/skills/you-dont-know
+  npx @gorand/you-dont-know --target ~/tools/you-dont-know
 `;
 
 function parseArgs(argv) {
