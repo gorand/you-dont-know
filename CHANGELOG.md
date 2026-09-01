@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-09-01
+
+### Added
+
+- `bin/install.mjs` — an `npx you-dont-know` installer. Defaults to the
+  project-scoped Claude Code location (`./.claude/skills/you-dont-know`);
+  `--global` targets `~/.claude/skills/you-dont-know`; `--agents` targets
+  the `.agents/skills` layout instead; `--target <dir>` overrides both.
+  Not yet published to npm — run it from a local clone
+  (`node bin/install.mjs`) until it is.
+- `package.json` `bin` entry and `engines.node >= 18`.
+
+### Changed
+
+- README: install instructions now lead with Claude Code (`npx
+  you-dont-know`) and note that Claude Code does not read `.agents/skills` —
+  that path is documented as the Agent-Skills-spec-generic fallback, not
+  the primary path.
+
 ## [0.2.3] — 2026-08-31
 
 ### Fixed

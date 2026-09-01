@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.3-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 
 Interactive HTML lessons for things that look simple until they aren't — the You Don't Know JS vibe.
@@ -16,17 +16,29 @@ Not a blog post. A stepped diagram, narration, and code.
 
 ## Install
 
-Copy this folder into an agent skills directory:
+Requires [Node.js](https://nodejs.org/) 18+.
 
-```text
-~/.agents/skills/you-dont-know/
+**Claude Code (recommended):**
+
+```sh
+npx you-dont-know            # ./.claude/skills/you-dont-know — this project only
+npx you-dont-know --global   # ~/.claude/skills/you-dont-know — every project
 ```
 
-or a project's `.agents/skills/you-dont-know/`.
+`npx you-dont-know --help` lists the rest (`--agents`, `--target <dir>`). This
+runs `bin/install.mjs`, which copies the skill files — it is not a dependency
+of your project. Until this package is published to npm, run it from a local
+clone instead: `node bin/install.mjs [options]`, or `npx <path-to-this-repo>
+[options]`.
 
-Invoke explicitly: `/you-dont-know` plus a topic, or `/you-dont-know` in a repo to hunt candidates.
+**Any other harness that reads the [Agent Skills](https://agentskills.io/specification) layout**
+(`.agents/skills/<name>/SKILL.md`): either `npx you-dont-know --agents` /
+`--agents --global`, or copy this folder by hand into
+`~/.agents/skills/you-dont-know/` or a project's `.agents/skills/you-dont-know/`.
+Claude Code itself does **not** read that path — see above.
 
-Requires [Node.js](https://nodejs.org/) 18+ for `scripts/inject-lesson.mjs`.
+Once installed where your harness looks for skills, invoke explicitly:
+`/you-dont-know` plus a topic, or `/you-dont-know` in a repo to hunt candidates.
 
 ## Build a lesson
 
@@ -55,7 +67,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.2.3** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.3.0** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 

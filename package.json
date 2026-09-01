@@ -1,15 +1,22 @@
 {
   "name": "you-dont-know",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "you-dont-know": "bin/install.mjs"
+  },
   "files": [
     "SKILL.md",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
+    "bin/",
     "templates/",
     "scripts/",
     "references/",
