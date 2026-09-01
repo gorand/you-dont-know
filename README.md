@@ -1,8 +1,9 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.3-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
+[![npm](https://img.shields.io/badge/npm-not_yet_published-lightgrey.svg)](#roadmap)
 
 Interactive HTML lessons for things that look simple until they aren't — the You Don't Know JS vibe.
 
@@ -16,17 +17,28 @@ Not a blog post. A stepped diagram, narration, and code.
 
 ## Install
 
-Copy this folder into an agent skills directory:
+Requires [Node.js](https://nodejs.org/) 18+. **Not yet published to npm** — see
+[Roadmap](#roadmap). Until it is, run the installer from a local clone:
 
-```text
-~/.agents/skills/you-dont-know/
+```sh
+node bin/install.mjs            # ./.claude/skills/you-dont-know — this project only
+node bin/install.mjs --global   # ~/.claude/skills/you-dont-know — every project
 ```
 
-or a project's `.agents/skills/you-dont-know/`.
+Once published, the same tool runs via `npx @gorand/you-dont-know [options]`
+(package `@gorand/you-dont-know`; the installed folder and the `/you-dont-know`
+command stay named `you-dont-know` either way). `--help` lists the rest
+(`--agents`, `--target <dir>`). This only copies the skill files — it is
+never a dependency of your project.
 
-Invoke explicitly: `/you-dont-know` plus a topic, or `/you-dont-know` in a repo to hunt candidates.
+**Any other harness that reads the [Agent Skills](https://agentskills.io/specification) layout**
+(`.agents/skills/<name>/SKILL.md`): either `node bin/install.mjs --agents` /
+`--agents --global`, or copy this folder by hand into
+`~/.agents/skills/you-dont-know/` or a project's `.agents/skills/you-dont-know/`.
+Claude Code itself does **not** read that path — see above.
 
-Requires [Node.js](https://nodejs.org/) 18+ for `scripts/inject-lesson.mjs`.
+Once installed where your harness looks for skills, invoke explicitly:
+`/you-dont-know` plus a topic, or `/you-dont-know` in a repo to hunt candidates.
 
 ## Build a lesson
 
@@ -53,9 +65,19 @@ Error / warning / success live in `--state-*` and do not change with the switche
 
 Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). Card shells are rect, stadium, diamond, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
 
+## Roadmap
+
+- [x] Locked lesson shell, contract, `inject-lesson.mjs`
+- [x] `npx`-shaped installer (`bin/install.mjs`)
+- [ ] Publish `@gorand/you-dont-know` to npm — `private: true` and
+      `publishConfig.access: "public"` are already set in `package.json`;
+      publishing itself (npm account, `npm login`, `npm publish`) is a
+      deliberate manual step, not yet done. Track progress here and in
+      [CHANGELOG.md](CHANGELOG.md); install from a local clone until it lands.
+
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.2.3** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.3.1** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 

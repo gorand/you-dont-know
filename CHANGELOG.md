@@ -5,6 +5,41 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-09-01
+
+### Changed
+
+- npm package renamed `you-dont-know` → `@gorand/you-dont-know` (avoids a
+  registry-name collision; unscoped `you-dont-know` was never published).
+  The installed skill folder and the `/you-dont-know` command are unaffected —
+  only the npm package identity changes.
+- `package.json`: added `publishConfig.access: "public"` so a future
+  `npm publish` of the scoped package defaults to public. `private: true`
+  is left in place — publishing is a deliberate future step, not this one.
+- README: added a `## Roadmap` section and an "npm: not yet published"
+  badge; install instructions now run `node bin/install.mjs` from a local
+  clone, with the `npx @gorand/you-dont-know` form documented for once it
+  is published.
+
+## [0.3.0] — 2026-09-01
+
+### Added
+
+- `bin/install.mjs` — an `npx you-dont-know` installer. Defaults to the
+  project-scoped Claude Code location (`./.claude/skills/you-dont-know`);
+  `--global` targets `~/.claude/skills/you-dont-know`; `--agents` targets
+  the `.agents/skills` layout instead; `--target <dir>` overrides both.
+  Not yet published to npm — run it from a local clone
+  (`node bin/install.mjs`) until it is.
+- `package.json` `bin` entry and `engines.node >= 18`.
+
+### Changed
+
+- README: install instructions now lead with Claude Code (`npx
+  you-dont-know`) and note that Claude Code does not read `.agents/skills` —
+  that path is documented as the Agent-Skills-spec-generic fallback, not
+  the primary path.
+
 ## [0.2.3] — 2026-08-31
 
 ### Fixed
