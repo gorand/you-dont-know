@@ -8,7 +8,7 @@ description: >-
   /understand maps.
 license: MIT
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
 disable-model-invocation: true
 argument-hint: "[topic-or-path]"
 ---

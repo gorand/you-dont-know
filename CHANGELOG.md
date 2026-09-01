@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] — 2026-09-01
+
+### Fixed
+
+- `layoutDag` (and, through it, `layoutContainers`) no longer counts
+  `edges[].kind: "back"` toward a node's rank. A node that is only the
+  *target* of back-edges (a loop start, e.g. `invoke` in a Phase A/B
+  confirm-and-retry flow) previously drifted to the bottom of the layout
+  instead of staying at rank 0, forcing its back-edges to snake across the
+  whole diagram.
+- `layoutContainers` (used whenever a lesson has a `kind: "group"` node) now
+  ranks the whole graph once — groups and their children included — instead
+  of laying out every group above a separately-ranked DAG of the remaining
+  nodes. A `parent`-nested child that also sits mid-chain in the runtime
+  flow (e.g. a file that is itself a pipeline step) no longer drops its
+  connecting edges out of the rank computation and splits the graph into
+  disconnected, side-by-side halves.
+- `group` node labels no longer clip when the text wraps to two lines — the
+  `foreignObject` height was hardcoded to `22px` regardless of wrapped line
+  count; `layoutContainers`'s per-group header padding grew to match.
+
+### Changed
+
+- `kind: "decision"` no longer renders as a rotated-45° diamond — it now
+  shares the same rounded-rect shell as `process`/`action`/`boundary` (the
+  diamond was the one shape breaking the shell's otherwise rectilinear
+  vocabulary, and its slanted sides cramped the label). Distinguished only
+  by icon: Lucide `git-branch`, replacing the diamond glyph. The JSON
+  contract (`kind: "decision"`) is unchanged — this is a shell-only
+  rendering change.
+- `prefers-reduced-motion: reduce` now also stops the SVG `<animateMotion>`
+  token on live edges (previously only CSS transitions/animations were
+  gated) — a static dot marks the live edge instead.
+- Added `touch-action: manipulation` and a pressed/active state
+  (`:active { transform: scale(...) }`) to every clickable surface that was
+  missing one (nodes, rail steps, accent swatches, aside `.fn` buttons).
+- Added `text-wrap: balance` on the lesson `h1` and a
+  `<meta name="theme-color">` matching `--lacquer`.
+- Widened default node spacing in the DAG/grouped layout
+  (`gapX` 28→40, `gapY` 88→104) to give edge routing more room.
+
 ## [0.3.1] — 2026-09-01
 
 ### Changed

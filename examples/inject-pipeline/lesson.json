@@ -1,0 +1,164 @@
+{
+  "lang": "ru",
+  "kind": "architecture",
+  "title": "Как рождается `index.html`",
+  "pattern": "Pipeline инъекции урока",
+  "repo": "you-dont-know",
+  "thesis": "Один и тот же `lesson.json` можно скормить разным версиям shell — `templates/lesson.html` (текущий) или `templates/lesson.next.html` (черновой) — и получить два разных `index.html` с одинаковым содержимым: контент и chrome разделены нарочно.",
+  "problem": "Если бы контент и вёрстка жили в одном файле, любая правка дизайна требовала бы переписывать урок, а любой новый урок — трогать вёрстку.",
+  "whyNotBasic": "Наивный вариант — один большой HTML на урок, вручную. Тогда 20 уроков — это 20 копий одной и той же разметки rail/stage/inspector, и правка футера означает правку 20 файлов.",
+  "cost": "Контракт `lesson.json` жёсткий: пять инвариантов проверяются перед записью на диск (`scripts/inject-lesson.mjs:19-50`) — мёртвый узел, битый `parent`, битый `via`, неизвестный `kind`, сноска без соответствующего элемента в `asides[]`. Любой из них останавливает сборку до появления файла.",
+  "asides": [
+    {
+      "id": "gate",
+      "title": "Почему нельзя запускать по любому поводу",
+      "body": "Урок — не Q&A и не обзор кода: это отдельный HTML-артефакт со своим файлом на диске. Если бы скилл срабатывал на любой вопрос про архитектуру, каждый третий ответ превращался бы в файл без спроса. `disable-model-invocation: true` в `SKILL.md` закрывает и автоматический подхват моделью — вызов должен быть явным словом пользователя."
+    },
+    {
+      "id": "whyconfirm",
+      "title": "Зачем отдельная стоп-линия",
+      "body": "Построение урока — это запись файла и чтение цитируемых исходников; откатывать такое дороже, чем не начинать. Явное подтверждение работает по тому же принципу, что и любое труднообратимое действие: показать план, дать шанс поправить, и только потом писать."
+    },
+    {
+      "id": "contract",
+      "title": "Что жёстко задано в lesson.json",
+      "body": "`lang`, `kind`, `thesis`/`problem`/`whyNotBasic`/`cost`, `nodes[]`, `edges[]`, `steps[]` — обязательны. `kind` сам выбирает акцент (`how`/`concept`/`api` → iris, `architecture`/`repo` → glacier, `security`/`vuln` → dusk); переопределить можно только на `iris`/`glacier`/`dusk`. HTML внутри строк запрещён — только бэктики для идентификаторов и `[[id]]` для сносок."
+    },
+    {
+      "id": "deadnode",
+      "title": "Почему мёртвый узел — это ошибка сборки",
+      "body": "Каждый узел на схеме кликабелен и должен открывать какой-то шаг — так устроена вся навигация. Узел, на который не ссылается ни один `steps[].highlight`, никогда не отреагирует на клик: это тихо сломанный UX, который легко не заметить, просто читая JSON глазами. Поэтому проверка жёсткая (`process.exit(1)`), а не предупреждение в консоль."
+    },
+    {
+      "id": "exit1",
+      "title": "Почему сразу exit(1), а не try/catch в шаблоне",
+      "body": "Ошибка в контракте — это ошибка автора урока, а не runtime-ситуация, которую должен разруливать shell в браузере. Ловить её на этапе сборки, в Node.js, до записи файла — дешевле: причина видна прямо в терминале, вместо того чтобы открывать недособранный `index.html` и гадать, почему схема пустая."
+    },
+    {
+      "id": "xss",
+      "title": "Почему экранируется именно </script",
+      "body": "Урок про уязвимость (`kind: \"vuln\"`) вполне может процитировать `</script>` как часть примера полезной нагрузки. Без экранирования эта строка внутри JSON закрыла бы окружающий `<script type=\"application/json\">` раньше срока, и браузер начал бы разбирать остаток файла как HTML, а не как данные — ирония, если тема урока как раз про такие уязвимости."
+    }
+  ],
+  "files": ["SKILL.md", "scripts/inject-lesson.mjs", "references/lesson-contract.md", "templates/lesson.html"],
+  "repeats": [
+    { "module": "how-promise", "file": "examples/how-promise/lesson.json", "note": "kind: how — микрозадачи Promise, без привязки к этому репозиторию" },
+    { "module": "palette", "file": "examples/palette/lesson.json", "note": "полный словарь форм/иконок/типов рёбер — для отладки шаблона, не для чтения как урок" }
+  ],
+  "nodes": [
+    { "id": "invoke", "label": "/you-dont-know", "kind": "start" },
+    { "id": "phaseA", "label": "Phase A: план", "kind": "process" },
+    { "id": "confirm", "label": "Подтверждено?", "kind": "decision" },
+    { "id": "slugDir", "label": "tmp/you-dont-know/<slug>/", "kind": "group" },
+    { "id": "lessonJson", "label": "lesson.json", "kind": "file", "parent": "slugDir" },
+    { "id": "inject", "label": "inject-lesson.mjs", "kind": "process" },
+    { "id": "validate", "label": "5 инвариантов", "kind": "subroutine" },
+    { "id": "boundary", "label": "process.exit(1)", "kind": "boundary" },
+    { "id": "replace", "label": "__LESSON_JSON__ → JSON", "kind": "action" },
+    { "id": "output", "label": "index.html", "kind": "file" },
+    { "id": "browser", "label": "shell / браузер", "kind": "inbox" }
+  ],
+  "edges": [
+    { "from": "invoke", "to": "phaseA", "label": "" },
+    { "from": "phaseA", "to": "confirm", "label": "план готов" },
+    { "from": "confirm", "to": "invoke", "label": "нет — правки", "kind": "back" },
+    { "from": "confirm", "to": "lessonJson", "label": "да" },
+    { "from": "lessonJson", "to": "inject", "label": "" },
+    { "from": "inject", "to": "validate", "label": "" },
+    { "from": "validate", "to": "boundary", "label": "невалидно", "kind": "dashed" },
+    { "from": "boundary", "to": "invoke", "label": "стоп: файлов нет", "kind": "back" },
+    { "from": "validate", "to": "replace", "label": "валидно" },
+    { "from": "replace", "to": "output", "label": "" },
+    { "from": "output", "to": "browser", "label": "" }
+  ],
+  "steps": [
+    {
+      "id": "invoke",
+      "title": "Явный вызов",
+      "narration": "Скилл не запускается сам — нужен явный `/you-dont-know` или прямая просьба об этом виде урока. [[gate]]",
+      "highlight": ["invoke"],
+      "code": {
+        "file": "SKILL.md",
+        "startLine": 52,
+        "text": "1. **Explicit invoke.** No `/you-dont-know` (or equivalent ask for this visual lesson) → do not run."
+      }
+    },
+    {
+      "id": "phaseA",
+      "title": "Phase A — только план",
+      "narration": "Заголовок, kind, 4–8 шагов и обоснование «почему урок, а не абзац». HTML на этом этапе ещё не пишется.",
+      "highlight": ["phaseA"],
+      "code": {
+        "file": "SKILL.md",
+        "startLine": 61,
+        "text": "Title: …\nKind: how | architecture | security\nSteps: 4–8 runtime beats (one line each)\nWhy a lesson, not a paragraph: …"
+      }
+    },
+    {
+      "id": "confirm",
+      "title": "Стоп-линия",
+      "narration": "Явная стоп-линия перед любой записью на диск — число, заголовок или «да» на предложенный план. [[whyconfirm]]",
+      "highlight": ["confirm"],
+      "code": {
+        "file": "SKILL.md",
+        "startLine": 67,
+        "text": "Then: «Подтвердите — пишу артефакт. Пока нет — файлов нет.»"
+      }
+    },
+    {
+      "id": "write",
+      "title": "lesson.json пишется по контракту",
+      "narration": "После подтверждения появляется `tmp/you-dont-know/<slug>/lesson.json`, строго по контракту — идентификаторы в бэктиках, никакого HTML внутри JSON. [[contract]]",
+      "highlight": ["slugDir", "lessonJson"],
+      "code": {
+        "file": "references/lesson-contract.md",
+        "startLine": 27,
+        "text": "\"nodes\": [\n  { \"id\": \"call\", \"label\": \"then(onFulfilled)\", \"kind\": \"action\" }\n],\n\"edges\": [\n  { \"from\": \"call\", \"to\": \"queue\", \"label\": \"enqueue\" }\n],\n\"steps\": [\n  {\n    \"id\": \"enqueue\",\n    \"title\": \"Enqueue\",\n    \"narration\": \"What happens at this instant. Optional [[why-microtask]].\",\n    \"highlight\": [\"call\"],\n    \"code\": {\n      \"file\": \"lib/promise.js\",\n      \"startLine\": 1,\n      \"text\": \"real excerpt or a labeled canonical snippet\"\n    }\n  }\n]"
+      }
+    },
+    {
+      "id": "validateStep",
+      "title": "inject-lesson.mjs проверяет мёртвые узлы",
+      "narration": "Каждый `nodes[].id` обязан встретиться хотя бы в одном `steps[].highlight`, иначе узел мёртв и не кликается. [[deadnode]]",
+      "highlight": ["inject", "validate"],
+      "code": {
+        "file": "scripts/inject-lesson.mjs",
+        "startLine": 19,
+        "text": "const ids = (data.nodes || []).map((n) => n.id);\nconst idSet = new Set(ids);\nconst highlighted = new Set();\n(data.steps || []).forEach((s) => (s.highlight || []).forEach((id) => highlighted.add(id)));\nconst dead = ids.filter((id) => !highlighted.has(id));\nif (dead.length) {\n  console.error(\"nodes missing from any steps[].highlight (not clickable): \" + dead.join(\", \"));\n  process.exit(1);\n}"
+      }
+    },
+    {
+      "id": "boundaryStep",
+      "title": "Невалидный урок не долетает до диска",
+      "narration": "Та же проверка отбраковывает неизвестный `kind`, битый `parent`, битый `via` и непривязанную сноску — сборка останавливается кодом выхода `1`, файл не создаётся. [[exit1]]",
+      "highlight": ["boundary"],
+      "code": {
+        "file": "scripts/inject-lesson.mjs",
+        "startLine": 39,
+        "text": "const KNOWN_KINDS = new Set([\n  \"process\", \"child\", \"other\",\n  \"start\", \"decision\", \"cloud\", \"queue\",\n  \"folder\", \"file\", \"group\", \"junction\",\n  \"provider\", \"host\", \"frame\", \"hoc\", \"inbox\", \"consumer\",\n  \"action\", \"boundary\", \"subroutine\"\n]);\nconst badKind = (data.nodes || []).filter((n) => n.kind && !KNOWN_KINDS.has(n.kind));\nif (badKind.length) {\n  console.error(\"nodes[].kind not in the shell vocabulary: \" + badKind.map((n) => `${n.id} (${n.kind})`).join(\", \"));\n  process.exit(1);\n}"
+      }
+    },
+    {
+      "id": "emitStep",
+      "title": "__LESSON_JSON__ подменяется",
+      "narration": "На чистом JSON `__LESSON_JSON__` заменяется в шаблоне; перед этим `</script` в данных экранируется, иначе тег `<script>` шаблона закрылся бы раньше времени. [[xss]]",
+      "highlight": ["replace", "output"],
+      "code": {
+        "file": "scripts/inject-lesson.mjs",
+        "startLine": 75,
+        "text": "fs.mkdirSync(path.dirname(outPath), { recursive: true });\n// A `</script` anywhere in the JSON (e.g. a `kind: \"vuln\"` lesson quoting an\n// XSS payload) would otherwise close the surrounding <script> tag early.\nconst json = JSON.stringify(data, null, 2).replace(/<\\/script/gi, \"<\\\\/script\");\nfs.writeFileSync(outPath, template.replace(\"__LESSON_JSON__\", json));\nconsole.log(outPath);"
+      }
+    },
+    {
+      "id": "openStep",
+      "title": "Готовый артефакт",
+      "narration": "Если `__LESSON_JSON__` всё же не подменился — например, шаблон открыли напрямую без сборки — сам shell выводит запасной текст вместо пустого экрана.",
+      "highlight": ["output", "browser"],
+      "code": {
+        "file": "templates/lesson.html",
+        "startLine": 1388,
+        "text": "function boot() {\n  if (!LESSON || typeof LESSON !== \"object\") {\n    document.body.innerHTML = \"<p>LESSON JSON was not injected (__LESSON_JSON__).</p>\";\n    return;\n  }"
+      }
+    }
+  ]
+}

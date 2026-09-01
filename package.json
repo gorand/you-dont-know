@@ -1,6 +1,6 @@
 {
   "name": "@gorand/you-dont-know",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
   "license": "MIT",
@@ -28,7 +28,12 @@
   "scripts": {
     "inject": "node scripts/inject-lesson.mjs",
     "palette": "node scripts/inject-lesson.mjs templates/lesson.html examples/palette/lesson.json examples/palette/index.html",
-    "example": "node scripts/inject-lesson.mjs templates/lesson.html examples/how-promise/lesson.json examples/how-promise/index.html"
+    "example": "node scripts/inject-lesson.mjs templates/lesson.html examples/how-promise/lesson.json examples/how-promise/index.html",
+    "palette:next": "node scripts/inject-lesson.mjs templates/lesson.next.html examples/palette/lesson.json examples/palette/index.next.html",
+    "example:next": "node scripts/inject-lesson.mjs templates/lesson.next.html examples/how-promise/lesson.json examples/how-promise/index.next.html",
+    "stress": "node scripts/inject-lesson.mjs templates/lesson.html examples/inject-pipeline/lesson.json examples/inject-pipeline/index.html",
+    "stress:next": "node scripts/inject-lesson.mjs templates/lesson.next.html examples/inject-pipeline/lesson.json examples/inject-pipeline/index.next.html",
+    "build:compare": "npm run palette && npm run example && npm run stress && npm run palette:next && npm run example:next && npm run stress:next"
   },
   "keywords": [
     "agent-skills",
