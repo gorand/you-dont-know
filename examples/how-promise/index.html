@@ -1294,7 +1294,11 @@
           x += u.w + unitGap;
           subRowH = Math.max(subRowH, u.h);
         });
-        y += subRowH + 36;
+        // 36px left exactly enough room for ONE edge label between ranks —
+        // a node with two branches out (e.g. a validate step with a valid/
+        // invalid split) needs two stacked labels in that gap, and the
+        // second one had nowhere to go but into the next row's node.
+        y += subRowH + 60;
       });
       return placed;
     }
@@ -1379,6 +1383,50 @@
       return { laneOf, count: Math.max(1, items.length) };
     }
 
+    function pathSegments(d) {
+      const nums = (d.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+      const pts = [];
+      for (let i = 0; i < nums.length; i += 2) pts.push({ x: nums[i], y: nums[i + 1] });
+      const segs = [];
+      for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i + 1]]);
+      return segs;
+    }
+
+    function pathBlocked(nodes, excludeIds, d) {
+      // Does this (axis-aligned) edge path cut through the BODY of some
+      // node it isn't connected to? A back-edge's default orthoPath route
+      // often does — same x as several intervening nodes in a column draws
+      // one line straight through all of them. A short local back-edge
+      // between two adjacent nodes (e.g. two siblings in one group) usually
+      // doesn't and should keep its normal, compact route rather than
+      // detour to the rail unconditionally.
+      return pathSegments(d).some(([p, q]) => nodes.some((o) => {
+        // A group's own fence is a translucent container, not an obstacle —
+        // edges legitimately cross it to reach a nested child (that's what
+        // the group-label z-order fix above is for). Only concrete content
+        // nodes count as something a route needs to avoid.
+        if (excludeIds.has(o.id) || kindOf(o) === "group") return false;
+        if (Math.abs(p.y - q.y) < 0.5) {
+          const lo = Math.min(p.x, q.x), hi = Math.max(p.x, q.x);
+          return p.y > o.y + 1 && p.y < o.y + o.h - 1 && hi > o.x && lo < o.x + o.w;
+        }
+        if (Math.abs(p.x - q.x) < 0.5) {
+          const lo = Math.min(p.y, q.y), hi = Math.max(p.y, q.y);
+          return p.x > o.x + 1 && p.x < o.x + o.w - 1 && hi > o.y && lo < o.y + o.h;
+        }
+        return false;
+      }));
+    }
+
+    function railClear(nodes, self, x0, x1, y) {
+      // Is the horizontal strip [x0,x1] at height y free of every OTHER
+      // node? A same-rank sibling sitting between a back-edge's port and
+      // its rail (e.g. two nodes side by side in one row) would otherwise
+      // get cut through the middle by that straight approach line.
+      const lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+      return !nodes.some((o) => o.id !== self.id && y > o.y && y < o.y + o.h && hi > o.x && lo < o.x + o.w);
+    }
+
     function orthoPath(a, b, p, q, lane, laneCount) {
       if (Math.abs(p.x - q.x) < 1.5) {
         return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: p.x + 10, ly: (p.y + q.y) / 2 + 3, vertical: true };
@@ -1405,17 +1453,25 @@
       };
     }
 
-    function nudgeLabel(x, y, text, placed) {
+    function nudgeLabel(x, y, text, placed, anchorStart) {
       const w = Math.min(150, 6.2 * String(text).length + 8);
-      const h = 14;
+      const h = 16;
+      // `x` is the SVG anchor point, not a box center — "start"-anchored
+      // labels (vertical edges) draw rightward from it, "middle"-anchored
+      // ones (horizontal edges) straddle it. The old check treated every
+      // label as centered on `x`, so two "start"-anchored labels close in x
+      // (e.g. two edges fanned out of the same node, like "невалидно" /
+      // "валидно" off `validate`) under-counted their true overlap and
+      // could clear the y-test by a couple px while still overlapping.
+      const x0 = anchorStart ? x : x - w / 2;
       let ly = y;
       let guard = 0;
       while (guard++ < 8) {
-        const hit = placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - ly) < h);
+        const hit = placed.some((p) => x0 < p.x0 + p.w + 4 && p.x0 < x0 + w + 4 && Math.abs(p.y - ly) < (p.h + h) / 2);
         if (!hit) break;
-        ly += 13;
+        ly += h;
       }
-      placed.push({ x, y: ly, w, h });
+      placed.push({ x0, y: ly, w, h });
       return ly;
     }
 
@@ -1435,7 +1491,7 @@
       return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
     }
 
-    function renderNode(n, live) {
+    function renderNode(n, live, part) {
       const on = live.has(n.id) ? "on" : "";
       const k = kindOf(n);
       const group = k === "group";
@@ -1447,11 +1503,21 @@
             <div xmlns="http://www.w3.org/1999/xhtml" class="node-label" style="color:#f4f2ee;-webkit-text-fill-color:#f4f2ee"><span class="txt">${escapeHtml(n.label)}</span></div>
           </foreignObject>`
         : "";
-      return `<g class="node ${on} kind-${escapeHtml(k)}" data-id="${n.id}">
-        ${nodeShell(n)}
+      // A group's fence rect draws BEFORE edges (its translucent fill would
+      // otherwise wash out any child node placed on top of it), but its
+      // icon+label must draw AFTER edges like every other node's — otherwise
+      // an edge merely passing through the group on its way to a nested
+      // child paints directly over the group's own caption text. `part`
+      // splits the two: "shell" for the early pass, "content" for the late
+      // one; omitted (ordinary nodes) renders both together as before.
+      const shellHtml = part === "content" ? "" : nodeShell(n);
+      const contentHtml = part === "shell" ? "" : `
         <svg class="node-ico" x="${n.x + 8}" y="${icoY}" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">${glyph(k)}</svg>
         ${label}
-        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>
+        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>`;
+      return `<g class="node ${on} kind-${escapeHtml(k)}" data-id="${n.id}">
+        ${shellHtml}
+        ${contentHtml}
       </g>`;
     }
 
@@ -1468,7 +1534,30 @@
     function renderFlow(highlight) {
       const nodes = layoutNodes(LESSON.nodes || [], LESSON.edges || []);
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
-      const maxX = Math.max(420, ...nodes.map((n) => n.x + n.w + 48));
+      const edgesAll = LESSON.edges || [];
+      const { fromP, toP } = fanPorts(nodes, edgesAll);
+      const { laneOf, count: laneCount } = lanePlan(edgesAll, fromP, toP, pos);
+      // A back-edge's default route (same port assignment as any other
+      // edge) is fine when it's short and local — e.g. two siblings in one
+      // group — and keeping that route there is what keeps it compact. It
+      // only needs the dedicated rail (see below) when that default route
+      // would cut through some OTHER node's body, which happens for long
+      // back-edges spanning several ranks of a column.
+      const maxNodeX = Math.max(0, ...nodes.map((n) => n.x + n.w));
+      const backRailOf = {};
+      let railCursor = maxNodeX + 40;
+      edgesAll.forEach((e, ei) => {
+        if (e.kind !== "back" || e.via) return;
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b || !fromP[ei] || !toP[ei]) return;
+        const natural = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, laneCount);
+        if (pathBlocked(nodes, new Set([a.id, b.id]), natural.d)) {
+          backRailOf[ei] = railCursor;
+          railCursor += 26;
+        }
+      });
+      const hasBackRail = Object.keys(backRailOf).length > 0;
+      const maxX = Math.max(420, ...nodes.map((n) => n.x + n.w + 48), hasBackRail ? railCursor + 16 : 0);
       const maxY = Math.max(240, ...nodes.map((n) => n.y + n.h + 36));
       const svg = $("flow");
       svg.setAttribute("viewBox", `0 0 ${maxX} ${maxY}`);
@@ -1495,12 +1584,10 @@
           <path d="M 10 0 L 0 5 L 10 10 z" fill="var(--primary)"></path>
         </marker>
       </defs>`;
-      const { fromP, toP } = fanPorts(nodes, LESSON.edges || []);
-      const { laneOf, count: laneCount } = lanePlan(LESSON.edges || [], fromP, toP, pos);
       const placed = [];
       const edgeEls = [];
       const labelEls = [];
-      (LESSON.edges || []).forEach((e, ei) => {
+      edgesAll.forEach((e, ei) => {
         const a = pos[e.from];
         const b = pos[e.to];
         if (!a || !b) return;
@@ -1512,6 +1599,27 @@
           const m = { x: mid.x + mid.w / 2, y: mid.y + mid.h / 2 };
           d = `M ${p.x} ${p.y} L ${m.x} ${m.y} L ${q.x} ${q.y}`;
           lx = m.x + 10; ly = m.y - 6; vertical = false;
+        } else if (backRailOf[ei] !== undefined) {
+          // Forced mid-right ports (not the fanned ones from fanPorts) —
+          // this edge is leaving its normal side entirely for the rail, so
+          // it no longer shares a side-bucket with whatever else attaches
+          // to a's/b's natural side.
+          const p = pointOnSide(a, "right", 0, 1);
+          const q = pointOnSide(b, "right", 0, 1);
+          const railX = backRailOf[ei];
+          // A same-rank sibling can sit directly between a port and the
+          // rail; detour above the row (to the node's own top edge) when
+          // the straight approach at port height would cut through it.
+          const detourSrc = !railClear(nodes, a, p.x, railX, p.y);
+          const detourTgt = !railClear(nodes, b, q.x, railX, q.y);
+          const py = detourSrc ? a.y - 10 : p.y;
+          const qy = detourTgt ? b.y - 10 : q.y;
+          d = `M ${p.x} ${p.y}`;
+          if (detourSrc) d += ` L ${p.x} ${py}`;
+          d += ` L ${railX} ${py} L ${railX} ${qy}`;
+          if (detourTgt) d += ` L ${q.x} ${qy}`;
+          d += ` L ${q.x} ${q.y}`;
+          lx = railX + 8; ly = (py + qy) / 2; vertical = true;
         } else {
           if (!fromP[ei] || !toP[ei]) return;
           ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, laneCount));
@@ -1521,13 +1629,15 @@
         const token = tokenMark(d, liveEdge);
         edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
         if (e.label) {
-          const y = nudgeLabel(lx, ly, e.label, placed);
+          const y = nudgeLabel(lx, ly, e.label, placed, vertical);
           labelEls.push(`<text class="edge-label${liveEdge ? " live" : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
         }
       });
-      const groupEls = nodes.filter((n) => kindOf(n) === "group").map((n) => renderNode(n, live)).join("");
+      const groups = nodes.filter((n) => kindOf(n) === "group");
+      const groupShellEls = groups.map((n) => renderNode(n, live, "shell")).join("");
+      const groupLabelEls = groups.map((n) => renderNode(n, live, "content")).join("");
       const nodeEls = nodes.filter((n) => kindOf(n) !== "group").map((n) => renderNode(n, live)).join("");
-      svg.innerHTML = marks + groupEls + edgeEls.join("") + nodeEls + labelEls.join("");
+      svg.innerHTML = marks + groupShellEls + edgeEls.join("") + groupLabelEls + nodeEls + labelEls.join("");
       svg.querySelectorAll(".node").forEach((el) => {
         el.addEventListener("click", () => {
           const id = el.getAttribute("data-id");

@@ -5,6 +5,34 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] — 2026-09-02
+
+### Fixed
+
+- Long `kind: "back"` edges no longer draw straight through every
+  intervening node between source and target. A new `pathBlocked()` check
+  runs an edge's normal route past every other node's bounding box first
+  (excluding `kind: "group"` containers, which edges legitimately cross to
+  reach a nested child); only a route that actually cuts through something
+  reroutes onto a dedicated vertical rail to the right of the widest node,
+  one rail per rerouted edge. A short, local back-edge between two
+  siblings keeps its original compact route unchanged.
+- A `kind: "group"` node's caption text no longer loses to an edge that
+  merely passes through the group on its way to a nested child. The
+  group's fence rect still draws before edges (its translucent fill would
+  otherwise wash out real children placed on top of it), but the icon and
+  label now draw after — same pass as every other node's content — so no
+  line can paint over the text anymore.
+- `nudgeLabel`'s overlap check compared every edge label's `x` as a box
+  *center*; `text-anchor: start` labels (any vertical edge) actually draw
+  rightward *from* `x`, so two labels close together in `x` could pass the
+  check while still visibly overlapping on screen. Fixed to compare true
+  left-edge boxes.
+- `layoutContainers`'s inter-rank gap (36px) had exactly enough room for
+  one edge label, not two stacked ones (e.g. a validate step branching
+  into a valid/invalid pair) — the second label had nowhere to go but into
+  the next rank's node. Widened to 60px.
+
 ## [0.3.2] — 2026-09-01
 
 ### Fixed

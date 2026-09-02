@@ -16,14 +16,14 @@ Build (from the skill root):
 
 ```sh
 npm run example   # how-promise
-npm run palette    # palette
-npm run stress      # inject-pipeline
+npm run palette   # palette
+npm run stress    # inject-pipeline
 
-# same three against templates/lesson.next.html, output as index.next.html
-npm run example:next
-npm run palette:next
-npm run stress:next
-
-# all six in one shot
-npm run build:compare
+# all three in one shot
+npm run build
 ```
+
+For a `templates/lesson.next.html` design-pass workflow (a working copy of
+the shell to compare against the shipped one before promoting), see
+`references/design-harness.md` — that file isn't kept in the repo at rest,
+only recreated for the duration of a design pass.

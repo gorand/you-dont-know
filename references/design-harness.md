@@ -87,22 +87,94 @@ Rank is now correct top-to-bottom (round 4 fixed it). Remaining, **not** fixed t
 
 **Decision (user, this session):** promote `templates/lesson.next.html` → `templates/lesson.html` now. Net effect so far is neutral-to-positive versus the previous shipped shell — no regression found, several real bugs fixed (group label clipping, decision shape, back-edge rank, group+DAG rank composition) — the open back-edge-rail item is worth continuing on top of a promoted baseline rather than blocking on it. Resume this file's checklist from Round 5 next session; re-copy `templates/lesson.html` → `templates/lesson.next.html` to reopen the compare workflow.
 
+## Round 6 — the back-edge rail, built and screenshot-verified
+
+Picked up the Round 5 sketch (route `kind: "back"` edges through a dedicated
+rail instead of straight through the column) and found three more real bugs
+along the way, each caught by an actual Playwright screenshot, not code
+reading:
+
+- [x] **Back-edges now route around, not through.** `orthoPath`'s
+  straight-line shortcut (same `x` → one line) is still what a back-edge
+  gets by default — and for a *short*, local back-edge (two siblings in one
+  group, e.g. `palette`'s `cloud → queue "retry"`) that default is already
+  fine and stays untouched. A new `pathBlocked()` check runs that default
+  route past every other node's bounding box first (excluding the edge's
+  own endpoints and any `kind: "group"` container, which edges are always
+  allowed to cross to reach a nested child); only a route that actually
+  cuts through something gets rerouted onto a dedicated vertical rail to
+  the right of the widest node (`M source → railX → railX → target`, one
+  rail per rerouted edge, forced onto each node's right-side port instead
+  of its natural side). Verified against `inject-pipeline`'s two long
+  back-edges (`confirm → invoke`, `boundary → invoke`) — both now clear
+  every intervening node and each other, live/animated state included —
+  while `palette`'s short local back-edge kept its original compact arrow
+  (confirmed by diffing against the pre-fix screenshot; the first pass at
+  this fix routed *every* back-edge onto the rail unconditionally, which
+  fixed `inject-pipeline` but turned `palette`'s clean short arrow into a
+  long detour exiting its group's border — `pathBlocked()` is what makes
+  the rail conditional).
+- [x] **Group caption text no longer loses to edges passing through the
+  group.** A `kind: "group"` node rendered its fence rect, icon, and label
+  as one unit in `groupEls`, drawn *before* edges (needed so the group's
+  translucent fill doesn't wash out real children placed on top of it
+  later) — but that put the group's own caption text under the same
+  z-order, so any edge merely passing through the group on its way to a
+  nested child (`inject-pipeline`: `confirm → lessonJson`) painted directly
+  over the caption ("tmp/you-d[line]nt-know/<slug[line]/"). `renderNode()`
+  now takes a `part` ("shell" | "content") so the fence rect still draws
+  early but the icon+label draw late, in the same pass as every other
+  node's content — same fix, applied to text instead of a routed line.
+- [x] **Two edge labels off the same node no longer overlap each other or
+  the next row.** `nudgeLabel`'s collision test compared every label's `x`
+  as if it were a box *center*, but a `text-anchor: start` label (any
+  vertical edge — the common case) draws rightward *from* `x`; two labels
+  close in `x` (`inject-pipeline`'s `validate` branching into `невалидно`
+  dashed / `валидно`) under-counted their real overlap and could pass the
+  test while still overlapping on screen. Fixed to compare true left-edge
+  boxes. That alone pushed the second label down into the *next rank's*
+  node — `layoutContainers`'s inter-rank gap (36px) had exactly enough
+  room for one label, not two stacked ones; widened to 60px.
+
+Not attempted this round: the rest of the Round 2 accessibility checklist
+(keyboard nav on SVG nodes) — out of scope for a rendering-correctness pass.
+
+**Decision:** promoted `templates/lesson.next.html` → `templates/lesson.html`,
+rebuilt all three shipped example artifacts (`npm run build`), then deleted
+`templates/lesson.next.html` and every `examples/*/index.next.html` — the
+design pass is done, and those were scratch files for the compare, not
+things to ship (see Workflow below). Verified via Playwright CLI screenshots
+(`@playwright/cli` + `playwright install chromium` as devDependencies)
+against all three fixtures (`palette`, `how-promise`, `inject-pipeline`),
+stepping through every lesson step including live/highlighted state, not
+just the static first frame. Recreate `templates/lesson.next.html` (copy
+from `templates/lesson.html`) to reopen the compare workflow next round.
+
 ## Workflow
 
+`templates/lesson.next.html` and `examples/*/index.next.html` are **not**
+kept in the repo at rest — they're scratch files for the duration of a
+design pass, recreated each time one starts and deleted (or just left
+uncommitted) once the pass promotes or is abandoned. Housekeeping, not a
+step you can skip: shipping them alongside the real template doubles every
+example's file count with byte-for-byte duplicates once a pass is promoted,
+and they'd otherwise ride along into the published npm package (`files` in
+`package.json` globs the whole `templates/`/`examples/` directories).
+
 ```sh
-# rebuild the current (shipped) template's examples
-npm run palette && npm run example
+# start a design pass: open a working copy of the shipped template
+cp templates/lesson.html templates/lesson.next.html
 
-# rebuild the experimental template's examples, same fixtures
-npm run palette:next && npm run example:next
+# rebuild the shipped template's examples
+npm run palette && npm run example && npm run stress   # or: npm run build
 
-# both in one shot
-npm run build:compare
+# rebuild the same fixtures against the working copy, output as *.next.html
+node scripts/inject-lesson.mjs templates/lesson.next.html examples/palette/lesson.json examples/palette/index.next.html
+node scripts/inject-lesson.mjs templates/lesson.next.html examples/how-promise/lesson.json examples/how-promise/index.next.html
+node scripts/inject-lesson.mjs templates/lesson.next.html examples/inject-pipeline/lesson.json examples/inject-pipeline/index.next.html
 ```
 
-`templates/lesson.html` stays the one `SKILL.md` points to and the one real
-invocations use. `templates/lesson.next.html` is the working copy — edit only
-this one during the design pass. Compare `examples/*/index.html` (current)
-against `examples/*/index.next.html` (next) side by side in the browser.
-Promote by copying `lesson.next.html` over `lesson.html` only once the user
-signs off.
+Compare `examples/*/index.html` (current) against `examples/*/index.next.html`
+(next) side by side in the browser. Promote by copying `lesson.next.html`
+over `lesson.html` once the user signs off, then delete every `*.next.html`
+(template and examples) before committing — they've done their job.
