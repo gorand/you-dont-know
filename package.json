@@ -1,12 +1,19 @@
 {
   "name": "@gorand/you-dont-know",
   "version": "0.5.0",
-  "private": true,
   "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
   "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gorand/you-dont-know.git"
+  },
+  "homepage": "https://github.com/gorand/you-dont-know#readme",
+  "bugs": {
+    "url": "https://github.com/gorand/you-dont-know/issues"
   },
   "publishConfig": {
     "access": "public"
