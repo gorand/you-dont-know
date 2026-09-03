@@ -54,7 +54,10 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - State colors are shell tokens `--state-error` / `--state-warn` / `--state-ok`. JSON must not restyle them. `kind: "boundary"` stays error-red in every accent.
 - `--node-fill` is achromatic. Do not put red / amber / green in `accent`.
 - Optional `layout`: `"timeline"` | `"layers"` | `"tree"` | `"auto"`. `"tree"` indents `folder` / `file` by `parent`. `"auto"` uses tree only when every node is folder/file; uses group layout if any `kind: "group"`.
+- Optional `detail`: `"auto"` (default) | `"progressive"` | `"full"` — how much of the diagram is open at once. See **Staged detail** below.
 - Optional `nodes[].parent`: id of a `group` (fence) or, in `layout: "tree"`, a folder
+- Optional `nodes[].collapsed`: boolean, `kind: "group"` only — that group's own default state (overrides the `detail` heuristic for it)
+- Optional `steps[].expand`: group ids this step opens even though it highlights none of their children
 - Optional `nodes[].rank`: explicit row
 - Optional `edges[].kind`: `flow` (default) | `dashed` | `back` | `both`
 - Optional `edges[].via`: junction node id (polyline through that node)
@@ -87,3 +90,51 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - Prose may use `` `identifier` ``; no HTML in JSON
 - Node `label` ≤ ~40 characters
 - Edges: the shell places split-row arrows on **separate rails** with a lacquer overpass. Do not pack four labels onto one shared bus in JSON either — keep labels short
+
+## Staged detail
+
+A diagram past ~12 nodes read at fit-to-screen is wallpaper: everything is on
+screen and nothing is legible. The shell answers that in two ways, and both
+are automatic — a lesson that says nothing about either still works.
+
+**Folding.** A `kind: "group"` node can stand in FOR its children instead of
+fencing them. Collapsed it draws as one solid block with the child count and
+a chevron; every edge that touched a hidden child re-anchors onto the block
+(edges wholly inside it disappear, parallel ones merge into a `label ×N`).
+
+A folded block is a closed container first and a step link second: clicking
+its body opens it, and so does the chevron (`Enter` / `Space` on the chevron
+too). Its own step stays reachable from the rail, and from the fence itself
+once it is open — an expanded fence opens its step on a body click like any
+other node. Neither fold nor unfold changes the current step or moves the
+frame: the reader who opened a group is looking at that group, and the view
+only shifts when what they just opened no longer fits on screen.
+
+Which groups are open comes from three layers, most specific first:
+
+1. the reader's own chevron toggle on that group;
+2. the canvas-wide `Детали / Detail` switch — `auto` · `all` (nothing folds)
+   · `step` (only the current step opens);
+3. `auto`, i.e. the lesson's own default: a group opens when the current step
+   highlights one of its children or names it in `steps[].expand`, and stays
+   folded otherwise — **but only for a complex diagram** (more than one
+   collapsible group AND >12 nodes or >14 edges). Below that everything is
+   open, exactly as before.
+
+`detail: "progressive"` forces the staged reveal on a diagram the heuristic
+would call simple; `detail: "full"` disables folding entirely (the reader can
+still fold by hand). `nodes[].collapsed` sets one group's default either way.
+
+Write for it: on a big lesson, put every node in a group named for the
+periphery it belongs to, and let each step highlight the children it is
+actually about. That is what turns the top level into a handful of large
+shapes with detail one click away, with no extra keys in the JSON.
+
+**Zoom.** The canvas pans and zooms like a Figma board: `Ctrl`/`⌘` + wheel
+zooms at the cursor (trackpad pinch too), `Shift` + wheel pans sideways, a
+plain wheel pans, dragging empty canvas moves it, and `+` `-` `0` (fit) `1`
+(100%) `2` (zoom to the current step) work bare or with `Ctrl`/`⌘`. The
+zoombar in the corner does the same for the mouse. Until the reader touches
+the canvas the shell frames each step itself: fit-to-screen while that stays
+readable, otherwise the step's own nodes. After that the frame is theirs — it
+only follows when a step's nodes would sit off screen.

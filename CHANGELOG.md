@@ -5,6 +5,64 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-09-03
+
+### Added
+
+- **Canvas viewport.** The diagram is a pannable, zoomable board instead of
+  a picture scaled to fit. `Ctrl`/`⌘` + wheel zooms at the cursor (trackpad
+  pinch included), `Shift` + wheel pans sideways, a plain wheel pans,
+  dragging empty canvas moves it, and two-finger pinch works on touch.
+  Keys: `+` `-` `0` (fit) `1` (100%) `2` (zoom to the current step), bare or
+  with `Ctrl`/`⌘`. A zoombar in the canvas corner does the same by mouse and
+  reads out the current scale. The background grid pans and zooms with the
+  content, so the surface reads as one board.
+- **Staged detail.** A `kind: "group"` node can now stand in FOR its
+  children instead of fencing them: collapsed it draws as one solid block
+  with a child count and a chevron, and every edge that touched a hidden
+  child re-anchors onto it (edges wholly inside the group disappear,
+  parallel ones merge into `label ×N`). On a complex diagram (more than one
+  collapsible group and >12 nodes or >14 edges) groups start folded and each
+  step opens exactly the group it narrates — the top level becomes a handful
+  of large shapes with detail one step, or one click, away. Below that
+  threshold nothing changes.
+- New contract keys, all optional: `detail` (`auto` | `progressive` |
+  `full`), `nodes[].collapsed` on a group, `steps[].expand`. Validated by
+  `inject-lesson.mjs`.
+- A canvas-wide `Detail` switch (`auto` · `all` · `step`), hidden when the
+  lesson has no collapsible group.
+- Clicking a folded block's body opens it. A closed container's first
+  meaning is "open me"; its step stays reachable from the rail and from the
+  fence once open. An expanded fence opens its step on a body click as
+  before.
+- `examples/dense-request/` — 31 nodes across 6 groups, the reference for
+  staged detail and the viewport (`npm run dense`).
+
+### Changed
+
+- Auto-framing replaces unconditional fit-to-screen. Until the reader
+  touches the canvas the shell frames each step itself: fit-to-screen while
+  that stays legible, otherwise the step's own nodes. After a manual zoom or
+  pan the frame belongs to the reader — it only follows when the current
+  step's nodes would sit off screen entirely.
+- A collapsed group is laid out larger than a leaf node, so the folded level
+  reads as containers rather than more of the same boxes.
+
+### Fixed
+
+- Folding or unfolding a group no longer re-frames the canvas onto the
+  current step. A disclosure toggle is the reader navigating away from that
+  step on purpose; auto-framing dragged them straight back. Toggling now
+  keeps the frame and the scale, and corrects the view only when what was
+  just opened would not fit on screen — centring on that group, never on the
+  step.
+- `computeRank` no longer strands nodes at rank 0 when the graph contains a
+  cycle. Kahn's pass stalls on one, which put every node behind the cycle in
+  the first row; it now breaks the cycle at the node with the fewest unmet
+  dependencies and keeps ranking. Folding a group makes cycles easy to
+  create (a service and a storage group that merely exchange edges collapse
+  into an A⇄B pair), but the bug predates it and affected any cyclic lesson.
+
 ## [0.3.3] — 2026-09-02
 
 ### Fixed

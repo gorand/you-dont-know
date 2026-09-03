@@ -49,6 +49,25 @@ if (badKind.length) {
   process.exit(1);
 }
 
+const groupIds = new Set((data.nodes || []).filter((n) => n.kind === "group").map((n) => n.id));
+const badCollapsed = (data.nodes || []).filter(
+  (n) => n.collapsed !== undefined && (typeof n.collapsed !== "boolean" || !groupIds.has(n.id))
+);
+if (badCollapsed.length) {
+  console.error("nodes[].collapsed is a boolean on kind:\"group\" only: " + badCollapsed.map((n) => n.id).join(", "));
+  process.exit(1);
+}
+const badExpand = (data.steps || []).flatMap((s) => (s.expand || []).filter((id) => !groupIds.has(id)));
+if (badExpand.length) {
+  console.error("steps[].expand must name kind:\"group\" ids: " + badExpand.join(", "));
+  process.exit(1);
+}
+const KNOWN_DETAIL = new Set(["auto", "progressive", "full"]);
+if (data.detail && !KNOWN_DETAIL.has(data.detail)) {
+  console.error(`detail "${data.detail}" is not auto | progressive | full`);
+  process.exit(1);
+}
+
 const KNOWN_ACCENTS = new Set(["iris", "glacier", "dusk"]);
 if (data.accent && !KNOWN_ACCENTS.has(data.accent)) {
   console.error(`accent "${data.accent}" is not iris | glacier | dusk`);

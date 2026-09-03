@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.1-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 [![npm](https://img.shields.io/badge/npm-not_yet_published-lightgrey.svg)](#roadmap)
 
@@ -45,9 +45,23 @@ Once installed where your harness looks for skills, invoke explicitly:
 ```sh
 npm run example
 npm run palette   # debug every node/edge kind
+npm run dense     # 31 nodes, 6 groups — staged detail + zoom
 ```
 
 Open `examples/how-promise/index.html` or `examples/palette/index.html` (`file://` is enough).
+
+## Reading a big diagram
+
+The canvas is a board, not a picture. `Ctrl`/`⌘` + wheel zooms at the cursor
+(trackpad pinch too), `Shift` + wheel pans sideways, a plain wheel pans, and
+dragging empty canvas moves it; `+` `-` `0` (fit) `1` (100%) `2` (zoom to the
+current step) are the keys, and the corner zoombar does the same by mouse.
+
+Past ~12 nodes the shell also stages the diagram: groups fold into single
+blocks with a child count, and each step opens exactly the group it talks
+about. Any chevron toggles a group by hand, and the `Detail` switch flips the
+whole canvas between `auto`, `all` and `step`. See
+[references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 
 Default working copy for a repo session: `tmp/you-dont-know/<slug>/`.
 
@@ -77,7 +91,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.3.1** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.4.0** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 

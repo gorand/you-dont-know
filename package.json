@@ -1,6 +1,6 @@
 {
   "name": "@gorand/you-dont-know",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "private": true,
   "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
   "license": "MIT",
@@ -30,7 +30,8 @@
     "palette": "node scripts/inject-lesson.mjs templates/lesson.html examples/palette/lesson.json examples/palette/index.html",
     "example": "node scripts/inject-lesson.mjs templates/lesson.html examples/how-promise/lesson.json examples/how-promise/index.html",
     "stress": "node scripts/inject-lesson.mjs templates/lesson.html examples/inject-pipeline/lesson.json examples/inject-pipeline/index.html",
-    "build": "npm run palette && npm run example && npm run stress"
+    "dense": "node scripts/inject-lesson.mjs templates/lesson.html examples/dense-request/lesson.json examples/dense-request/index.html",
+    "build": "npm run palette && npm run example && npm run stress && npm run dense"
   },
   "keywords": [
     "agent-skills",

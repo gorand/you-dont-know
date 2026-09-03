@@ -8,7 +8,7 @@ description: >-
   /understand maps.
 license: MIT
 metadata:
-  version: "0.3.3"
+  version: "0.4.0"
 disable-model-invocation: true
 argument-hint: "[topic-or-path]"
 ---
@@ -85,9 +85,22 @@ For each confirmed item:
      tmp/you-dont-know/<slug>/index.html
    ```
    (From a clone of this skill: `node scripts/inject-lesson.mjs templates/lesson.html …`.)
-4. Visual-QA `index.html`: node labels readable on dark fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; live/error/ok strokes still distinct from `--primary`. Selected step in the rail must visibly hover darker than the selected rest state.
+4. Visual-QA `index.html`: node labels readable on dark fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; live/error/ok strokes still distinct from `--primary`. Selected step in the rail must visibly hover darker than the selected rest state. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label.
 
-Shell vocabulary (shapes, groups, tree, edge kinds) lives in `examples/palette/` — rebuild after template edits.
+### Complex diagrams (>12 nodes)
+
+The shell folds them for you — but only if the JSON gives it something to
+fold. Put every node in a `kind: "group"` named for the periphery it belongs
+to (client · edge · gateway · service · storage), and let each step highlight
+the children it is actually about. The canvas then shows a handful of large
+blocks and opens one group per step; the reader pans / zooms (Ctrl+wheel,
+Shift+wheel, drag) and toggles any group by its chevron. Details and the
+`detail` / `collapsed` / `expand` overrides: [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
+
+A flat 25-node lesson with no groups gets no staging — it is still one wall
+of boxes, just zoomable. Group it.
+
+Shell vocabulary (shapes, groups, tree, edge kinds) lives in `examples/palette/` — rebuild after template edits. `examples/dense-request/` is the staged-detail reference (31 nodes, 6 groups).
 
 Default dest is `tmp/`. Never `docs/` unless asked.
 
@@ -100,6 +113,7 @@ Default dest is `tmp/`. Never `docs/` unless asked.
 - Shared collinear edge bus that hides where an arrow goes
 - Tab / sheet polygon for `folder` or `file` — Lucide glyph + path label already say directory; shell is a rounded rect
 - Node with no `highlight` (dead click)
+- A 20+ node lesson with every node top-level — nothing to fold, nothing to stage
 - Lead-only narration when the reason is non-obvious and no `[[aside]]`
 - Output in `docs/` or a markdown essay instead of the HTML shell
 
@@ -112,3 +126,4 @@ Default dest is `tmp/`. Never `docs/` unless asked.
 | «Cinnabar для security» | Security = dusk. Boundary/error keeps `--state-error` |
 | «Стрелки сошлись на одной линии — так короче» | Separate rails or a visible overpass |
 | «Узел декоративный, клик не нужен» | Every node id is in at least one step.highlight |
+| «Схема большая — читатель просто отзумит» | Zoom is the escape hatch, not the plan. Group the nodes so the top level is 5–7 blocks |
