@@ -1,0 +1,486 @@
+{
+  "lang": "ru",
+  "kind": "how",
+  "detail": "progressive",
+  "title": "Путь POST /orders: от клика до строки в БД",
+  "pattern": "Runtime · сквозной запрос",
+  "repo": "канонический стек",
+  "thesis": "Один клик проходит пять независимых периметров, и на каждом у запроса свой способ умереть.",
+  "problem": "Схема целиком — это 31 узел и 29 связей. Показанная разом, она читается как обои: масштаб падает, подписи сливаются, и смысл каждого перехода теряется.",
+  "whyNotBasic": "«Клиент → сервер → БД» не объясняет ни повтор после 429, ни почему письмо уходит не из транзакции. Детали живут ровно там, где ломается наивная модель.",
+  "cost": "Пять периметров — пять мест, где нужен свой таймаут, свой лимит и своя идемпотентность.",
+  "asides": [
+    {
+      "id": "why-idem",
+      "title": "Зачем ключ идемпотентности",
+      "body": "Повтор после таймаута — это тот же запрос, а не новый заказ. Клиент шлёт `Idempotency-Key`, сервис кладёт его в `redis` до транзакции и на повторе возвращает уже готовый ответ. Без ключа ретрай на сети создаёт второй заказ, и увидит это только бухгалтерия."
+    },
+    {
+      "id": "why-outbox",
+      "title": "Почему письмо не отправляется из транзакции",
+      "body": "Брокер не участвует в транзакции БД. Отправь в `Kafka` внутри `tx` — и при откате письмо уже ушло; отправь после коммита — и падение процесса теряет событие. Outbox пишет событие той же транзакцией, а `relay` вычитывает его отдельно: атомарность остаётся у БД, доставка — у relay."
+    },
+    {
+      "id": "why-lock",
+      "title": "Что делает SELECT FOR UPDATE",
+      "body": "Строка остатка блокируется до конца транзакции, поэтому два параллельных заказа не спишут один и тот же товар дважды. Плата — сериализация по этой строке: горячий товар превращает параллельные запросы в очередь."
+    }
+  ],
+  "files": [
+    "канонический пример"
+  ],
+  "repeats": [],
+  "nodes": [
+    {
+      "id": "user",
+      "label": "Пользователь",
+      "kind": "start"
+    },
+    {
+      "id": "g-client",
+      "label": "Браузер",
+      "kind": "group"
+    },
+    {
+      "id": "ui",
+      "label": "клик «Оплатить»",
+      "kind": "action",
+      "parent": "g-client"
+    },
+    {
+      "id": "fetch",
+      "label": "fetch() + AbortController",
+      "kind": "process",
+      "parent": "g-client"
+    },
+    {
+      "id": "retry",
+      "label": "429 / сеть → повтор",
+      "kind": "decision",
+      "parent": "g-client"
+    },
+    {
+      "id": "g-edge",
+      "label": "Периметр (CDN / WAF)",
+      "kind": "group"
+    },
+    {
+      "id": "tls",
+      "label": "TLS-терминация",
+      "kind": "process",
+      "parent": "g-edge"
+    },
+    {
+      "id": "waf",
+      "label": "WAF: правила",
+      "kind": "boundary",
+      "parent": "g-edge"
+    },
+    {
+      "id": "cdn",
+      "label": "кэш ответа",
+      "kind": "queue",
+      "parent": "g-edge"
+    },
+    {
+      "id": "g-gw",
+      "label": "API-шлюз",
+      "kind": "group"
+    },
+    {
+      "id": "authn",
+      "label": "проверка JWT",
+      "kind": "process",
+      "parent": "g-gw"
+    },
+    {
+      "id": "rate",
+      "label": "лимит 100 rps",
+      "kind": "decision",
+      "parent": "g-gw"
+    },
+    {
+      "id": "route",
+      "label": "маршрут /orders",
+      "kind": "process",
+      "parent": "g-gw"
+    },
+    {
+      "id": "trace",
+      "label": "trace-id в заголовок",
+      "kind": "action",
+      "parent": "g-gw"
+    },
+    {
+      "id": "g-svc",
+      "label": "Сервис заказов",
+      "kind": "group"
+    },
+    {
+      "id": "handler",
+      "label": "handler POST /orders",
+      "kind": "process",
+      "parent": "g-svc"
+    },
+    {
+      "id": "validate",
+      "label": "валидация тела",
+      "kind": "decision",
+      "parent": "g-svc"
+    },
+    {
+      "id": "idem",
+      "label": "Idempotency-Key",
+      "kind": "process",
+      "parent": "g-svc"
+    },
+    {
+      "id": "tx",
+      "label": "транзакция",
+      "kind": "subroutine",
+      "parent": "g-svc"
+    },
+    {
+      "id": "outbox",
+      "label": "запись в outbox",
+      "kind": "inbox",
+      "parent": "g-svc"
+    },
+    {
+      "id": "g-store",
+      "label": "Хранилище",
+      "kind": "group"
+    },
+    {
+      "id": "redis",
+      "label": "Redis: ключ запроса",
+      "kind": "queue",
+      "parent": "g-store"
+    },
+    {
+      "id": "lock",
+      "label": "SELECT … FOR UPDATE",
+      "kind": "process",
+      "parent": "g-store"
+    },
+    {
+      "id": "pg",
+      "label": "PostgreSQL: orders",
+      "kind": "process",
+      "parent": "g-store"
+    },
+    {
+      "id": "wal",
+      "label": "WAL / fsync",
+      "kind": "file",
+      "parent": "g-store"
+    },
+    {
+      "id": "g-async",
+      "label": "Асинхронный хвост",
+      "kind": "group"
+    },
+    {
+      "id": "relay",
+      "label": "outbox-relay",
+      "kind": "process",
+      "parent": "g-async"
+    },
+    {
+      "id": "broker",
+      "label": "Kafka: orders.created",
+      "kind": "cloud",
+      "parent": "g-async"
+    },
+    {
+      "id": "mailer",
+      "label": "consumer: письмо",
+      "kind": "inbox",
+      "parent": "g-async"
+    },
+    {
+      "id": "dlq",
+      "label": "DLQ после 5 попыток",
+      "kind": "queue",
+      "parent": "g-async"
+    },
+    {
+      "id": "resp",
+      "label": "201 + Location",
+      "kind": "action"
+    }
+  ],
+  "edges": [
+    {
+      "from": "user",
+      "to": "ui",
+      "label": "клик"
+    },
+    {
+      "from": "ui",
+      "to": "fetch",
+      "label": "POST"
+    },
+    {
+      "from": "fetch",
+      "to": "retry",
+      "label": "ответ"
+    },
+    {
+      "from": "retry",
+      "to": "fetch",
+      "label": "backoff",
+      "kind": "back"
+    },
+    {
+      "from": "fetch",
+      "to": "tls",
+      "label": "TLS 1.3"
+    },
+    {
+      "from": "tls",
+      "to": "waf",
+      "label": "поток"
+    },
+    {
+      "from": "waf",
+      "to": "cdn",
+      "label": "miss",
+      "kind": "dashed"
+    },
+    {
+      "from": "cdn",
+      "to": "authn",
+      "label": "проброс"
+    },
+    {
+      "from": "authn",
+      "to": "rate",
+      "label": "sub"
+    },
+    {
+      "from": "rate",
+      "to": "route",
+      "label": "в лимите"
+    },
+    {
+      "from": "rate",
+      "to": "retry",
+      "label": "429",
+      "kind": "back"
+    },
+    {
+      "from": "route",
+      "to": "trace",
+      "label": "заголовки"
+    },
+    {
+      "from": "trace",
+      "to": "handler",
+      "label": "upstream"
+    },
+    {
+      "from": "handler",
+      "to": "validate",
+      "label": "тело"
+    },
+    {
+      "from": "validate",
+      "to": "resp",
+      "label": "400",
+      "kind": "dashed"
+    },
+    {
+      "from": "validate",
+      "to": "idem",
+      "label": "ок"
+    },
+    {
+      "from": "idem",
+      "to": "redis",
+      "label": "SETNX"
+    },
+    {
+      "from": "redis",
+      "to": "resp",
+      "label": "повтор → готовый ответ",
+      "kind": "dashed"
+    },
+    {
+      "from": "idem",
+      "to": "tx",
+      "label": "BEGIN"
+    },
+    {
+      "from": "tx",
+      "to": "lock",
+      "label": "остаток"
+    },
+    {
+      "from": "lock",
+      "to": "pg",
+      "label": "INSERT"
+    },
+    {
+      "from": "pg",
+      "to": "outbox",
+      "label": "та же tx"
+    },
+    {
+      "from": "outbox",
+      "to": "wal",
+      "label": "COMMIT"
+    },
+    {
+      "from": "wal",
+      "to": "resp",
+      "label": "201"
+    },
+    {
+      "from": "wal",
+      "to": "relay",
+      "label": "poll",
+      "kind": "dashed"
+    },
+    {
+      "from": "relay",
+      "to": "broker",
+      "label": "publish"
+    },
+    {
+      "from": "broker",
+      "to": "mailer",
+      "label": "consume"
+    },
+    {
+      "from": "mailer",
+      "to": "dlq",
+      "label": "5 неудач",
+      "kind": "back"
+    },
+    {
+      "from": "resp",
+      "to": "cdn",
+      "label": "no-store",
+      "kind": "back"
+    }
+  ],
+  "steps": [
+    {
+      "id": "click",
+      "title": "Клик и запрос",
+      "narration": "`AbortController` даёт клиенту собственный таймаут: без него вкладка ждёт ответа столько, сколько решит сеть. Повтор после сбоя — уже другой периметр ответственности [[why-idem]].",
+      "highlight": [
+        "user",
+        "g-client",
+        "ui",
+        "fetch",
+        "retry"
+      ],
+      "code": {
+        "file": "канонический пример: client.ts",
+        "startLine": 1,
+        "text": "const ac = new AbortController();\nconst t = setTimeout(() => ac.abort(), 8000);\nawait fetch(\"/orders\", {\n  method: \"POST\",\n  headers: { \"Idempotency-Key\": key },\n  signal: ac.signal\n});"
+      }
+    },
+    {
+      "id": "edge",
+      "title": "Периметр",
+      "narration": "TLS завершается на краю, дальше внутри контура идёт обычный HTTP. WAF режет запрос до того, как он стоит хоть чего-то приложению.",
+      "highlight": [
+        "g-edge",
+        "tls",
+        "waf",
+        "cdn"
+      ],
+      "code": {
+        "file": "канонический пример: edge.conf",
+        "startLine": 1,
+        "text": "location /orders {\n  limit_except POST { deny all; }\n  proxy_cache off;            # POST не кэшируется\n  proxy_pass http://gateway;\n}"
+      }
+    },
+    {
+      "id": "gateway",
+      "title": "Шлюз: кто и сколько",
+      "narration": "Шлюз отвечает на два вопроса — «кто ты» и «не слишком ли часто». `429` возвращается клиенту и замыкает цикл повтора.",
+      "highlight": [
+        "g-gw",
+        "authn",
+        "rate",
+        "route",
+        "trace"
+      ],
+      "code": {
+        "file": "канонический пример: gateway.yaml",
+        "startLine": 1,
+        "text": "routes:\n  - path: /orders\n    auth: jwt\n    rateLimit: { rps: 100, burst: 20 }\n    headers: { add: [\"x-trace-id: $req_id\"] }"
+      }
+    },
+    {
+      "id": "handler",
+      "title": "Хендлер и идемпотентность",
+      "narration": "Валидация отвечает `400` сразу, не открывая транзакцию. Ключ идемпотентности ставится до `BEGIN` — иначе повтор успеет завести второй заказ [[why-idem]].",
+      "highlight": [
+        "g-svc",
+        "handler",
+        "validate",
+        "idem",
+        "redis"
+      ],
+      "code": {
+        "file": "канонический пример: orders.ts",
+        "startLine": 12,
+        "text": "const fresh = await redis.set(`idem:${key}`, \"1\", \"NX\", \"EX\", 86400);\nif (!fresh) return cachedResponse(key);\nconst order = await db.tx(async (t) => { /* … */ });"
+      }
+    },
+    {
+      "id": "tx",
+      "title": "Транзакция",
+      "narration": "Блокировка строки остатка сериализует конкурентов по одному товару [[why-lock]]. Ответ клиенту законен только после `fsync` журнала.",
+      "highlight": [
+        "g-store",
+        "tx",
+        "lock",
+        "pg",
+        "wal"
+      ],
+      "code": {
+        "file": "канонический пример: orders.sql",
+        "startLine": 1,
+        "text": "BEGIN;\nSELECT qty FROM stock WHERE sku = $1 FOR UPDATE;\nINSERT INTO orders (id, sku, qty) VALUES ($2, $1, $3);\nINSERT INTO outbox (topic, payload) VALUES ('orders.created', $4);\nCOMMIT;"
+      }
+    },
+    {
+      "id": "outbox",
+      "title": "Outbox вместо прямой отправки",
+      "narration": "Событие пишется той же транзакцией, что и заказ, и уходит в брокер отдельным процессом [[why-outbox]].",
+      "highlight": [
+        "outbox",
+        "g-async",
+        "relay",
+        "broker"
+      ],
+      "code": {
+        "file": "канонический пример: relay.ts",
+        "startLine": 1,
+        "text": "const batch = await db.query(\n  \"SELECT * FROM outbox WHERE sent_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED\"\n);\nfor (const row of batch) await producer.send(row);"
+      }
+    },
+    {
+      "id": "tail",
+      "title": "Ответ и хвост",
+      "narration": "Клиент получает `201` сразу после коммита, письмо доходит позже и своим темпом. Пять неудачных попыток отправляют событие в DLQ, а не роняют заказ.",
+      "highlight": [
+        "resp",
+        "mailer",
+        "dlq",
+        "g-async"
+      ],
+      "code": {
+        "file": "канонический пример: mailer.ts",
+        "startLine": 1,
+        "text": "await consumer.run({\n  eachMessage: async ({ message }) => {\n    try { await sendMail(message); }\n    catch (e) { await maybeDlq(message, e); }\n  }\n});"
+      }
+    }
+  ]
+}

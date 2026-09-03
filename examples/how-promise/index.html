@@ -212,16 +212,34 @@
       background: var(--lacquer);
     }
     .stage {
-      overflow: auto;
+      overflow: hidden;
       padding: 12px 16px 16px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: var(--lacquer);
+    }
+    /* The viewport. World coordinates live in the SVG viewBox; the grid
+       under it is painted by CSS and re-synced to the same transform on
+       every pan/zoom, so the canvas reads as one surface that moves. */
+    .canvas {
+      position: relative;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      border-radius: var(--r);
       background:
         linear-gradient(var(--hairline) 1px, transparent 1px) 0 0 / 24px 24px,
         linear-gradient(90deg, var(--hairline) 1px, transparent 1px) 0 0 / 24px 24px,
         var(--lacquer-deep);
+      touch-action: none;
+      cursor: grab;
     }
+    .canvas.panning { cursor: grabbing; }
     .stage-label {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       font-family: var(--font-mono);
       font-size: 0.6875rem;
@@ -231,13 +249,85 @@
       margin: 0 0 8px;
     }
     svg.flow {
+      position: absolute;
+      inset: 0;
       display: block;
       width: 100%;
-      height: calc(100% - 1.5rem);
-      min-height: 12rem;
-      margin-inline: auto;
+      height: 100%;
       color: #f4f2ee;
     }
+    .hint {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.06em;
+      text-transform: none;
+      color: var(--faint);
+    }
+    .hint kbd {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--muted);
+      border: 1px solid var(--hairline);
+      border-radius: 3px;
+      padding: 0 4px;
+      line-height: 1.5;
+    }
+    .zoombar {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid var(--hairline);
+      border-radius: var(--r);
+      background: color-mix(in srgb, var(--graphite) 90%, transparent);
+      box-shadow: 0 8px 24px oklch(4% 0.004 95 / 0.5);
+    }
+    .zoombar button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      min-width: 26px;
+      height: 24px;
+      padding: 0 6px;
+      font: inherit;
+      font-size: 0.75rem;
+      color: var(--primary);
+      background: transparent;
+      border: 0;
+      border-radius: var(--r);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background-color 120ms var(--ease), transform 90ms var(--ease);
+    }
+    .zoombar button:hover { background: var(--primary-soft); }
+    .zoombar button:active { transform: scale(0.92); }
+    .zoombar .ico { width: 13px; height: 13px; }
+    .zoombar .zsep { width: 1px; height: 16px; margin: 0 3px; background: var(--hairline); }
+    .zoombar .pct {
+      min-width: 3.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+    .zoombar .detail {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .zoombar .detail .ico { color: var(--primary); }
+    .zoombar [hidden] { display: none; }
     .node { cursor: pointer; touch-action: manipulation; }
     .node .node-shell {
       fill: var(--node-fill);
@@ -269,6 +359,47 @@
       fill: color-mix(in srgb, var(--primary) 14%, oklch(16% 0 0 / 0.5));
       stroke: var(--primary);
       stroke-dasharray: 5 4;
+    }
+    /* A collapsed group is a solid block, not a fence: it stands in for its
+       children, so it must read as one object. The offset ghost rect behind
+       it is the only hint that something is folded inside. */
+    .node.kind-group.collapsed .node-shell {
+      fill: var(--node-fill);
+      stroke: oklch(78% 0 0 / 0.42);
+      stroke-dasharray: none;
+    }
+    .node.on.kind-group.collapsed .node-shell {
+      fill: color-mix(in srgb, var(--primary) 34%, var(--node-fill));
+      stroke: var(--primary);
+    }
+    .node-stack {
+      fill: var(--node-fill);
+      stroke: oklch(78% 0 0 / 0.26);
+      stroke-width: 1;
+      pointer-events: none;
+    }
+    .node.on .node-stack { stroke: var(--primary-rule); }
+    .disclose { cursor: pointer; touch-action: manipulation; }
+    .disclose-bg {
+      fill: oklch(18% 0 0 / 0.92);
+      stroke: var(--primary-rule);
+      stroke-width: 1;
+      transition: fill 120ms var(--ease), stroke 120ms var(--ease);
+    }
+    .disclose:hover .disclose-bg { fill: color-mix(in srgb, var(--primary) 26%, oklch(18% 0 0)); stroke: var(--primary); }
+    .disclose-mark {
+      fill: none;
+      stroke: var(--primary-pale);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .disclose-n {
+      fill: var(--primary-pale);
+      font: 500 10px var(--font-mono);
+      pointer-events: none;
+      dominant-baseline: middle;
     }
     .node-ico {
       overflow: visible;
@@ -587,12 +718,13 @@
         padding: 8px 12px 12px;
       }
       .step { flex: 0 0 12rem; }
-      svg.flow {
-        width: min(100%, 28rem);
-        height: auto;
-        min-height: 0;
-        max-height: 28rem;
-      }
+      .canvas { min-height: 18rem; }
+      .hint { display: none; }
+      /* The page itself scrolls at this width. A canvas that swallowed
+         vertical drags would trap the reader inside an 18rem box, so the
+         browser keeps vertical panning and only sideways drags move the
+         diagram — the zoombar covers the rest. */
+      .canvas { touch-action: pan-y; }
       .notes { max-height: none; }
     }
     @media (max-width: 720px) {
@@ -639,8 +771,32 @@
       <p class="stage-label">
         <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/><path d="M7 4.5 H10.5 V9"/></svg>
         <span id="stage-copy">Diagram · node opens a step</span>
+        <span class="hint" id="hint"></span>
       </p>
-      <svg class="flow" id="flow" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+      <div class="canvas" id="canvas">
+        <svg class="flow" id="flow" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+        <div class="zoombar" id="zoombar">
+          <button type="button" id="zoom-out" title="Zoom out">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8 H12.5"/></svg>
+          </button>
+          <button type="button" id="zoom-pct" class="pct" title="Reset zoom">100%</button>
+          <button type="button" id="zoom-in" title="Zoom in">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5 V12.5"/><path d="M3.5 8 H12.5"/></svg>
+          </button>
+          <span class="zsep" aria-hidden="true"></span>
+          <button type="button" id="zoom-fit" title="Fit">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6 V2.5 H6"/><path d="M10 2.5 H13.5 V6"/><path d="M13.5 10 V13.5 H10"/><path d="M6 13.5 H2.5 V10"/></svg>
+          </button>
+          <button type="button" id="zoom-step" title="Focus step">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.5"/><circle class="fill" cx="8" cy="8" r="1.5"/><path d="M8 1.5 V3"/><path d="M8 13 V14.5"/><path d="M1.5 8 H3"/><path d="M13 8 H14.5"/></svg>
+          </button>
+          <span class="zsep" id="detail-sep" aria-hidden="true"></span>
+          <button type="button" id="detail" class="detail" title="Detail level">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 L14.5 5 L8 8.2 L1.5 5 Z"/><path d="M1.5 8 L8 11.2 L14.5 8"/><path d="M1.5 11 L8 14.2 L14.5 11"/></svg>
+            <span id="detail-label">auto</span>
+          </button>
+        </div>
+      </div>
     </section>
     <aside class="inspector">
       <div class="narration-wrap">
@@ -822,6 +978,10 @@
     const $ = (id) => document.getElementById(id);
     let i = 0;
     let timer = null;
+    // What the canvas is showing right now: a disclosure toggle or a detail
+    // switch re-renders the same step without walking the rail.
+    let CURRENT = { highlight: [], step: null, live: [] };
+    let justDragged = false;
     const REDUCE_MOTION = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
     function tokenMark(d, liveEdge) {
@@ -840,8 +1000,28 @@
       security: "dusk", vuln: "dusk"
     };
     const UI = {
-      en: { back: "Back", next: "Next", play: "Play", pause: "Pause", accent: "Accent", stage: "Diagram · node opens a step", problem: "The catch", why: "Why not the basic way", cost: "Cost", steps: "Steps", more: "More" },
-      ru: { back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза", accent: "Акцент", stage: "Схема · узел открывает шаг", problem: "Проблема", why: "Почему не базовый подход", cost: "Цена", steps: "Шаги", more: "Подробнее" }
+      en: {
+        back: "Back", next: "Next", play: "Play", pause: "Pause", accent: "Accent",
+        stage: "Diagram · node opens a step", problem: "The catch", why: "Why not the basic way",
+        cost: "Cost", steps: "Steps", more: "More",
+        zoomIn: "Zoom in (+)", zoomOut: "Zoom out (−)", zoomReset: "Zoom 100% (1)",
+        fit: "Fit the whole diagram (0)", focus: "Zoom to this step (2)",
+        expand: "Expand", collapse: "Collapse",
+        detailTitle: "Detail: auto · all open · current step only",
+        detail: { auto: "auto", full: "all", step: "step" },
+        hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
+      },
+      ru: {
+        back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза", accent: "Акцент",
+        stage: "Схема · узел открывает шаг", problem: "Проблема", why: "Почему не базовый подход",
+        cost: "Цена", steps: "Шаги", more: "Подробнее",
+        zoomIn: "Приблизить (+)", zoomOut: "Отдалить (−)", zoomReset: "Масштаб 100% (1)",
+        fit: "Вписать схему целиком (0)", focus: "Приблизить к текущему шагу (2)",
+        expand: "Раскрыть", collapse: "Свернуть",
+        detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
+        detail: { auto: "авто", full: "всё", step: "шаг" },
+        hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
+      }
     };
     function ui() {
       const lang = String((LESSON && LESSON.lang) || document.documentElement.lang || "en").slice(0, 2);
@@ -878,6 +1058,142 @@
 
     function ico(inner) {
       return `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${inner}</svg>`;
+    }
+
+    /* ---------- progressive disclosure ----------
+       A `kind: "group"` node can stand in FOR its children instead of
+       fencing them. Collapsed it is one solid block, and every edge that
+       touched a hidden child re-anchors onto it (self-loops inside the
+       group drop, parallel edges merge with a ×N label); expanded it is the
+       dashed fence it has always been. Which state a group is in comes from
+       three layers, most specific first: an explicit toggle on that group,
+       the canvas-wide detail mode, then the lesson's own default — where a
+       step pulls exactly its own material open and lets the rest stay
+       folded. That last layer is the staged reveal: top level is a handful
+       of large shapes, detail arrives one step (or one click) at a time.
+    */
+    const collapseOverride = new Map();
+    let detailMode = null; // null = auto · "full" = everything open · "step" = only the current step opens
+
+    function nodeIndex() {
+      const by = {};
+      (LESSON.nodes || []).forEach((n) => { by[n.id] = n; });
+      return by;
+    }
+
+    function groupList() {
+      return (LESSON.nodes || []).filter((n) => kindOf(n) === "group");
+    }
+
+    function childrenDeep(id) {
+      const by = nodeIndex();
+      const out = [];
+      (LESSON.nodes || []).forEach((n) => {
+        let p = n.parent;
+        let guard = 0;
+        while (p && guard++ < 12) {
+          if (p === id) { out.push(n); return; }
+          p = by[p] && by[p].parent;
+        }
+      });
+      return out;
+    }
+
+    function collapsibleGroups() {
+      return groupList().filter((g) => childrenDeep(g.id).length > 0);
+    }
+
+    function isComplex() {
+      const n = (LESSON.nodes || []).length;
+      const e = (LESSON.edges || []).length;
+      return collapsibleGroups().length > 1 && (n > 12 || e > 14);
+    }
+
+    function stepNeeds(gid, highlight, step) {
+      if (step && (step.expand || []).indexOf(gid) >= 0) return true;
+      const live = new Set(highlight || []);
+      // The group's OWN id being highlighted means "look at this container",
+      // not "unpack it" — only a lit child opens the fence.
+      return childrenDeep(gid).some((k) => live.has(k.id));
+    }
+
+    function stagedByDefault(g) {
+      if (LESSON.detail === "full") return false;
+      if (typeof g.collapsed === "boolean") return g.collapsed;
+      if (LESSON.detail === "progressive") return true;
+      return isComplex();
+    }
+
+    function collapsedSet(highlight, step) {
+      const out = new Set();
+      collapsibleGroups().forEach((g) => {
+        let collapsed;
+        if (collapseOverride.has(g.id)) collapsed = collapseOverride.get(g.id);
+        else if (detailMode === "full") collapsed = false;
+        else if (detailMode === "step") collapsed = !stepNeeds(g.id, highlight, step);
+        else collapsed = stagedByDefault(g) && !stepNeeds(g.id, highlight, step);
+        if (collapsed) out.add(g.id);
+      });
+      return out;
+    }
+
+    function isFence(n) { return kindOf(n) === "group" && !n._collapsed; }
+
+    // One entry point for every manual fold/unfold, so all of them share the
+    // same rule: the step does not change and the frame does not move.
+    function setCollapsed(id, collapsed) {
+      collapseOverride.set(id, collapsed);
+      renderFlow(CURRENT.highlight, CURRENT.step, id);
+    }
+
+    function visibleGraph(collapsed) {
+      const by = nodeIndex();
+      const hidden = new Set();
+      const anchorOf = {};
+      (LESSON.nodes || []).forEach((n) => {
+        let top = null;
+        let p = n.parent;
+        let guard = 0;
+        while (p && guard++ < 12) {
+          if (collapsed.has(p)) top = p; // the OUTERMOST collapsed ancestor wins
+          p = by[p] && by[p].parent;
+        }
+        anchorOf[n.id] = top || n.id;
+        if (top) hidden.add(n.id);
+      });
+      const nodes = (LESSON.nodes || []).filter((n) => !hidden.has(n.id)).map((n) => {
+        const kids = kindOf(n) === "group" ? childrenDeep(n.id).length : 0;
+        const copy = { ...n };
+        if (kids) copy._kids = kids;
+        if (collapsed.has(n.id)) copy._collapsed = true;
+        return copy;
+      });
+      const visible = new Set(nodes.map((n) => n.id));
+      const merged = new Map();
+      const edges = [];
+      (LESSON.edges || []).forEach((e) => {
+        const from = anchorOf[e.from] || e.from;
+        const to = anchorOf[e.to] || e.to;
+        if (from === to) return; // both ends folded into the same block
+        if (!visible.has(from) || !visible.has(to)) return;
+        const key = from + "\t" + to;
+        const prev = merged.get(key);
+        if (prev) {
+          prev._n += 1;
+          if ((e.label || "") !== prev._label) prev._mixed = true;
+          if ((e.kind || "flow") !== (prev.kind || "flow")) prev.kind = "flow";
+          return;
+        }
+        const ne = { ...e, from, to, _n: 1, _label: e.label || "" };
+        if (ne.via && (hidden.has(ne.via) || !visible.has(ne.via))) delete ne.via;
+        merged.set(key, ne);
+        edges.push(ne);
+      });
+      edges.forEach((e) => {
+        if (e._n < 2) return;
+        e.label = e._mixed || !e._label ? `×${e._n}` : `${e._label} ×${e._n}`;
+      });
+      return { nodes, edges, anchorOf };
     }
 
     function escapeHtml(s) {
@@ -1108,16 +1424,26 @@
       return nodes.every((n) => out[n.id] <= 1 && inn[n.id] <= 1);
     }
 
+    // A collapsed group stands for everything inside it, so it outweighs a
+    // leaf node on purpose: the top level of a staged diagram should read as
+    // a few large shapes, not as more of the same boxes.
+    const COLLAPSED_GROW_W = 44;
+    const COLLAPSED_GROW_H = 12;
+    function unitW(n, boxW) { return n._collapsed ? boxW + COLLAPSED_GROW_W : boxW; }
+    function unitH(n, boxH) { return n._collapsed ? boxH + COLLAPSED_GROW_H : boxH; }
+
     function placeRow(row, li, boxW, boxH, gapX, gapY, padY, canvasW) {
-      const rowW = row.length * boxW + Math.max(0, row.length - 1) * gapX;
-      const startX = Math.max(24, (canvasW - rowW) / 2);
-      return row.map((n, idx) => ({
-        ...n,
-        x: startX + idx * (boxW + gapX),
-        y: padY + li * (boxH + gapY),
-        w: boxW,
-        h: boxH
-      }));
+      const ws = row.map((n) => unitW(n, boxW));
+      const hs = row.map((n) => unitH(n, boxH));
+      const rowH = Math.max(...hs);
+      const rowW = ws.reduce((a, b) => a + b, 0) + Math.max(0, row.length - 1) * gapX;
+      const y0 = padY + li * (boxH + gapY);
+      let x = Math.max(24, (canvasW - rowW) / 2);
+      return row.map((n, idx) => {
+        const box = { ...n, x, y: y0 + (rowH - hs[idx]) / 2, w: ws[idx], h: hs[idx] };
+        x += ws[idx] + gapX;
+        return box;
+      });
     }
 
     function layoutTimeline(nodes) {
@@ -1134,8 +1460,9 @@
       });
       const boxW = 188, boxH = 52, gapX = 40, gapY = 104, padY = 28;
       const layers = [...groups.keys()].sort((a, b) => a - b);
-      const maxCount = Math.max(1, ...layers.map((L) => groups.get(L).length));
-      const width = 48 + maxCount * boxW + (maxCount - 1) * gapX;
+      const widest = Math.max(1, ...layers.map((L) =>
+        groups.get(L).reduce((sum, n) => sum + unitW(n, boxW) + gapX, -gapX)));
+      const width = 48 + widest;
       return layers.flatMap((L, li) => placeRow(groups.get(L), li, boxW, boxH, gapX, gapY, padY, width));
     }
 
@@ -1168,15 +1495,32 @@
       const rank = Object.fromEntries(nodes.map((n) => [n.id, 0]));
       const queue = nodes.filter((n) => incoming[n.id] === 0).map((n) => n.id);
       const seen = new Set();
-      while (queue.length) {
-        const id = queue.shift();
-        if (seen.has(id)) continue;
-        seen.add(id);
-        (outs[id] || []).forEach((to) => {
-          rank[to] = Math.max(rank[to], rank[id] + 1);
-          incoming[to] -= 1;
-          if (incoming[to] === 0) queue.push(to);
-        });
+      const drain = () => {
+        while (queue.length) {
+          const id = queue.shift();
+          if (seen.has(id)) continue;
+          seen.add(id);
+          (outs[id] || []).forEach((to) => {
+            rank[to] = Math.max(rank[to], rank[id] + 1);
+            incoming[to] -= 1;
+            if (incoming[to] === 0) queue.push(to);
+          });
+        }
+      };
+      drain();
+      // Kahn's pass stalls on a cycle and leaves every node behind it at
+      // rank 0 — which reads as "this belongs in the first row". Folding a
+      // group makes that easy to hit: two nodes that merely exchange edges
+      // (a service writing to storage, storage's row coming back) collapse
+      // into one A⇄B pair that no topological order can resolve. Break the
+      // cycle at whatever node has the fewest unmet dependencies left and
+      // keep ranking, so the rest of the diagram still lands in flow order.
+      while (seen.size < nodes.length) {
+        const stuck = nodes.filter((n) => !seen.has(n.id));
+        if (!stuck.length) break;
+        stuck.sort((a, b) => (incoming[a.id] - incoming[b.id]) || (rank[a.id] - rank[b.id]));
+        queue.push(stuck[0].id);
+        drain();
       }
       return { rank, indeg };
     }
@@ -1219,12 +1563,14 @@
       // and edges routed through a grouped child silently drop out of the
       // ungrouped nodes' own rank computation (two DAGs that don't know about
       // each other → nodes stranded far from their logical position).
-      const groupIds = new Set(nodes.filter((n) => kindOf(n) === "group").map((n) => n.id));
+      // A COLLAPSED group has no visible children — it is a plain block in
+      // the flow, so only expanded fences claim container slots here.
+      const groupIds = new Set(nodes.filter((n) => isFence(n)).map((n) => n.id));
       const kids = {};
       groupIds.forEach((id) => { kids[id] = []; });
       const outer = [];
       nodes.forEach((n) => {
-        if (kindOf(n) === "group") return;
+        if (isFence(n)) return;
         if (n.parent && groupIds.has(n.parent)) kids[n.parent].push(n);
         else outer.push(n);
       });
@@ -1246,14 +1592,14 @@
       }
 
       const units = [];
-      nodes.filter((n) => kindOf(n) === "group").forEach((g) => {
+      nodes.filter((n) => isFence(n)).forEach((g) => {
         const list = kids[g.id] || [];
         const box = groupBox(list);
         const childRanks = list.map((k) => fullRank[k.id] || 0);
         units.push({ kind: "group", node: g, w: box.w, h: box.h, rank: childRanks.length ? Math.min(...childRanks) : (fullRank[g.id] || 0) });
       });
       outer.forEach((n) => {
-        units.push({ kind: "outer", node: n, w: outerW, h: outerH, rank: fullRank[n.id] || 0 });
+        units.push({ kind: "outer", node: n, w: unitW(n, outerW), h: unitH(n, outerH), rank: fullRank[n.id] || 0 });
       });
 
       const byRank = new Map();
@@ -1307,7 +1653,7 @@
       const mode = LESSON.layout || "auto";
       const treeish = nodes.length && nodes.every((n) => n.kind === "folder" || n.kind === "file");
       if (mode === "tree" || (mode === "auto" && treeish)) return layoutTree(nodes);
-      if (nodes.some((n) => kindOf(n) === "group")) return layoutContainers(nodes, edges);
+      if (nodes.some((n) => isFence(n))) return layoutContainers(nodes, edges);
       if (mode === "timeline" || (mode === "auto" && isChain(nodes, edges))) return layoutTimeline(nodes);
       if (nodes.some((n) => Number.isFinite(n.rank))) return layoutRanked(nodes);
       if (mode === "layers") return layoutLayers(nodes);
@@ -1405,7 +1751,7 @@
         // edges legitimately cross it to reach a nested child (that's what
         // the group-label z-order fix above is for). Only concrete content
         // nodes count as something a route needs to avoid.
-        if (excludeIds.has(o.id) || kindOf(o) === "group") return false;
+        if (excludeIds.has(o.id) || isFence(o)) return false;
         if (Math.abs(p.y - q.y) < 0.5) {
           const lo = Math.min(p.x, q.x), hi = Math.max(p.x, q.x);
           return p.y > o.y + 1 && p.y < o.y + o.h - 1 && hi > o.x && lo < o.x + o.w;
@@ -1478,6 +1824,12 @@
     function nodeShell(n) {
       const { x, y, w, h } = n;
       const k = kindOf(n);
+      if (k === "group" && n._collapsed) {
+        // Ghost card behind the block: the one static cue that this shape is
+        // a stack of things, not a leaf.
+        return `<rect class="node-stack" x="${x + 6}" y="${y - 6}" width="${w - 6}" height="${h}" rx="2"/>`
+          + `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
+      }
       if (k === "group") {
         return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>`;
       }
@@ -1491,15 +1843,37 @@
       return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
     }
 
+    function discloseMark(n) {
+      if (!n._kids) return "";
+      const t = ui();
+      const open = !n._collapsed;
+      const bw = 32, bh = 18;
+      const x = n.x + n.w - bw - 6;
+      const y = open ? n.y + 6 : n.y + (n.h - bh) / 2;
+      const cy = y + bh / 2;
+      const chev = open
+        ? `M ${x + 19} ${cy + 2.4} L ${x + 22.5} ${cy - 2.2} L ${x + 26} ${cy + 2.4}`
+        : `M ${x + 19} ${cy - 2.4} L ${x + 22.5} ${cy + 2.2} L ${x + 26} ${cy - 2.4}`;
+      const name = `${open ? t.collapse : t.expand} — ${n.label || n.id} (${n._kids})`;
+      return `<g class="disclose" data-group="${escapeHtml(n.id)}" role="button" tabindex="0"
+          aria-expanded="${open}" aria-label="${escapeHtml(name)}">
+        <rect class="disclose-bg" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="9"/>
+        <text class="disclose-n" x="${x + 10}" y="${cy + 0.5}" text-anchor="middle">${n._kids}</text>
+        <path class="disclose-mark" d="${chev}"/>
+      </g>`;
+    }
+
     function renderNode(n, live, part) {
       const on = live.has(n.id) ? "on" : "";
       const k = kindOf(n);
-      const group = k === "group";
+      const group = k === "group" && !n._collapsed;
       const icoY = group ? n.y + 8 : n.y + (n.h - 16) / 2;
       const foY = group ? n.y + 2 : n.y;
       const foH = group ? 50 : n.h;
+      const badge = discloseMark(n);
+      const labelW = Math.max(24, n.w - 30 - (badge ? 40 : 0));
       const label = n.label
-        ? `<foreignObject x="${n.x + 26}" y="${foY}" width="${n.w - 30}" height="${foH}" color="#f4f2ee">
+        ? `<foreignObject x="${n.x + 26}" y="${foY}" width="${labelW}" height="${foH}" color="#f4f2ee">
             <div xmlns="http://www.w3.org/1999/xhtml" class="node-label" style="color:#f4f2ee;-webkit-text-fill-color:#f4f2ee"><span class="txt">${escapeHtml(n.label)}</span></div>
           </foreignObject>`
         : "";
@@ -1514,8 +1888,9 @@
       const contentHtml = part === "shell" ? "" : `
         <svg class="node-ico" x="${n.x + 8}" y="${icoY}" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">${glyph(k)}</svg>
         ${label}
-        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>`;
-      return `<g class="node ${on} kind-${escapeHtml(k)}" data-id="${n.id}">
+        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>
+        ${badge}`;
+      return `<g class="node ${on}${n._collapsed ? " collapsed" : ""} kind-${escapeHtml(k)}" data-id="${n.id}">
         ${shellHtml}
         ${contentHtml}
       </g>`;
@@ -1531,10 +1906,212 @@
       return { cls: `edge${live}${dash}`, start, end };
     }
 
-    function renderFlow(highlight) {
-      const nodes = layoutNodes(LESSON.nodes || [], LESSON.edges || []);
+    /* ---------- viewport: pan + zoom ----------
+       Figma keys: Ctrl/⌘ + wheel zooms at the cursor, Shift + wheel pans
+       sideways, a plain wheel pans, dragging empty canvas moves it. The
+       graph keeps its own world coordinates and only the viewBox moves, so
+       nothing re-lays-out and labels stay vector-crisp at any scale.
+
+       `viewPinned` is the whole contract with the reader: until they touch
+       the canvas the diagram keeps auto-fitting exactly as it always did.
+       Once they zoom or pan, their frame is theirs — the shell then only
+       nudges it when the current step's nodes would otherwise sit off
+       screen, and never zooms further in than where they left it.
+    */
+    const ZOOM_MIN = 0.15;
+    const ZOOM_MAX = 4;
+    const VIEW = { cx: 320, cy: 180, s: 1 };
+    let WORLD = { w: 640, h: 360 };
+    let NODE_BOX = {};
+    let viewReady = false;
+    let viewPinned = false;
+    let viewAnim = 0;
+
+    const r2 = (v) => Math.round(v * 100) / 100;
+
+    function canvasBox() {
+      const r = $("canvas").getBoundingClientRect();
+      return { w: Math.max(1, r.width), h: Math.max(1, r.height), left: r.left, top: r.top };
+    }
+
+    function clampScale(v) { return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v)); }
+
+    function viewRect() {
+      const b = canvasBox();
+      const w = b.w / VIEW.s;
+      const h = b.h / VIEW.s;
+      return { x: VIEW.cx - w / 2, y: VIEW.cy - h / 2, w, h };
+    }
+
+    function applyView() {
+      const v = viewRect();
+      $("flow").setAttribute("viewBox", `${r2(v.x)} ${r2(v.y)} ${r2(v.w)} ${r2(v.h)}`);
+      // Keep the CSS grid locked to world coordinates — a grid that stayed
+      // put while the diagram moved would read as a printed backdrop, not a
+      // canvas.
+      const cell = 24 * VIEW.s;
+      const ox = r2(-v.x * VIEW.s);
+      const oy = r2(-v.y * VIEW.s);
+      const canvas = $("canvas");
+      canvas.style.backgroundSize = `${r2(cell)}px ${r2(cell)}px, ${r2(cell)}px ${r2(cell)}px, auto`;
+      canvas.style.backgroundPosition = `${ox}px ${oy}px, ${ox}px ${oy}px, 0 0`;
+      $("zoom-pct").textContent = Math.round(VIEW.s * 100) + "%";
+    }
+
+    function clientToWorld(cx, cy) {
+      const b = canvasBox();
+      const v = viewRect();
+      return { x: v.x + (cx - b.left) / VIEW.s, y: v.y + (cy - b.top) / VIEW.s };
+    }
+
+    function setView(v, animate) {
+      if (viewAnim) cancelAnimationFrame(viewAnim);
+      viewAnim = 0;
+      const target = { cx: v.cx, cy: v.cy, s: clampScale(v.s) };
+      if (!animate || REDUCE_MOTION) {
+        VIEW.cx = target.cx; VIEW.cy = target.cy; VIEW.s = target.s;
+        applyView();
+        return;
+      }
+      const from = { cx: VIEW.cx, cy: VIEW.cy, s: VIEW.s };
+      const t0 = performance.now();
+      const dur = 280;
+      const tick = (now) => {
+        const k = Math.min(1, (now - t0) / dur);
+        const e = 1 - Math.pow(1 - k, 3);
+        VIEW.cx = from.cx + (target.cx - from.cx) * e;
+        VIEW.cy = from.cy + (target.cy - from.cy) * e;
+        // Scale interpolates in log space: linear zoom reads as a lurch.
+        VIEW.s = Math.exp(Math.log(from.s) + (Math.log(target.s) - Math.log(from.s)) * e);
+        applyView();
+        viewAnim = k < 1 ? requestAnimationFrame(tick) : 0;
+      };
+      viewAnim = requestAnimationFrame(tick);
+    }
+
+    function viewFor(box, maxScale, pad) {
+      const b = canvasBox();
+      const m = pad == null ? 28 : pad;
+      const s = clampScale(Math.min(
+        (b.w - m * 2) / Math.max(1, box.w),
+        (b.h - m * 2) / Math.max(1, box.h),
+        maxScale || 2
+      ));
+      return { cx: box.x + box.w / 2, cy: box.y + box.h / 2, s };
+    }
+
+    function fitAll(animate) {
+      setView(viewFor({ x: 0, y: 0, w: WORLD.w, h: WORLD.h }, 2), animate);
+      viewPinned = false;
+    }
+
+    function zoomAt(cx, cy, factor) {
+      const before = clientToWorld(cx, cy);
+      VIEW.s = clampScale(VIEW.s * factor);
+      const after = clientToWorld(cx, cy);
+      VIEW.cx += before.x - after.x;
+      VIEW.cy += before.y - after.y;
+      viewPinned = true;
+      applyView();
+    }
+
+    function zoomBy(factor) {
+      const b = canvasBox();
+      zoomAt(b.left + b.w / 2, b.top + b.h / 2, factor);
+    }
+
+    function panBy(dx, dy) {
+      VIEW.cx += dx / VIEW.s;
+      VIEW.cy += dy / VIEW.s;
+      viewPinned = true;
+      applyView();
+    }
+
+    function boxOf(ids) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      (ids || []).forEach((id) => {
+        const n = NODE_BOX[id];
+        if (!n) return;
+        x0 = Math.min(x0, n.x); y0 = Math.min(y0, n.y);
+        x1 = Math.max(x1, n.x + n.w); y1 = Math.max(y1, n.y + n.h);
+      });
+      if (!Number.isFinite(x0)) return null;
+      return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+
+    function boxVisible(box) {
+      const v = viewRect();
+      const m = 8;
+      return box.x >= v.x + m && box.y >= v.y + m
+        && box.x + box.w <= v.x + v.w - m && box.y + box.h <= v.y + v.h - m;
+    }
+
+    function inflate(box, k) {
+      return { x: box.x - k, y: box.y - k, w: box.w + k * 2, h: box.h + k * 2 };
+    }
+
+    function liveIds() { return CURRENT.live || []; }
+
+    function syncDetailUi() {
+      const t = ui();
+      const any = collapsibleGroups().length > 0;
+      $("detail").hidden = !any;
+      $("detail-sep").hidden = !any;
+      $("detail-label").textContent = t.detail[detailMode || "auto"];
+      $("detail").title = t.detailTitle;
+    }
+
+    function focusLive(animate) {
+      const box = boxOf(liveIds());
+      if (!box) { fitAll(animate); return; }
+      setView(viewFor(inflate(box, 24), 1.6), animate);
+      viewPinned = true;
+    }
+
+    // Below this, a 13px node label is roughly 8px on screen — the exact
+    // "everything blurs together" state staged detail exists to avoid.
+    const LEGIBLE = 0.62;
+
+    function autoFrame(animate) {
+      const whole = viewFor({ x: 0, y: 0, w: WORLD.w, h: WORLD.h }, 2);
+      const box = boxOf(liveIds());
+      // Fitting the whole graph is right until it stops being readable.
+      // Past that point the step's own material wins the frame — the
+      // overview is one click (or `0`) away, an illegible diagram is not.
+      if (whole.s >= LEGIBLE || !box) setView(whole, animate);
+      else setView(viewFor(inflate(box, 40), 1.4), animate);
+      viewPinned = false;
+    }
+
+    // Opening a group is the reader looking at THAT group. Re-framing on the
+    // current step there would drag them back to material they deliberately
+    // navigated away from, so a disclosure toggle never re-frames: the view
+    // stays put, and the only correction is keeping the node they just
+    // toggled on screen — at the scale they chose, zooming out only if what
+    // they opened no longer fits.
+    function keepInView(id) {
+      applyView();
+      const box = NODE_BOX[id];
+      if (!box || boxVisible(box)) return;
+      setView(viewFor(inflate(box, 32), VIEW.s), true);
+    }
+
+    function syncViewport(live, keep) {
+      if (keep) { keepInView(keep); return; }
+      if (!viewReady) { viewReady = true; autoFrame(false); return; }
+      if (!viewPinned) { autoFrame(true); return; }
+      applyView();
+      const box = boxOf(live);
+      // Zoomed in and this step happens somewhere else on the canvas: pan
+      // (and only if needed, zoom out) to it rather than narrate off-screen.
+      if (box && !boxVisible(box)) setView(viewFor(inflate(box, 32), VIEW.s), true);
+    }
+
+    function renderFlow(highlight, step, keep) {
+      const graph = visibleGraph(collapsedSet(highlight, step));
+      const nodes = layoutNodes(graph.nodes, graph.edges);
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
-      const edgesAll = LESSON.edges || [];
+      const edgesAll = graph.edges;
       const { fromP, toP } = fanPorts(nodes, edgesAll);
       const { laneOf, count: laneCount } = lanePlan(edgesAll, fromP, toP, pos);
       // A back-edge's default route (same port assignment as any other
@@ -1560,9 +2137,12 @@
       const maxX = Math.max(420, ...nodes.map((n) => n.x + n.w + 48), hasBackRail ? railCursor + 16 : 0);
       const maxY = Math.max(240, ...nodes.map((n) => n.y + n.h + 36));
       const svg = $("flow");
-      svg.setAttribute("viewBox", `0 0 ${maxX} ${maxY}`);
-      svg.style.aspectRatio = `${maxX} / ${maxY}`;
-      const live = new Set(highlight || []);
+      WORLD = { w: maxX, h: maxY };
+      NODE_BOX = Object.fromEntries(nodes.map((n) => [n.id, { x: n.x, y: n.y, w: n.w, h: n.h }]));
+      // A highlighted node that is currently folded away lights up the block
+      // standing in for it, so no step ever points at nothing.
+      const live = new Set((highlight || []).map((id) => graph.anchorOf[id] || id));
+      CURRENT.live = [...live];
       const marks = `<defs>
         <style>
           .node-label, .node-label .txt {
@@ -1633,18 +2213,41 @@
           labelEls.push(`<text class="edge-label${liveEdge ? " live" : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
         }
       });
-      const groups = nodes.filter((n) => kindOf(n) === "group");
-      const groupShellEls = groups.map((n) => renderNode(n, live, "shell")).join("");
-      const groupLabelEls = groups.map((n) => renderNode(n, live, "content")).join("");
-      const nodeEls = nodes.filter((n) => kindOf(n) !== "group").map((n) => renderNode(n, live)).join("");
-      svg.innerHTML = marks + groupShellEls + edgeEls.join("") + groupLabelEls + nodeEls + labelEls.join("");
+      // Only an EXPANDED fence splits into two passes (translucent shell
+      // before the edges, caption after). A collapsed group is an ordinary
+      // solid block and draws with the rest of them.
+      const fences = nodes.filter((n) => isFence(n));
+      const fenceShellEls = fences.map((n) => renderNode(n, live, "shell")).join("");
+      const fenceLabelEls = fences.map((n) => renderNode(n, live, "content")).join("");
+      const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live)).join("");
+      svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
       svg.querySelectorAll(".node").forEach((el) => {
-        el.addEventListener("click", () => {
+        el.addEventListener("click", (ev) => {
+          if (ev.target.closest(".disclose")) return;
+          if (justDragged) return;
           const id = el.getAttribute("data-id");
+          // A folded block is a closed container first and a step link
+          // second: clicking it means "open this", not "jump somewhere
+          // else". Its step stays reachable from the rail, and from the
+          // fence itself once it is open.
+          if (el.classList.contains("collapsed")) { setCollapsed(id, false); return; }
           const stepIdx = stepForNode(id);
           if (stepIdx >= 0) show(stepIdx);
         });
       });
+      svg.querySelectorAll(".disclose").forEach((el) => {
+        const toggle = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          setCollapsed(el.getAttribute("data-group"), el.getAttribute("aria-expanded") === "true");
+        };
+        el.addEventListener("click", toggle);
+        el.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") toggle(ev);
+        });
+      });
+      syncDetailUi();
+      syncViewport([...live], keep);
     }
 
     function stepForNode(id) {
@@ -1677,7 +2280,8 @@
         if (idx === i) btn.setAttribute("aria-current", "true");
         else btn.removeAttribute("aria-current");
       });
-      renderFlow(step.highlight || []);
+      CURRENT = { highlight: step.highlight || [], step, live: CURRENT.live };
+      renderFlow(step.highlight || [], step);
     }
 
     function play() {
@@ -1752,11 +2356,124 @@
           if (!$("pop").hidden) { ev.preventDefault(); closePop(); }
           return;
         }
+        // Figma-side of the keyboard. `+ / - / 0 / 1 / 2` work bare and with
+        // Ctrl/⌘, so the muscle memory from either app lands somewhere sane.
+        if (ev.key === "+" || ev.key === "=") { ev.preventDefault(); zoomBy(1.25); return; }
+        if (ev.key === "-" || ev.key === "_") { ev.preventDefault(); zoomBy(0.8); return; }
+        if (ev.key === "0") { ev.preventDefault(); fitAll(true); return; }
+        if (ev.key === "1") {
+          ev.preventDefault();
+          setView({ cx: VIEW.cx, cy: VIEW.cy, s: 1 }, true);
+          viewPinned = true;
+          return;
+        }
+        if (ev.key === "2") { ev.preventDefault(); focusLive(true); return; }
         if (ev.key === " ") { ev.preventDefault(); play(); }
         if (ev.key === "ArrowRight") show(i + 1);
         if (ev.key === "ArrowLeft") show(i - 1);
       });
-      window.addEventListener("resize", closePop);
+      window.addEventListener("resize", () => { closePop(); applyView(); });
+
+      // --- canvas: pan · zoom · detail ---
+      const canvas = $("canvas");
+      $("hint").innerHTML = t.hint;
+      $("zoom-in").title = t.zoomIn;
+      $("zoom-out").title = t.zoomOut;
+      $("zoom-pct").title = t.zoomReset;
+      $("zoom-fit").title = t.fit;
+      $("zoom-step").title = t.focus;
+      $("zoom-in").onclick = () => zoomBy(1.25);
+      $("zoom-out").onclick = () => zoomBy(0.8);
+      $("zoom-pct").onclick = () => { setView({ cx: VIEW.cx, cy: VIEW.cy, s: 1 }, true); viewPinned = true; };
+      $("zoom-fit").onclick = () => fitAll(true);
+      $("zoom-step").onclick = () => focusLive(true);
+      $("detail").onclick = () => {
+        detailMode = detailMode === null ? "full" : (detailMode === "full" ? "step" : null);
+        collapseOverride.clear(); // the switch speaks for the whole canvas again
+        renderFlow(CURRENT.highlight, CURRENT.step);
+      };
+
+      canvas.addEventListener("wheel", (ev) => {
+        ev.preventDefault();
+        const unit = ev.deltaMode === 1 ? 16 : 1;
+        // Trackpad pinch arrives as a ctrlKey wheel — same branch as ⌘/Ctrl.
+        if (ev.ctrlKey || ev.metaKey) {
+          zoomAt(ev.clientX, ev.clientY, Math.exp(-ev.deltaY * unit * 0.0022));
+          return;
+        }
+        if (ev.shiftKey) panBy((ev.deltaY || ev.deltaX) * unit, 0);
+        else panBy(ev.deltaX * unit, ev.deltaY * unit);
+      }, { passive: false });
+
+      const pointers = new Map();
+      let drag = null;
+      let pinch = null;
+      const pinchState = () => {
+        const [a, b] = [...pointers.values()];
+        return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      };
+      canvas.addEventListener("pointerdown", (ev) => {
+        justDragged = false;
+        if (ev.pointerType === "mouse" && ev.button !== 0 && ev.button !== 1) return;
+        pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        if (pointers.size === 2) { drag = null; pinch = pinchState(); return; }
+        if (pointers.size > 2) return;
+        // No pointer capture yet: capturing here would retarget the click and
+        // kill every node tap. It is claimed only once this becomes a drag.
+        drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: false };
+      });
+      canvas.addEventListener("pointermove", (ev) => {
+        if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        if (pinch && pointers.size >= 2) {
+          const now = pinchState();
+          if (pinch.d > 0) zoomAt(now.x, now.y, now.d / pinch.d);
+          panBy(-(now.x - pinch.x), -(now.y - pinch.y));
+          pinch = now;
+          return;
+        }
+        if (!drag || ev.pointerId !== drag.id) return;
+        const dx = ev.clientX - drag.x;
+        const dy = ev.clientY - drag.y;
+        if (!drag.moved) {
+          if (Math.abs(dx) + Math.abs(dy) < 4) return;
+          drag.moved = true;
+          justDragged = true;
+          canvas.classList.add("panning");
+          try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* pointer already gone */ }
+        }
+        drag.x = ev.clientX;
+        drag.y = ev.clientY;
+        panBy(-dx, -dy);
+      });
+      const endPointer = (ev) => {
+        pointers.delete(ev.pointerId);
+        if (pointers.size < 2) pinch = null;
+        if (!drag || drag.id !== ev.pointerId) return;
+        if (drag.moved) {
+          canvas.classList.remove("panning");
+          try { canvas.releasePointerCapture(ev.pointerId); } catch (e) { /* not captured */ }
+        }
+        drag = null;
+      };
+      canvas.addEventListener("pointerup", endPointer);
+      canvas.addEventListener("pointercancel", endPointer);
+      // A drag that ends over a node must not also open that node's step.
+      canvas.addEventListener("click", (ev) => {
+        if (!justDragged) return;
+        ev.stopPropagation();
+        ev.preventDefault();
+        justDragged = false;
+      }, true);
+      canvas.addEventListener("dblclick", (ev) => {
+        if (ev.target.closest(".node")) return;
+        fitAll(true);
+      });
+      if (window.ResizeObserver) {
+        // Re-frame, don't blind-fit: on a narrow canvas fitting the whole
+        // graph is exactly what makes it unreadable.
+        new ResizeObserver(() => { if (viewPinned) applyView(); else autoFrame(false); }).observe(canvas);
+      }
+
       show(0);
     }
 
