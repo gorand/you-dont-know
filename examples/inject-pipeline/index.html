@@ -228,13 +228,22 @@
       overflow: hidden;
       border: 1px solid var(--hairline);
       border-radius: var(--r);
-      background:
-        linear-gradient(var(--hairline) 1px, transparent 1px) 0 0 / 24px 24px,
-        linear-gradient(90deg, var(--hairline) 1px, transparent 1px) 0 0 / 24px 24px,
-        var(--lacquer-deep);
+      /* Two densities on one unit: a faint line every CELL, a readable one
+         every MAJOR (4 cells). Sizes and offsets are re-synced from the
+         viewport transform on every pan/zoom — see applyView. The fine
+         layer drops out below ~0.5 scale, where it would only be mud. */
+      --grid-fine: oklch(78% 0 0 / 0.09);
+      --grid-major: oklch(78% 0 0 / 0.2);
+      background-color: var(--lacquer-deep);
+      background-image:
+        linear-gradient(var(--grid-fine) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px),
+        linear-gradient(var(--grid-major) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
       touch-action: none;
       cursor: grab;
     }
+    .canvas.coarse { --grid-fine: transparent; }
     .canvas.panning { cursor: grabbing; }
     .stage-label {
       display: flex;
@@ -1581,11 +1590,45 @@
       return nodes.every((n) => out[n.id] <= 1 && inn[n.id] <= 1);
     }
 
+    /* ---------- one spacing grid ----------
+       Every box, gap and pad below is a whole number of CELL, and the canvas
+       paints a line every CELL with a heavier one every MAJOR. Before this
+       the drawn grid was 24px while the layout ran on 40 / 52 / 104 / 16 —
+       the lines described nothing, and a same-row arrow got 40px of run,
+       less than the label it had to carry. The unit IS the layout now: a
+       horizontal edge always has six cells to be read in, and every node
+       edge lands on a drawn line.
+    */
+    const CELL = 16;
+    const MAJOR = CELL * 4;
+    const M = {
+      pad: CELL * 2,          // 32  canvas margin
+      nodeW: CELL * 12,       // 192
+      nodeH: CELL * 4,        // 64
+      colGap: CELL * 6,       // 96  room for a horizontal edge label
+      rowGap: CELL * 7,       // 112 the corridor every horizontal run lives in
+      childGapX: CELL * 3,    // 48
+      childGapY: CELL * 3,    // 48  a group's rows leave a corridor too
+      groupPadX: CELL * 2,    // 32
+      groupHead: CELL * 3,    // 48  fence caption band
+      groupFoot: CELL * 2,    // 32
+      unitGap: CELL * 2,      // 32
+      rankGap: CELL * 6,      // 96  two stacked edge labels fit
+      maxRowW: CELL * 60,     // 960
+      timelineW: CELL * 18,   // 288
+      timelineGap: CELL * 3,  // 48
+      treeW: CELL * 15,       // 240
+      treeH: CELL * 3,        // 48
+      treeGap: CELL,          // 16
+      indent: CELL * 2        // 32
+    };
+    const snap = (v) => Math.round(v / CELL) * CELL;
+
     // A collapsed group stands for everything inside it, so it outweighs a
     // leaf node on purpose: the top level of a staged diagram should read as
     // a few large shapes, not as more of the same boxes.
-    const COLLAPSED_GROW_W = 44;
-    const COLLAPSED_GROW_H = 12;
+    const COLLAPSED_GROW_W = CELL * 3;
+    const COLLAPSED_GROW_H = CELL * 2;
     function unitW(n, boxW) { return n._collapsed ? boxW + COLLAPSED_GROW_W : boxW; }
     function unitH(n, boxH) { return n._collapsed ? boxH + COLLAPSED_GROW_H : boxH; }
 
@@ -1595,16 +1638,16 @@
       const rowH = Math.max(...hs);
       const rowW = ws.reduce((a, b) => a + b, 0) + Math.max(0, row.length - 1) * gapX;
       const y0 = padY + li * (boxH + gapY);
-      let x = Math.max(24, (canvasW - rowW) / 2);
+      let x = Math.max(M.pad, snap((canvasW - rowW) / 2));
       return row.map((n, idx) => {
-        const box = { ...n, x, y: y0 + (rowH - hs[idx]) / 2, w: ws[idx], h: hs[idx] };
+        const box = { ...n, x, y: y0 + snap((rowH - hs[idx]) / 2), w: ws[idx], h: hs[idx] };
         x += ws[idx] + gapX;
         return box;
       });
     }
 
     function layoutTimeline(nodes) {
-      const boxW = 280, boxH = 44, gapY = 28, pad = 24, x = 48;
+      const boxW = M.timelineW, boxH = M.nodeH, gapY = M.timelineGap, pad = M.pad, x = CELL * 3;
       return nodes.map((n, idx) => ({ ...n, x, y: pad + idx * (boxH + gapY), w: boxW, h: boxH }));
     }
 
@@ -1615,11 +1658,11 @@
         if (!groups.has(L)) groups.set(L, []);
         groups.get(L).push(n);
       });
-      const boxW = 188, boxH = 52, gapX = 40, gapY = 104, padY = 28;
+      const boxW = M.nodeW, boxH = M.nodeH, gapX = M.colGap, gapY = M.rowGap, padY = M.pad;
       const layers = [...groups.keys()].sort((a, b) => a - b);
       const widest = Math.max(1, ...layers.map((L) =>
         groups.get(L).reduce((sum, n) => sum + unitW(n, boxW) + gapX, -gapX)));
-      const width = 48 + widest;
+      const width = M.pad * 2 + widest;
       return layers.flatMap((L, li) => placeRow(groups.get(L), li, boxW, boxH, gapX, gapY, padY, width));
     }
 
@@ -1642,9 +1685,13 @@
       const ids = new Set(nodes.map((n) => n.id));
       const incoming = Object.fromEntries(nodes.map((n) => [n.id, 0]));
       const outs = Object.fromEntries(nodes.map((n) => [n.id, []]));
+      const backIn = Object.fromEntries(nodes.map((n) => [n.id, []]));
       edges.forEach((e) => {
         if (!ids.has(e.from) || !ids.has(e.to)) return;
-        if (e.kind === "back") return; // a loop-back, not a rank dependency — counting it drags its target to the bottom of the layout
+        if (e.kind === "back") { // a loop-back, not a rank dependency — counting it drags its target to the bottom of the layout
+          backIn[e.to].push(e.from);
+          return;
+        }
         incoming[e.to] += 1;
         outs[e.from].push(e.to);
       });
@@ -1675,9 +1722,32 @@
       while (seen.size < nodes.length) {
         const stuck = nodes.filter((n) => !seen.has(n.id));
         if (!stuck.length) break;
-        stuck.sort((a, b) => (incoming[a.id] - incoming[b.id]) || (rank[a.id] - rank[b.id]));
+        // Fewest unmet dependencies first, then the node that already sits
+        // FURTHEST along the flow. Releasing the shallowest one instead
+        // (rank ascending) hands rank 0 to a node the whole graph feeds
+        // into: in the dense example the storage group got released before
+        // the service that writes to it, so storage — and everything
+        // downstream of it — was hoisted above the request that starts the
+        // lesson.
+        stuck.sort((a, b) => (incoming[a.id] - incoming[b.id]) || (rank[b.id] - rank[a.id]));
         queue.push(stuck[0].id);
         drain();
+      }
+      // A node reached ONLY by back-edges got no rank from the pass above and
+      // kept the default 0 — the top row, as if the flow started there. A
+      // dead-letter queue hanging off a consumer did exactly that, and since
+      // a group unit takes the LOWEST rank among its children, it hoisted the
+      // whole async tail above the request that produces it. Park such a node
+      // level with whatever loops back into it instead.
+      let lifted = true;
+      let passes = 0;
+      while (lifted && passes++ < nodes.length) {
+        lifted = false;
+        nodes.forEach((n) => {
+          if (indeg[n.id] > 0 || !backIn[n.id].length) return;
+          const r = Math.max(...backIn[n.id].map((id) => rank[id] || 0));
+          if (r > rank[n.id]) { rank[n.id] = r; lifted = true; }
+        });
       }
       return { rank, indeg };
     }
@@ -1699,7 +1769,7 @@
         if (n.parent && kids[n.parent]) kids[n.parent].push(n);
         else roots.push(n);
       });
-      const boxW = 228, boxH = 36, gapY = 10, indent = 28, pad = 24;
+      const boxW = M.treeW, boxH = M.treeH, gapY = M.treeGap, indent = M.indent, pad = M.pad;
       const out = [];
       let y = pad;
       function walk(n, depth) {
@@ -1733,9 +1803,10 @@
       });
 
       const { rank: fullRank } = computeRank(nodes, edges);
-      const boxW = 168, boxH = 48, gapX = 16, gapY = 16, padX = 16, padY = 54;
-      const outerW = 188, outerH = 52;
-      const maxRowW = 760, unitGap = 28;
+      const boxW = M.nodeW, boxH = M.nodeH, gapX = M.childGapX, gapY = M.childGapY;
+      const padX = M.groupPadX, padY = M.groupHead;
+      const outerW = M.nodeW, outerH = M.nodeH;
+      const maxRowW = M.maxRowW, unitGap = M.unitGap;
 
       function groupBox(list) {
         const folderish = list.length && list.every((k) => k.kind === "folder" || k.kind === "file");
@@ -1744,7 +1815,7 @@
         return {
           cols,
           w: padX * 2 + cols * boxW + Math.max(0, cols - 1) * gapX,
-          h: padY + 14 + rows * boxH + Math.max(0, rows - 1) * gapY
+          h: padY + rows * boxH + Math.max(0, rows - 1) * gapY + M.groupFoot
         };
       }
 
@@ -1767,12 +1838,12 @@
       const ranksSorted = [...byRank.keys()].sort((a, b) => a - b);
 
       const placed = [];
-      let y = 24;
+      let y = M.pad;
       ranksSorted.forEach((r) => {
-        let x = 24, subRowH = 0;
+        let x = M.pad, subRowH = 0;
         byRank.get(r).forEach((u) => {
-          if (x > 24 && x + u.w > maxRowW) {
-            x = 24;
+          if (x > M.pad && x + u.w > maxRowW) {
+            x = M.pad;
             y += subRowH + unitGap;
             subRowH = 0;
           }
@@ -1797,11 +1868,10 @@
           x += u.w + unitGap;
           subRowH = Math.max(subRowH, u.h);
         });
-        // 36px left exactly enough room for ONE edge label between ranks —
-        // a node with two branches out (e.g. a validate step with a valid/
-        // invalid split) needs two stacked labels in that gap, and the
-        // second one had nowhere to go but into the next row's node.
-        y += subRowH + 60;
+        // The gap between ranks is the corridor every horizontal edge run
+        // is routed into (see channelY), so it has to hold two stacked
+        // labels — a node branching valid/invalid needs both.
+        y += subRowH + M.rankGap;
       });
       return placed;
     }
@@ -1830,12 +1900,21 @@
       return dy > 0 ? "bottom" : "top";
     }
 
+    // Ports sit on cell CENTRES, never on a cell line. Every box edge is on a
+    // line, so this guarantees each run keeps half a cell of clearance from
+    // every border instead of grazing one — the arrows that used to look
+    // like they were drawn along the boxes rather than between them.
+    function portOn(lo, hi, t) {
+      const mid = Math.floor((lo + (hi - lo) * t) / CELL) * CELL + CELL / 2;
+      return Math.min(hi - CELL / 2, Math.max(lo + CELL / 2, mid));
+    }
+
     function pointOnSide(n, side, k, count) {
       const t = count <= 1 ? 0.5 : (k + 1) / (count + 1);
-      if (side === "bottom") return { x: n.x + n.w * t, y: n.y + n.h };
-      if (side === "top") return { x: n.x + n.w * t, y: n.y };
-      if (side === "right") return { x: n.x + n.w, y: n.y + n.h * t };
-      return { x: n.x, y: n.y + n.h * t };
+      if (side === "bottom") return { x: portOn(n.x, n.x + n.w, t), y: n.y + n.h };
+      if (side === "top") return { x: portOn(n.x, n.x + n.w, t), y: n.y };
+      if (side === "right") return { x: n.x + n.w, y: portOn(n.y, n.y + n.h, t) };
+      return { x: n.x, y: portOn(n.y, n.y + n.h, t) };
     }
 
     function fanPorts(nodes, edges) {
@@ -1863,8 +1942,20 @@
         const list = buckets[key];
         const horiz = side === "top" || side === "bottom";
         list.sort((A, B) => (horiz ? A.other.x - B.other.x : A.other.y - B.other.y));
+        // Snapping to cell centres can land two ports of a crowded side on
+        // the same centre; push the later one along by a whole cell so they
+        // stay one cell apart rather than exactly on top of each other.
+        const used = new Set();
+        const span = horiz ? n.w : n.h;
         list.forEach((item, k) => {
           const pt = pointOnSide(n, side, k, list.length);
+          let v = horiz ? pt.x : pt.y;
+          const lo = (horiz ? n.x : n.y) + CELL / 2;
+          const hi = lo + Math.max(0, span - CELL);
+          while (used.has(v) && v + CELL <= hi) v += CELL;
+          while (used.has(v) && v - CELL >= lo) v -= CELL;
+          used.add(v);
+          if (horiz) pt.x = v; else pt.y = v;
           if (item.end === "from") fromP[item.i] = pt;
           else toP[item.i] = pt;
         });
@@ -1872,18 +1963,74 @@
       return { fromP, toP };
     }
 
-    function lanePlan(edges, fromP, toP, pos) {
+    /* ---------- corridors ----------
+       Rows of nodes leave horizontal corridors between them, and that is
+       where every horizontal edge run belongs. The old router put the run
+       at a fraction of the WHOLE vertical distance, so an edge crossing
+       three ranks laid its horizontal segment straight across the middle
+       row's nodes — the "arrows run along the boxes" problem. Bands are
+       computed from the finished layout, not assumed, so this holds for
+       every layout mode.
+    */
+    function rowBands(nodes) {
+      const solid = nodes.filter((n) => !isFence(n));
+      if (!solid.length) return [];
+      const sorted = [...solid].sort((a, b) => a.y - b.y);
+      const bands = [];
+      sorted.forEach((n) => {
+        const last = bands[bands.length - 1];
+        // Overlapping vertically means the same row, however ragged.
+        if (last && n.y < last.y1 - 1) last.y1 = Math.max(last.y1, n.y + n.h);
+        else bands.push({ y0: n.y, y1: n.y + n.h });
+      });
+      return bands;
+    }
+
+    function bandIndex(bands, y) {
+      for (let i = 0; i < bands.length; i++) {
+        if (y >= bands[i].y0 - 1 && y <= bands[i].y1 + 1) return i;
+      }
+      return -1;
+    }
+
+    // The empty strip between the source's row and the next one along the
+    // way. Every horizontal run is placed inside it, so it can never cross
+    // a node body.
+    function corridor(bands, fromY, toY) {
+      const down = toY >= fromY;
+      const i = bandIndex(bands, fromY);
+      if (i < 0) return { y0: Math.min(fromY, toY), y1: Math.max(fromY, toY) };
+      const here = bands[i];
+      const next = down ? bands[i + 1] : bands[i - 1];
+      const edge = down ? here.y1 : here.y0;
+      const far = next ? (down ? next.y0 : next.y1) : toY;
+      return { y0: Math.min(edge, far), y1: Math.max(edge, far), key: down ? i : i - 1 };
+    }
+
+    // Lanes are per corridor, not global: two edges sharing a strip must
+    // sit at different heights, but an edge three rows down has its own
+    // strip and should not be pushed off-centre by them.
+    function lanePlan(edges, fromP, toP, pos, bands) {
+      const byKey = new Map();
       const items = [];
       edges.forEach((e, i) => {
         const a = pos[e.from], b = pos[e.to];
         if (!a || !b || !fromP[i] || !toP[i]) return;
         if (Math.abs(a.y - b.y) <= Math.min(a.h, b.h) * 0.5) return;
-        items.push({ i, x: fromP[i].x });
+        const key = corridor(bands, fromP[i].y, toP[i].y).key;
+        items.push({ i, key, x: fromP[i].x });
       });
       items.sort((A, B) => A.x - B.x);
       const laneOf = {};
-      items.forEach((it, k) => { laneOf[it.i] = k; });
-      return { laneOf, count: Math.max(1, items.length) };
+      const countOf = {};
+      items.forEach((it) => {
+        const list = byKey.get(it.key) || [];
+        laneOf[it.i] = list.length;
+        list.push(it.i);
+        byKey.set(it.key, list);
+      });
+      items.forEach((it) => { countOf[it.i] = (byKey.get(it.key) || []).length; });
+      return { laneOf, countOf };
     }
 
     function pathSegments(d) {
@@ -1930,15 +2077,16 @@
       return !nodes.some((o) => o.id !== self.id && y > o.y && y < o.y + o.h && hi > o.x && lo < o.x + o.w);
     }
 
-    function orthoPath(a, b, p, q, lane, laneCount) {
+    function orthoPath(a, b, p, q, lane, laneCount, bands) {
       if (Math.abs(p.x - q.x) < 1.5) {
         return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: p.x + 10, ly: (p.y + q.y) / 2 + 3, vertical: true };
       }
       if (Math.abs(p.y - q.y) < 1.5) {
-        return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: (p.x + q.x) / 2, ly: p.y - 8, vertical: false };
+        return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: (p.x + q.x) / 2, ly: p.y - 10, vertical: false };
       }
       const t = laneCount > 1 ? (lane + 1) / (laneCount + 1) : 0.5;
-      const midY = p.y + (q.y - p.y) * t;
+      const strip = corridor(bands || [], p.y, q.y);
+      const midY = strip.y1 > strip.y0 ? strip.y0 + (strip.y1 - strip.y0) * t : p.y + (q.y - p.y) * t;
       if (Math.abs(a.y - b.y) >= Math.abs(a.x - b.x) * 0.35) {
         return {
           d: `M ${p.x} ${p.y} L ${p.x} ${midY} L ${q.x} ${midY} L ${q.x} ${q.y}`,
@@ -1956,7 +2104,7 @@
       };
     }
 
-    function nudgeLabel(x, y, text, placed, anchorStart) {
+    function nudgeLabel(x, y, text, placed, anchorStart, nodes) {
       const w = Math.min(150, 6.2 * String(text).length + 8);
       const h = 16;
       // `x` is the SVG anchor point, not a box center — "start"-anchored
@@ -1967,10 +2115,19 @@
       // "валидно" off `validate`) under-counted their true overlap and
       // could clear the y-test by a couple px while still overlapping.
       const x0 = anchorStart ? x : x - w / 2;
+      // A label was only ever moved out of another LABEL's way, so one could
+      // still land on top of a node — most visibly inside a group, where the
+      // corridors are short. Boxes now push it too. Fences are skipped: they
+      // are transparent containers, and dodging one would shove every label
+      // out of the group it belongs to.
+      const overBox = (ly) => (nodes || []).some((o) => !isFence(o)
+        && x0 < o.x + o.w + 2 && o.x < x0 + w + 2
+        && ly + h / 2 > o.y && ly - h / 2 < o.y + o.h);
       let ly = y;
       let guard = 0;
       while (guard++ < 8) {
-        const hit = placed.some((p) => x0 < p.x0 + p.w + 4 && p.x0 < x0 + w + 4 && Math.abs(p.y - ly) < (p.h + h) / 2);
+        const hit = placed.some((p) => x0 < p.x0 + p.w + 4 && p.x0 < x0 + w + 4 && Math.abs(p.y - ly) < (p.h + h) / 2)
+          || overBox(ly);
         if (!hit) break;
         ly += h;
       }
@@ -1984,7 +2141,7 @@
       if (k === "group" && n._collapsed) {
         // Ghost card behind the block: the one static cue that this shape is
         // a stack of things, not a leaf.
-        return `<rect class="node-stack" x="${x + 6}" y="${y - 6}" width="${w - 6}" height="${h}" rx="2"/>`
+        return `<rect class="node-stack" x="${x + CELL / 2}" y="${y - CELL / 2}" width="${w - CELL / 2}" height="${h}" rx="2"/>`
           + `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
       }
       if (k === "group") {
@@ -2103,15 +2260,17 @@
     function applyView() {
       const v = viewRect();
       $("flow").setAttribute("viewBox", `${r2(v.x)} ${r2(v.y)} ${r2(v.w)} ${r2(v.h)}`);
-      // Keep the CSS grid locked to world coordinates — a grid that stayed
-      // put while the diagram moved would read as a printed backdrop, not a
-      // canvas.
-      const cell = 24 * VIEW.s;
+      // Keep the grid locked to world coordinates — a grid that stayed put
+      // while the diagram moved would read as a printed backdrop, not a
+      // canvas. It is the layout's own unit, so node edges land on lines.
+      const fine = r2(CELL * VIEW.s);
+      const major = r2(MAJOR * VIEW.s);
       const ox = r2(-v.x * VIEW.s);
       const oy = r2(-v.y * VIEW.s);
       const canvas = $("canvas");
-      canvas.style.backgroundSize = `${r2(cell)}px ${r2(cell)}px, ${r2(cell)}px ${r2(cell)}px, auto`;
-      canvas.style.backgroundPosition = `${ox}px ${oy}px, ${ox}px ${oy}px, 0 0`;
+      canvas.style.backgroundSize = `${fine}px ${fine}px, ${fine}px ${fine}px, ${major}px ${major}px, ${major}px ${major}px`;
+      canvas.style.backgroundPosition = `${ox}px ${oy}px, ${ox}px ${oy}px, ${ox}px ${oy}px, ${ox}px ${oy}px`;
+      canvas.classList.toggle("coarse", CELL * VIEW.s < 9);
       $("zoom-pct").textContent = Math.round(VIEW.s * 100) + "%";
     }
 
@@ -2270,29 +2429,32 @@
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
       const edgesAll = graph.edges;
       const { fromP, toP } = fanPorts(nodes, edgesAll);
-      const { laneOf, count: laneCount } = lanePlan(edgesAll, fromP, toP, pos);
-      // A back-edge's default route (same port assignment as any other
-      // edge) is fine when it's short and local — e.g. two siblings in one
-      // group — and keeping that route there is what keeps it compact. It
-      // only needs the dedicated rail (see below) when that default route
-      // would cut through some OTHER node's body, which happens for long
-      // back-edges spanning several ranks of a column.
+      const bands = rowBands(nodes);
+      const { laneOf, countOf } = lanePlan(edgesAll, fromP, toP, pos, bands);
+      // A route is fine when it's short and local — e.g. two siblings in
+      // one group — and keeping it there is what keeps it compact. It needs
+      // the dedicated rail (see below) only when it would cut through some
+      // OTHER node's body. Corridor routing keeps adjacent-rank edges clear
+      // on its own, so what reaches the rail is what actually spans rows: a
+      // long back-edge up a column, or a forward edge that skips ranks.
       const maxNodeX = Math.max(0, ...nodes.map((n) => n.x + n.w));
       const backRailOf = {};
-      let railCursor = maxNodeX + 40;
+      let railCursor = maxNodeX + CELL * 3;
       edgesAll.forEach((e, ei) => {
-        if (e.kind !== "back" || e.via) return;
+        if (e.via) return;
         const a = pos[e.from], b = pos[e.to];
         if (!a || !b || !fromP[ei] || !toP[ei]) return;
-        const natural = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, laneCount);
+        const spans = Math.abs(bandIndex(bands, fromP[ei].y) - bandIndex(bands, toP[ei].y));
+        if (e.kind !== "back" && spans < 2) return;
+        const natural = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands);
         if (pathBlocked(nodes, new Set([a.id, b.id]), natural.d)) {
           backRailOf[ei] = railCursor;
-          railCursor += 26;
+          railCursor += CELL * 2;
         }
       });
       const hasBackRail = Object.keys(backRailOf).length > 0;
-      const maxX = Math.max(420, ...nodes.map((n) => n.x + n.w + 48), hasBackRail ? railCursor + 16 : 0);
-      const maxY = Math.max(240, ...nodes.map((n) => n.y + n.h + 36));
+      const maxX = Math.max(CELL * 26, ...nodes.map((n) => n.x + n.w + M.pad), hasBackRail ? railCursor + M.pad : 0);
+      const maxY = Math.max(CELL * 15, ...nodes.map((n) => n.y + n.h + M.pad));
       const svg = $("flow");
       WORLD = { w: maxX, h: maxY };
       NODE_BOX = Object.fromEntries(nodes.map((n) => [n.id, { x: n.x, y: n.y, w: n.w, h: n.h }]));
@@ -2349,8 +2511,8 @@
           // the straight approach at port height would cut through it.
           const detourSrc = !railClear(nodes, a, p.x, railX, p.y);
           const detourTgt = !railClear(nodes, b, q.x, railX, q.y);
-          const py = detourSrc ? a.y - 10 : p.y;
-          const qy = detourTgt ? b.y - 10 : q.y;
+          const py = detourSrc ? a.y - CELL : p.y;
+          const qy = detourTgt ? b.y - CELL : q.y;
           d = `M ${p.x} ${p.y}`;
           if (detourSrc) d += ` L ${p.x} ${py}`;
           d += ` L ${railX} ${py} L ${railX} ${qy}`;
@@ -2359,14 +2521,14 @@
           lx = railX + 8; ly = (py + qy) / 2; vertical = true;
         } else {
           if (!fromP[ei] || !toP[ei]) return;
-          ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, laneCount));
+          ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands));
         }
         const liveEdge = live.has(e.from) && live.has(e.to);
         const mk = edgeMarks(e, liveEdge);
         const token = tokenMark(d, liveEdge);
         edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
         if (e.label) {
-          const y = nudgeLabel(lx, ly, e.label, placed, vertical);
+          const y = nudgeLabel(lx, ly, e.label, placed, vertical, nodes);
           labelEls.push(`<text class="edge-label${liveEdge ? " live" : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
         }
       });

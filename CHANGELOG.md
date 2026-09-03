@@ -5,6 +5,50 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-09-03
+
+### Changed
+
+- **The layout runs on one grid.** Every box, gap and pad is now a whole
+  number of a single 16px cell (node 192×64, column gap 96, row gap 112,
+  collapsed group 240×96), and the canvas paints that same unit — a faint
+  line every cell, a readable one every four, both dropping to the coarse
+  layer alone below ~0.55 scale. Before, the drawn grid was 24px while the
+  layout ran on 40 / 52 / 104 / 16: the lines described nothing, and a
+  same-row arrow got 40px of run to carry a label that needed more. Node
+  edges now land on drawn lines and a horizontal edge has six cells.
+- **Horizontal edge runs are routed into corridors.** The strip between two
+  rows of nodes is computed from the finished layout, and every horizontal
+  segment is placed inside it, one lane per edge per corridor. The old
+  router put the run at a fraction of the whole vertical distance, so an
+  edge crossing three ranks laid its horizontal segment straight across the
+  middle row's boxes.
+- **Ports sit on cell centres, never on cell lines.** Since every box edge
+  is on a line, each vertical run now keeps half a cell of clearance from
+  every border instead of grazing one — arrows read as going between the
+  boxes rather than along them. Ports that collide after snapping are
+  pushed apart by a whole cell.
+- Any edge that skips a row — not just a back-edge — leaves for the
+  right-hand rail when its natural route would cut through a node. Corridor
+  routing keeps adjacent-rank edges clear on their own, so fewer edges
+  reach the rail than before despite the wider net.
+- Edge labels are pushed clear of node boxes, not only of other labels. One
+  could previously land on a node, most visibly inside a group where the
+  corridors are short.
+
+### Fixed
+
+- A node reached only by `kind: "back"` edges no longer defaults to rank 0,
+  i.e. the top row. Back-edges are excluded from ranking (they are
+  loop-backs, not dependencies), which left such a node with no rank at
+  all: a dead-letter queue hanging off a consumer sat above the request
+  that produces it, and since a group unit takes the lowest rank among its
+  children, it hoisted the whole async tail up there with it. Such a node
+  is now parked level with whatever loops back into it.
+- When a cycle stalls the ranking pass, the node released first is the one
+  furthest along the flow rather than the shallowest. Releasing the
+  shallowest handed rank 0 to a node the whole graph feeds into.
+
 ## [0.4.0] — 2026-09-03
 
 ### Added
