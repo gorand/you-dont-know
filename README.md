@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.0-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.0-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 [![npm](https://img.shields.io/badge/npm-not_yet_published-lightgrey.svg)](#roadmap)
 
@@ -57,6 +57,12 @@ The canvas is a board, not a picture. `Ctrl`/`⌘` + wheel zooms at the cursor
 dragging empty canvas moves it; `+` `-` `0` (fit) `1` (100%) `2` (zoom to the
 current step) are the keys, and the corner zoombar does the same by mouse.
 
+The layout runs on one 16px cell — every box, gap and pad is a whole number
+of them, the grid under the diagram draws that same unit, and the gap between
+rows is the corridor each horizontal edge run is routed into. So arrows go
+*between* boxes instead of along them, and a same-row arrow has six cells to
+carry its label.
+
 Past ~12 nodes the shell also stages the diagram: groups fold into single
 blocks with a child count, and each step opens exactly the group it talks
 about. Any chevron toggles a group by hand, and the `Detail` switch flips the
@@ -91,7 +97,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.4.0** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.5.0** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 

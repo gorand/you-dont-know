@@ -89,7 +89,7 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - `asides[].id` is `[A-Za-z0-9_-]+`. No nested `[[…]]`
 - Prose may use `` `identifier` ``; no HTML in JSON
 - Node `label` ≤ ~40 characters
-- Edges: the shell places split-row arrows on **separate rails** with a lacquer overpass. Do not pack four labels onto one shared bus in JSON either — keep labels short
+- Edges: the shell places split-row arrows on **separate rails** with a lacquer overpass. Do not pack four labels onto one shared bus in JSON either — keep labels short (see **The grid** below for how much room a label actually gets)
 
 ## Staged detail
 
@@ -138,3 +138,28 @@ zoombar in the corner does the same for the mouse. Until the reader touches
 the canvas the shell frames each step itself: fit-to-screen while that stays
 readable, otherwise the step's own nodes. After that the frame is theirs — it
 only follows when a step's nodes would sit off screen.
+
+## The grid
+
+Every box, gap and pad in the layout is a whole number of one 16px cell, and
+the canvas paints a line every cell with a heavier one every four. Nothing in
+the JSON sets these — they are here so you know what a label has to fit in:
+
+| | cells | px |
+|---|---|---|
+| node | 12 × 4 | 192 × 64 |
+| collapsed group | 15 × 6 | 240 × 96 |
+| gap between columns | 6 | 96 |
+| gap between rows | 7 | 112 |
+
+The row gap is a **corridor**: every horizontal run of every edge is routed
+into the empty strip between two rows, one lane per edge, so an arrow can
+never be drawn across a node's face. Ports sit on cell centres, never on a
+cell line, which keeps half a cell of clearance between any vertical run and
+any box border — arrows read as going *between* the boxes, not along them.
+An edge that skips a row entirely, and any long back-edge, leaves for a rail
+to the right of the diagram rather than cutting through what is in the way.
+
+What that costs you as an author: an edge `label` has ~96px between columns
+and ~112px between rows before it starts stacking below its neighbour. Two
+or three words. Put the sentence in `narration` or an aside.
