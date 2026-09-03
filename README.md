@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.5.0-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
-[![npm](https://img.shields.io/badge/npm-not_yet_published-lightgrey.svg)](#roadmap)
+[![npm](https://img.shields.io/badge/npm-%40gorand%2Fyou--dont--know-cb3837.svg)](https://www.npmjs.com/package/@gorand/you-dont-know)
 
 Interactive HTML lessons for things that look simple until they aren't — the You Don't Know JS vibe.
 
@@ -17,19 +17,18 @@ Not a blog post. A stepped diagram, narration, and code.
 
 ## Install
 
-Requires [Node.js](https://nodejs.org/) 18+. **Not yet published to npm** — see
-[Roadmap](#roadmap). Until it is, run the installer from a local clone:
+Requires [Node.js](https://nodejs.org/) 18+.
 
 ```sh
-node bin/install.mjs            # ./.claude/skills/you-dont-know — this project only
-node bin/install.mjs --global   # ~/.claude/skills/you-dont-know — every project
+npx @gorand/you-dont-know            # ./.claude/skills/you-dont-know — this project only
+npx @gorand/you-dont-know --global   # ~/.claude/skills/you-dont-know — every project
 ```
 
-Once published, the same tool runs via `npx @gorand/you-dont-know [options]`
 (package `@gorand/you-dont-know`; the installed folder and the `/you-dont-know`
 command stay named `you-dont-know` either way). `--help` lists the rest
 (`--agents`, `--target <dir>`). This only copies the skill files — it is
-never a dependency of your project.
+never a dependency of your project. You can also run the installer from a
+local clone with `node bin/install.mjs [options]`.
 
 **Any other harness that reads the [Agent Skills](https://agentskills.io/specification) layout**
 (`.agents/skills/<name>/SKILL.md`): either `node bin/install.mjs --agents` /
@@ -89,11 +88,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 - [x] Locked lesson shell, contract, `inject-lesson.mjs`
 - [x] `npx`-shaped installer (`bin/install.mjs`)
-- [ ] Publish `@gorand/you-dont-know` to npm — `private: true` and
-      `publishConfig.access: "public"` are already set in `package.json`;
-      publishing itself (npm account, `npm login`, `npm publish`) is a
-      deliberate manual step, not yet done. Track progress here and in
-      [CHANGELOG.md](CHANGELOG.md); install from a local clone until it lands.
+- [x] Publish `@gorand/you-dont-know` to npm
 
 ## Versioning
 
