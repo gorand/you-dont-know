@@ -43,4 +43,6 @@ Glyphs in the diagram are Lucide-style 24×24 strokes. Do not add a one-off circ
 
 ## Visual QA
 
-Open `examples/palette/index.html`. Check: readable node labels, group fences, reverse/dashed/via edges, selected-step hover on the left rail, `boundary` stays error-red when switching accent.
+Open `examples/palette/index.html`. Check: readable node labels, group fences, reverse/dashed/via edges, selected-step hover on the left rail. The reader has no accent control — to check that `boundary` stays error-red in every accent, change `kind` in a copy of the JSON (or set `accent`) and rebuild.
+
+Chrome: the header names the lesson's `kind`, the Dzen toggle keeps title + transport + rail, and the inspector has a switch of its own. Both switches are session state — a reload comes back to the full layout.

@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.5.2-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.3-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 [![npm](https://img.shields.io/badge/npm-%40gorand%2Fyou--dont--know-cb3837.svg)](https://www.npmjs.com/package/@gorand/you-dont-know)
 
@@ -80,7 +80,9 @@ Lacquer surfaces. Node ink is always light (`--node-ink`). Primary is never traf
 | `architecture` / `repo` | glacier (blue) |
 | `security` / `vuln` | dusk (blue-violet) |
 
-Error / warning / success live in `--state-*` and do not change with the switcher.
+The `kind` picks the accent; an optional `accent` in the JSON overrides it. The reader does not choose — the chrome names the kind rather than offering a palette.
+
+Error / warning / success live in `--state-*` and never follow `data-accent`.
 
 Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). Card shells are rect, stadium, diamond, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
 
@@ -92,7 +94,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.5.2** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.5.3** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 

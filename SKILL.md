@@ -30,7 +30,9 @@ Interactive HTML lesson — You Don't Know JS vibe. Same locked shell for **any*
 | `architecture` `repo` | glacier (blue) | Structure of *this* system |
 | `security` `vuln` | dusk (blue-violet) | Attacks, trust, isolation |
 
-`--state-error` / `--state-warn` / `--state-ok` are locked (red / amber / green). They never follow `data-accent`. Do not use those hues as `--primary`. Chrome switcher: iris · glacier · dusk only.
+The accent is the shell's, not the reader's: `kind` picks it, an optional `accent` in the JSON overrides it, and there is no picker in the chrome. The header states the kind instead — a dot in that accent plus its name, `en` / `ru`.
+
+`--state-error` / `--state-warn` / `--state-ok` are locked (red / amber / green). They never follow `data-accent`. Do not use those hues as `--primary`.
 
 Do not restyle `:root` per lesson.
 
@@ -124,6 +126,7 @@ Default dest is `tmp/`. Never `docs/` unless asked.
 | «Тема очевидна, сразу HTML» | Outline first, then confirm |
 | «Жёлтый/красный акцент выразительнее» | Primary = iris / glacier / dusk. Red stays error |
 | «Cinnabar для security» | Security = dusk. Boundary/error keeps `--state-error` |
+| «Пусть читатель выберет акцент» | The accent states the lesson's `kind`. A picker would make it a preference |
 | «Стрелки сошлись на одной линии — так короче» | Separate rails or a visible overpass |
 | «Ступенька в один кубик — мелочь» | Two boxes in one column get one straight line. A stair means the ports never lined up |
 | «Узел декоративный, клик не нужен» | Every node id is in at least one step.highlight |

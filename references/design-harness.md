@@ -29,7 +29,7 @@ silently skipped.
 
 ### Accessibility
 - [ ] Every clickable SVG node (`.node`) is keyboard-reachable: `tabindex="0"`, `role="button"`, `aria-label`, and responds to `Enter`/`Space`, not just `click`.
-- [ ] Icon-only controls (accent swatches) get `aria-label`, not just `title`.
+- [x] Icon-only controls get `aria-label`, not just `title` — the chrome toggles do. (The accent swatches that first raised this are gone; the accent follows `kind`.)
 - [x] A control that toggles chrome (Dzen, the inspector panel) carries
   `aria-pressed` and an `aria-label` that says what it does, both re-read
   from the `UI` strings so `en`/`ru` stay covered. The Dzen button's name
@@ -55,16 +55,16 @@ silently skipped.
 - [x] `color-scheme: dark` stays on `html` (already true).
 
 ### Touch
-- [x] `touch-action: manipulation` on nodes, `.ctrl`, `.step`, `.accents button`, `.fn`.
+- [x] `touch-action: manipulation` on nodes, `.ctrl`, `.step`, `.fn`.
 - [ ] A chrome mode that removes page rows (Dzen drops the notes footer and
   the inspector) has to be re-checked at ≤1100px, where `body` rows are all
   `auto`: leftover height is shared out among them unless `align-content:
   start` parks it, and the header silently grows instead of the canvas.
 
 ### Shape / color / tactile (taste-skill subset)
-- [x] One corner-radius scale (`--r`) for rects; circular exceptions (accent swatches, junction nodes, `.fn`) stay the only documented exception — verified, not changed.
+- [x] One corner-radius scale (`--r`) for rects; circular exceptions (the kind dot, junction nodes, `.fn`) stay the only documented exception — verified, not changed.
 - [ ] `.ctrl.primary` text-on-background contrast ≥ 4.5:1 — verify after any palette tweak, not just at accent-lock time.
-- [x] Every clickable surface (node, step, button, accent swatch, aside `.fn`) has a visible pressed/active state now — `:active { transform: scale(...) }` added where missing (nodes, rail steps, accent swatches, `.fn`); `.ctrl` already had it.
+- [x] Every clickable surface (node, step, button, aside `.fn`) has a visible pressed/active state — `:active { transform: scale(...) }` added where missing (nodes, rail steps, `.fn`); `.ctrl` already had it. Chrome toggles add a held state on top of that (`aria-pressed`, filled).
 
 ### Sheen — tried, reverted
 - [x] Spacing scale audited (`grep -oE '(padding|margin|gap): [^;]+;'`): consistent 2px-step grid off a 4/8px base (4·6·8·10·12·14·16·20·24), no stray odd values. No changes made — it was already coherent.
