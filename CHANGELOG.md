@@ -5,6 +5,35 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] — 2026-09-04
+
+### Removed
+
+- **The accent switcher is gone from the chrome.** The three swatches let a
+  reader repaint the lesson, which made the accent look like a preference.
+  It is not: it states what kind of lesson this is (`how` · `concept` · `api`
+  → iris, `architecture` · `repo` → glacier, `security` · `vuln` → dusk), and
+  a reader who repaints it has only made the shell say something untrue.
+- With them goes the write to `localStorage` that recorded the choice — it
+  was never read back, so it did nothing but leave a key behind.
+
+### Added
+
+- **The header names the lesson's kind** where the swatches used to sit next
+  to it: a dot in the accent that `kind` selected, then the name, in the
+  kicker's own quiet mono. `en`/`ru` like every other chrome label; a `kind`
+  the shell does not know is shown as the JSON wrote it, rather than
+  pretending the lesson has no type.
+
+### Changed
+
+- `accent` in the lesson JSON stays, and stays an **author** override:
+  `iris` | `glacier` | `dusk`, applied over whatever `kind` would have
+  chosen. What is gone is the reader's copy of that control.
+- `--state-error` / `--state-warn` / `--state-ok` are unchanged and still
+  never follow `data-accent` — verified across all seven kinds, the explicit
+  override, and an unknown one.
+
 ## [0.5.2] — 2026-09-04
 
 ### Added
