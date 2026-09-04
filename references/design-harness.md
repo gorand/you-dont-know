@@ -150,6 +150,67 @@ stepping through every lesson step including live/highlighted state, not
 just the static first frame. Recreate `templates/lesson.next.html` (copy
 from `templates/lesson.html`) to reopen the compare workflow next round.
 
+## Round 7 — edge routing: what the ports say, not what the centres suggest
+
+Screenshot pass over `dense-request` steps 3-4, `inject-pipeline` and
+`palette`, this time backed by a geometric checker driven from the same
+Playwright session: it reads every rendered `path.edge` and every node box
+out of the live SVG and reports crossings, runs within 10px of a border they
+pass, pointless stairs, and two edges drawn on one line over the same
+stretch. Baseline across all 24 steps of the four examples: 115 findings.
+After the round: 0, with the number of rail edges (31 / 16 / 0 / 0) and the
+world width unchanged — the routes got better, not longer.
+
+- [x] **The shape of a route follows its port sides.** `orthoPath` chose
+  between the vertical and the horizontal Manhattan route from
+  `|a.y - b.y| >= |a.x - b.x| * 0.35`, a test with no connection to the
+  ports `fanPorts` had already placed. A top/bottom pair that came out
+  "horizontal" got its two horizontal legs laid at `p.y` and `q.y` — the
+  border lines of both rows. That is the whole "arrows glued to the boxes"
+  class: `route → trace` sliding along `rate`'s bottom edge, `idem → tx`
+  along `outbox`'s top edge, `decision → cloud` along `process`'s bottom
+  edge in `palette`. Reading the side off the port (`sideOf`) makes the
+  three cases explicit: vertical pair → corridor, horizontal pair →
+  mid-column, mixed → one elbow.
+- [x] **Rails are decided before the ports are placed.** The rail check ran
+  on the finished fan, so an edge that then left for the rail still held a
+  slot on its node's natural side and pushed everything else off centre. In
+  `inject-pipeline` that is exactly why `phaseA → confirm` — two identical
+  boxes in one column — was a stair: `invoke → phaseA`, on its way to the
+  rail, had taken the centre slot on `phaseA`'s bottom. Routing is now
+  `routePlan` (naive pass → decide hops and rails) → `fanPorts` (with those
+  decisions) → `alignPorts` → `lanePlan`.
+- [x] **Ports line up when a straight run exists.** `alignPorts` pulls the
+  two ends of an edge onto a shared cell centre inside the overlap of the
+  two boxes, nearest-to-straight first, skipping any slot already taken or
+  any run that would cut a box. Where no shared centre is free and the
+  offset is under two cells, `diagonalOk` allows one slanted line instead —
+  gated on `dx <= dy` and half a cell of clearance from every box
+  (Liang-Barsky), so an acute diagonal scraping a corner falls back to the
+  stair it replaces.
+- [x] **Same-row edges hop instead of cutting through the sibling between
+  them.** The obstruction check was gated on `spans >= 2`, so an edge inside
+  one row was never tested: `dense-request` step 3 drew the service group's
+  arrow to the response straight through the async group's body. Such an
+  edge now leaves through the top (or bottom) into the corridor and comes
+  back down; the rail remains the fallback for when the hop is blocked too.
+- [x] **One corridor, one set of lanes.** Horizontal runs sit on cell
+  centres a whole cell off the rows they pass (half a cell only in a strip
+  too narrow for that), and a rail edge crossing its own row takes a lane
+  from the same set rather than the private "one cell above the row" it used
+  before — which both drew a line along its own box's right border and could
+  land exactly on an existing run. Lane order within a strip is now: runs
+  that only reach down into it, runs that cross it whole, runs that only
+  reach up into it, so two stubs at the same `x` cannot overlap.
+
+Checker heuristics worth keeping for the next round: a detour is only
+*pointless* if the straight line between the two ports is genuinely free
+(inflate every box by the cling threshold before testing, or a hop over a
+row reads as a wasted stair); a `via` edge legitimately passes through the
+middle of the node it names; and the right-hand rail is a large deliberate
+deviation, so measure a stair by how far the intermediate points sit off the
+line between the ports, not by the distance between the ports themselves.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

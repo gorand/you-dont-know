@@ -85,7 +85,7 @@ For each confirmed item:
      tmp/you-dont-know/<slug>/index.html
    ```
    (From a clone of this skill: `node scripts/inject-lesson.mjs templates/lesson.html …`.)
-4. Visual-QA `index.html`: node labels readable on dark fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; live/error/ok strokes still distinct from `--primary`. Selected step in the rail must visibly hover darker than the selected rest state. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node.
+4. Visual-QA `index.html`: node labels readable on dark fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; live/error/ok strokes still distinct from `--primary`. Selected step in the rail must visibly hover darker than the selected rest state. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
 
 ### Complex diagrams (>12 nodes)
 
@@ -125,6 +125,7 @@ Default dest is `tmp/`. Never `docs/` unless asked.
 | «Жёлтый/красный акцент выразительнее» | Primary = iris / glacier / dusk. Red stays error |
 | «Cinnabar для security» | Security = dusk. Boundary/error keeps `--state-error` |
 | «Стрелки сошлись на одной линии — так короче» | Separate rails or a visible overpass |
+| «Ступенька в один кубик — мелочь» | Two boxes in one column get one straight line. A stair means the ports never lined up |
 | «Узел декоративный, клик не нужен» | Every node id is in at least one step.highlight |
 | «Схема большая — читатель просто отзумит» | Zoom is the escape hatch, not the plan. Group the nodes so the top level is 5–7 blocks |
 | «Подпись на ребре длинная, но зато точная» | An edge label gets ~96px. Two-three words; the sentence goes to narration |
