@@ -1,6 +1,6 @@
 {
   "name": "@gorand/you-dont-know",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Agent skill: interactive HTML lessons in a locked lacquer shell (You Don't Know JS vibe).",
   "license": "MIT",
   "type": "module",

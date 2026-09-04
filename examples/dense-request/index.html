@@ -156,28 +156,29 @@
       border-color: var(--primary);
       color: var(--primary-pale);
     }
-    .accents {
-      display: flex;
-      gap: 6px;
-      margin-right: 8px;
-      padding-right: 12px;
-      border-right: 1px solid var(--hairline);
+    /* What kind of lesson this is, stated once and quietly, in the accent
+       the kind itself selected. Not a picker: the reader has no accent to
+       choose, so this reads the shell's decision back rather than offering
+       one. */
+    .kind {
+      display: inline-flex;
+      align-items: baseline;
+      color: var(--primary);
     }
-    .accents button {
-      width: 14px;
-      height: 14px;
-      padding: 0;
+    .kind:empty { display: none; }
+    .kind::before {
+      content: "";
+      align-self: center;
+      width: 7px;
+      height: 7px;
+      margin-right: 7px;
       border-radius: 50%;
-      border: 1px solid var(--hairline);
-      cursor: pointer;
-      background: var(--swatch);
-      touch-action: manipulation;
-      transition: transform 90ms var(--ease);
+      background: var(--primary);
     }
-    .accents button:active { transform: scale(0.88); }
-    .accents button[aria-pressed="true"] {
-      outline: 2px solid var(--primary);
-      outline-offset: 2px;
+    .kind::after {
+      content: "·";
+      margin: 0 6px;
+      color: var(--faint);
     }
     .counter {
       font-family: var(--font-mono);
@@ -711,7 +712,8 @@
 
        `no-inspector` drops the code panel and gives the canvas its width.
        `dzen` additionally drops everything that DESCRIBES the lesson —
-       kicker, thesis, accents, the notes footer — and keeps everything that
+       kicker (with it the kind), thesis, the notes footer — and keeps all
+       of what
        DRIVES it: the title, the transport, the steps rail. The rail only
        gets denser, because losing the step titles would cost more than the
        ~40px of canvas it buys back. */
@@ -719,7 +721,6 @@
     body.no-inspector .main { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
     body.dzen .kicker,
     body.dzen .thesis,
-    body.dzen .accents,
     body.dzen .notes,
     body.dzen .repeats { display: none; }
     body.dzen .top { padding: 10px 24px 10px; align-items: center; }
@@ -813,7 +814,7 @@
 <body>
   <header class="top">
     <div>
-      <p class="kicker" id="pattern"></p>
+      <p class="kicker"><span class="kind" id="kind"></span><span id="pattern"></span></p>
       <h1 id="title"></h1>
       <p class="thesis" id="thesis"></p>
     </div>
@@ -825,11 +826,6 @@
         <button class="ctrl ghost icon" id="panel" type="button" aria-pressed="true">
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M9.5 2.5 V13.5"/></svg>
         </button>
-      </div>
-      <div class="accents" role="radiogroup" aria-label="Accent" id="accents">
-        <button type="button" data-accent="iris" style="--swatch: oklch(74% 0.12 304)" title="Iris" aria-pressed="true"></button>
-        <button type="button" data-accent="glacier" style="--swatch: oklch(76% 0.09 232)" title="Glacier" aria-pressed="false"></button>
-        <button type="button" data-accent="dusk" style="--swatch: oklch(72% 0.11 275)" title="Dusk" aria-pressed="false"></button>
       </div>
       <span class="counter" id="counter"></span>
       <button class="ctrl ghost" id="prev" type="button">
@@ -1446,9 +1442,14 @@
     };
     const UI = {
       en: {
-        back: "Back", next: "Next", play: "Play", pause: "Pause", accent: "Accent",
+        back: "Back", next: "Next", play: "Play", pause: "Pause",
         dzen: "Focus mode — diagram only", dzenOff: "Leave focus mode",
         panel: "Notes and code panel",
+        kinds: {
+          how: "How it works", concept: "Concept", api: "API",
+          architecture: "Architecture", repo: "Repository",
+          security: "Security", vuln: "Vulnerability"
+        },
         stage: "Diagram · node opens a step", problem: "The catch", why: "Why not the basic way",
         cost: "Cost", steps: "Steps", more: "More",
         zoomIn: "Zoom in (+)", zoomOut: "Zoom out (−)", zoomReset: "Zoom 100% (1)",
@@ -1459,9 +1460,14 @@
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
       },
       ru: {
-        back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза", accent: "Акцент",
+        back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза",
         dzen: "Дзен-режим — только схема", dzenOff: "Выйти из дзен-режима",
         panel: "Панель заметок и кода",
+        kinds: {
+          how: "Как работает", concept: "Концепция", api: "API",
+          architecture: "Архитектура", repo: "Репозиторий",
+          security: "Безопасность", vuln: "Уязвимость"
+        },
         stage: "Схема · узел открывает шаг", problem: "Проблема", why: "Почему не базовый подход",
         cost: "Цена", steps: "Шаги", more: "Подробнее",
         zoomIn: "Приблизить (+)", zoomOut: "Отдалить (−)", zoomReset: "Масштаб 100% (1)",
@@ -1649,15 +1655,15 @@
       return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
+    // The accent belongs to the lesson, not to the reader: it follows
+    // `kind` through KIND_ACCENT, or an explicit `accent` when the author
+    // overrode it. There is no switcher in the chrome any more, so there is
+    // also nothing to remember between loads — the reader's choice used to
+    // be written to localStorage and then never read back.
     function applyAccent(name) {
       if (name === "cinnabar" || name === "kinpaku") name = "dusk";
       if (name === "patina") name = "iris";
-      const id = ACCENTS.includes(name) ? name : "iris";
-      document.documentElement.setAttribute("data-accent", id);
-      try { localStorage.setItem("you-dont-know:accent", id); } catch (e) { /* file:// */ }
-      document.querySelectorAll(".accents button").forEach((b) => {
-        b.setAttribute("aria-pressed", b.dataset.accent === id ? "true" : "false");
-      });
+      document.documentElement.setAttribute("data-accent", ACCENTS.includes(name) ? name : "iris");
     }
 
     const INFO_ICO = '<circle cx="8" cy="8" r="5.5"/><circle class="fill" cx="8" cy="5.1" r="1.15"/><rect class="fill" x="7.25" y="7.1" width="1.5" height="4.15" rx="0.7"/>';
@@ -3207,7 +3213,6 @@
       }
       const t = ui();
       document.documentElement.lang = String(LESSON.lang || "en").slice(0, 2);
-      $("accents").setAttribute("aria-label", t.accent);
       $("lbl-back").textContent = t.back;
       $("lbl-next").textContent = t.next;
       $("stage-copy").textContent = t.stage;
@@ -3215,12 +3220,10 @@
       $("lbl-why").textContent = t.why;
       $("lbl-cost").textContent = t.cost;
       $("steps").setAttribute("aria-label", t.steps);
-      const defaultAccent = LESSON.accent || KIND_ACCENT[LESSON.kind] || "iris";
-      applyAccent(defaultAccent);
-      $("accents").addEventListener("click", (ev) => {
-        const btn = ev.target.closest("[data-accent]");
-        if (btn) applyAccent(btn.dataset.accent);
-      });
+      applyAccent(LESSON.kind && !LESSON.accent ? KIND_ACCENT[LESSON.kind] : LESSON.accent);
+      // An unlisted kind still gets named — the shell says what the JSON
+      // said rather than pretending the lesson has no type.
+      $("kind").textContent = LESSON.kind ? (t.kinds[LESSON.kind] || LESSON.kind) : "";
       $("dzen").onclick = () => setDzen(!dzen);
       $("panel").onclick = () => setPanel(!panelOpen, true);
       syncChrome();

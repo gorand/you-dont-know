@@ -50,7 +50,8 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 
 - `lang`: chrome (`Назад` / `Back`, transport labels) ships translations for `en` and `ru` only — set either to match the lesson's prose. Any other value falls back to the English chrome while the lesson content itself may still be authored in that language.
 - `kind`: `how` | `concept` | `api` → **iris**; `architecture` | `repo` → glacier; `security` | `vuln` → dusk. Default iris.
-- Optional `accent` overrides `kind`: `iris` | `glacier` | `dusk` only. Forbidden as primary: red, amber, green (and old names `cinnabar`, `patina`, `kinpaku`).
+- Optional `accent` overrides `kind`: `iris` | `glacier` | `dusk` only. Forbidden as primary: red, amber, green (and old names `cinnabar`, `patina`, `kinpaku`). This is an **author** override — the reader has no accent control, and nothing about the accent is remembered between loads.
+- The header names the `kind` next to a dot in that accent. `how` · `concept` · `api` · `architecture` · `repo` · `security` · `vuln` have `en`/`ru` names in the shell; any other value is shown as written.
 - State colors are shell tokens `--state-error` / `--state-warn` / `--state-ok`. JSON must not restyle them. `kind: "boundary"` stays error-red in every accent.
 - `--node-fill` is achromatic. Do not put red / amber / green in `accent`.
 - Optional `layout`: `"timeline"` | `"layers"` | `"tree"` | `"auto"`. `"tree"` indents `folder` / `file` by `parent`. `"auto"` uses tree only when every node is folder/file; uses group layout if any `kind: "group"`.
