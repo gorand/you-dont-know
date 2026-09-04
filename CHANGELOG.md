@@ -5,6 +5,40 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] — 2026-09-04
+
+### Added
+
+- **Dzen — a focus mode for the canvas.** One toggle in the chrome clears
+  everything that *describes* the lesson (kicker, thesis, accent swatches,
+  the notes footer, the inspector) and keeps everything that *drives* it:
+  the title, the transport, and the steps rail. The canvas roughly doubles
+  on a laptop (820×641 → 1280×841 at 1500×950) and gains more than that on
+  a tablet, where the notes footer had been eating the page. The rail stays
+  and only gets denser — 14.5rem → 12.25rem with tighter step padding, which
+  keeps two-line titles readable; dropping the titles would have cost more
+  than the ~40px of canvas it bought.
+- **The inspector has its own switch**, in or out of Dzen. Opening the panel
+  inside Dzen reveals it *without* leaving the mode — Dzen is about the
+  chrome, not about the panel.
+
+Both switches are session state and nothing else: no `localStorage`, no
+query flag. A reload always comes back to the full layout.
+
+Leaving Dzen restores the chrome the reader had on the way in, with one
+exception: if they worked the inspector switch **by hand** while in Dzen,
+that newer, explicit choice stands. An explicit action is never undone by a
+later mode switch.
+
+### Fixed
+
+- Below 1100px the `body` grid's rows are all `auto`, so any leftover page
+  height was shared out among them. With the notes footer and the inspector
+  gone there is leftover height, and it inflated the header instead of the
+  canvas — a 26px title sitting in a 183px row. Leftover height now parks at
+  the bottom (`align-content: start`) and the canvas claims its share
+  through its own `min-height`.
+
 ## [0.5.1] — 2026-09-04
 
 ### Fixed
