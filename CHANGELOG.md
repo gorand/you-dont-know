@@ -5,6 +5,58 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-09-04
+
+### Fixed
+
+- **Arrows no longer run along the boxes they pass.** The router picked the
+  shape of a route from the ratio between the two node centres, not from the
+  sides its ports actually sit on, so a pair of top/bottom ports could get a
+  route whose horizontal legs were laid at the ports' own `y` — which IS the
+  border line of every box in that row. On `dense-request` steps 3 and 4 that
+  drew `route → trace` and `idem → tx` as arrows glued to the bottom edge of
+  `rate` and to the top edge of `outbox`. Routing now reads the port side and
+  a top/bottom pair always turns inside the corridor between the rows.
+- **Two boxes stacked in one column are joined by one straight line.** Ports
+  are pulled onto a shared cell centre when the two boxes overlap there, the
+  slot is free on both sides and the straight run is clear — so
+  `inject-pipeline`'s `phaseA → confirm`, `lessonJson → inject` and
+  `wal → resp` are single lines instead of stairs with a 16px jog. Where a
+  shared centre is not available and the residual offset is under two cells,
+  one slanted line replaces the stair; a diagonal that would scrape a box
+  (or one flat enough to read as a run along a row) still goes orthogonal.
+- **An edge bound for the rail no longer holds a slot on the side it never
+  uses.** Rails were decided after the ports were fanned, so a railed edge
+  still took a share of its node's natural side and pushed the edges that
+  stayed there off their centre — the immediate cause of most of the stairs
+  above. Routing now runs in two passes: decide first, place ports second.
+- **Rail edges out of one box leave through different points.** Every rail
+  edge was forced onto the same mid-right port, so two of them touching one
+  node started as one doubled line. Rail ports are fanned like every other
+  side now.
+- **A same-row edge with a sibling in between goes over the row, not through
+  it.** Only edges spanning two or more rows were ever checked for
+  obstruction, so a hop between neighbours in one row — `dense-request`'s
+  service group reaching past the async group to the response — was drawn
+  straight across the box between them. Such an edge now hops through the
+  corridor; the rail stays the fallback for when the hop is blocked too.
+
+### Changed
+
+- Horizontal runs sit on cell centres a whole cell clear of the rows they
+  pass, falling back to the half cell the ports use only in a strip too
+  narrow for it. Lanes were previously placed at a fraction of the corridor,
+  which in a 48px strip put the outer two 12px off the boxes beside them.
+- A rail edge that has to cross its own row does it through a corridor lane
+  counted together with the ordinary runs in that strip, and through the
+  roomier of the corridors above and below its row. It used to slide up its
+  own box's right border to a lane nobody else knew about, which both drew a
+  line along that box and could land on top of an existing run.
+- Lane order inside a corridor is now: runs that only reach down into it,
+  then runs that cross it whole, then runs that only reach up into it. Two
+  stubs at the same `x` overlapped whenever the one dropping in from the row
+  above got the lower line.
+
 ## [0.5.0] — 2026-09-03
 
 ### Changed
