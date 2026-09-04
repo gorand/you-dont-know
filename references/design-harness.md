@@ -30,6 +30,13 @@ silently skipped.
 ### Accessibility
 - [ ] Every clickable SVG node (`.node`) is keyboard-reachable: `tabindex="0"`, `role="button"`, `aria-label`, and responds to `Enter`/`Space`, not just `click`.
 - [ ] Icon-only controls (accent swatches) get `aria-label`, not just `title`.
+- [x] A control that toggles chrome (Dzen, the inspector panel) carries
+  `aria-pressed` and an `aria-label` that says what it does, both re-read
+  from the `UI` strings so `en`/`ru` stay covered. The Dzen button's name
+  changes with its state ("Focus mode…" / "Leave focus mode"), the
+  inspector's does not — its `aria-pressed` already carries the state.
+- [x] Chrome toggles are real `<button>`s, so `Enter`/`Space` activate them
+  without extra key handling — verified in Playwright, not assumed.
 - [ ] Decorative `<svg class="ico">` stay `aria-hidden="true"` (already true — keep it true for any new icon).
 - [ ] `:focus-visible` ring stays visible on every new interactive element (nodes included) — don't rely on the global rule alone if the element sits inside an SVG.
 
@@ -49,6 +56,10 @@ silently skipped.
 
 ### Touch
 - [x] `touch-action: manipulation` on nodes, `.ctrl`, `.step`, `.accents button`, `.fn`.
+- [ ] A chrome mode that removes page rows (Dzen drops the notes footer and
+  the inspector) has to be re-checked at ≤1100px, where `body` rows are all
+  `auto`: leftover height is shared out among them unless `align-content:
+  start` parks it, and the header silently grows instead of the canvas.
 
 ### Shape / color / tactile (taste-skill subset)
 - [x] One corner-radius scale (`--r`) for rects; circular exceptions (accent swatches, junction nodes, `.fn`) stay the only documented exception — verified, not changed.
