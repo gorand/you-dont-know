@@ -1629,7 +1629,7 @@
       return { x: n.x, y: portOn(n.y, n.y + n.h, t) };
     }
 
-    function fanPorts(nodes, edges) {
+    function fanPorts(nodes, edges, plan) {
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
       const buckets = {};
       const add = (id, side, item) => {
@@ -1639,11 +1639,18 @@
       };
       edges.forEach((e, i) => {
         if (e.via) return;
+        // An edge bound for the rail is fanned on the side it actually
+        // leaves through, not the one it would have used. Keeping its old
+        // slot pushed the edges that DID stay off their centre — which is
+        // how two boxes in one column ended up joined by a stair — and two
+        // rail edges touching one box used to leave through the very same
+        // point.
+        const rt = (plan && plan[i]) || null;
         const a = pos[e.from];
         const b = pos[e.to];
         if (!a || !b) return;
-        add(e.from, edgeCardinal(a, b), { i, other: b, end: "from" });
-        add(e.to, edgeCardinal(b, a), { i, other: a, end: "to" });
+        add(e.from, (rt && rt.sideFrom) || edgeCardinal(a, b), { i, other: b, end: "from" });
+        add(e.to, (rt && rt.sideTo) || edgeCardinal(b, a), { i, other: a, end: "to" });
       });
       const fromP = [];
       const toP = [];
@@ -1719,29 +1726,119 @@
       return { y0: Math.min(edge, far), y1: Math.max(edge, far), key: down ? i : i - 1 };
     }
 
+    // Which side of its box a finished port sits on. Routing reads this
+    // instead of guessing from the two centres: the old router picked the
+    // shape of the route from the dx/dy ratio, so a pair of top/bottom ports
+    // could end up with a horizontal run laid at the port's own y — which IS
+    // the box's border line, and reads as an arrow glued to the row.
+    function sideOf(n, p) {
+      if (Math.abs(p.y - n.y) < 0.5) return "top";
+      if (Math.abs(p.y - (n.y + n.h)) < 0.5) return "bottom";
+      if (Math.abs(p.x - n.x) < 0.5) return "left";
+      return "right";
+    }
+
+    // Cell centres inside a strip, kept a whole cell clear of the rows on
+    // either side. A run PARALLEL to a row needs more room than a port stub
+    // does: at half a cell it still reads as attached to the boxes it passes.
+    // Narrow strips fall back to the half-cell the ports use.
+    function cellSlots(lo, hi) {
+      const at = (pad) => {
+        const out = [];
+        let v = Math.ceil((lo + pad - CELL / 2) / CELL) * CELL + CELL / 2;
+        while (v <= hi - pad + 0.01) { out.push(v); v += CELL; }
+        return out;
+      };
+      const wide = at(CELL);
+      return wide.length ? wide : at(CELL / 2);
+    }
+
+    // A hop leaves and lands on the SAME side of the same row, so its strip
+    // is the one that side faces, not the one between the two ports.
+    function runCorridor(bands, p, q, sa) {
+      const toY = Math.abs(p.y - q.y) < 0.5 ? (sa === "top" ? p.y - 1 : p.y + 1) : q.y;
+      return corridor(bands, p.y, toY);
+    }
+
+    // The strip an edge uses to get over its own row on the way to the rail.
+    function crossKey(bands, port, side) {
+      return runCorridor(bands, port, { x: port.x, y: port.y }, side).key;
+    }
+
+    // A horizontal run belongs on a cell centre inside its corridor, never at
+    // a fraction of it: with three edges in a 48px strip the old fractions
+    // put the outer two 12px off the boxes they pass, which reads as glued.
+    function laneY(bands, p, q, sa, lane, laneCount) {
+      const strip = runCorridor(bands, p, q, sa);
+      const slots = cellSlots(strip.y0, strip.y1);
+      if (laneCount > slots.length) {
+        // More edges than clean lines: share the strip evenly instead, still
+        // keeping the half cell off both rows that a port keeps.
+        const lo = strip.y0 + CELL / 2;
+        const hi = strip.y1 - CELL / 2;
+        if (hi <= lo) return Math.round((strip.y0 + strip.y1) / 2);
+        return Math.round(lo + (hi - lo) * (lane + 1) / (laneCount + 1));
+      }
+      const step = Math.floor(slots.length / laneCount) || 1;
+      const first = Math.floor((slots.length - 1 - step * (laneCount - 1)) / 2);
+      return slots[Math.max(0, Math.min(slots.length - 1, first + lane * step))];
+    }
+
+    // An edge that only touches one side of a corridor takes its lane from
+    // that side: 0 when it drops in from the row above, 2 when it comes up
+    // from the row below, 1 for the ones that cross the whole strip.
+    function rankOf(side, single) {
+      if (!single) return 1;
+      return side === "bottom" ? 0 : 2;
+    }
+
     // Lanes are per corridor, not global: two edges sharing a strip must
     // sit at different heights, but an edge three rows down has its own
     // strip and should not be pushed off-centre by them.
-    function lanePlan(edges, fromP, toP, pos, bands) {
+    function lanePlan(edges, fromP, toP, pos, bands, plan) {
       const byKey = new Map();
       const items = [];
       edges.forEach((e, i) => {
         const a = pos[e.from], b = pos[e.to];
         if (!a || !b || !fromP[i] || !toP[i]) return;
-        if (Math.abs(a.y - b.y) <= Math.min(a.h, b.h) * 0.5) return;
-        const key = corridor(bands, fromP[i].y, toP[i].y).key;
-        items.push({ i, key, x: fromP[i].x });
+        const rt = (plan && plan[i]) || null;
+        if (rt && rt.rail !== undefined) {
+          // A rail edge that has to get over its own row crosses it in a
+          // corridor, and there it competes for lanes with every ordinary
+          // run in that strip — count it, or the two land on one line.
+          const sa = sideOf(a, fromP[i]);
+          const sb = sideOf(b, toP[i]);
+          if (sa !== "right") items.push({ id: i + ":from", key: crossKey(bands, fromP[i], sa), x: fromP[i].x, rank: rankOf(sa, true) });
+          if (sb !== "right") items.push({ id: i + ":to", key: crossKey(bands, toP[i], sb), x: toP[i].x, rank: rankOf(sb, true) });
+          return;
+        }
+        const sa = sideOf(a, fromP[i]);
+        // An edge that stays inside its row never enters a corridor — unless
+        // it is hopping over a sibling, and then it needs a lane like the
+        // rest of them.
+        if (sa !== "top" && sa !== "bottom") return;
+        items.push({
+          id: i,
+          key: runCorridor(bands, fromP[i], toP[i], sa).key,
+          x: fromP[i].x,
+          rank: rankOf(sa, !!(rt && rt.hop))
+        });
       });
-      items.sort((A, B) => A.x - B.x);
+      // Lane order decides where the two stubs of an edge end up, and two
+      // stubs at the same x overlap unless the one dropping in from the row
+      // above gets the higher line. So: everything that only reaches DOWN
+      // into the strip first, edges that cross it whole next, everything that
+      // only reaches UP into it last.
+      items.sort((A, B) => (A.rank - B.rank) || (A.x - B.x));
       const laneOf = {};
       const countOf = {};
       items.forEach((it) => {
         const list = byKey.get(it.key) || [];
-        laneOf[it.i] = list.length;
-        list.push(it.i);
+        laneOf[it.id] = list.length;
+        list.push(it.id);
         byKey.set(it.key, list);
       });
-      items.forEach((it) => { countOf[it.i] = (byKey.get(it.key) || []).length; });
+      items.forEach((it) => { countOf[it.id] = (byKey.get(it.key) || []).length; });
       return { laneOf, countOf };
     }
 
@@ -1789,17 +1886,140 @@
       return !nodes.some((o) => o.id !== self.id && y > o.y && y < o.y + o.h && hi > o.x && lo < o.x + o.w);
     }
 
-    function orthoPath(a, b, p, q, lane, laneCount, bands) {
-      if (Math.abs(p.x - q.x) < 1.5) {
-        return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: p.x + 10, ly: (p.y + q.y) / 2 + 3, vertical: true };
+    // Does the segment come within `pad` of a box? Liang-Barsky against the
+    // inflated rect — used to decide whether a diagonal is clean or is
+    // scraping something on its way.
+    function segHitsBox(p, q, o, pad) {
+      const dx = q.x - p.x, dy = q.y - p.y;
+      const tests = [
+        [-dx, p.x - (o.x - pad)], [dx, (o.x + o.w + pad) - p.x],
+        [-dy, p.y - (o.y - pad)], [dy, (o.y + o.h + pad) - p.y]
+      ];
+      let t0 = 0, t1 = 1;
+      for (const [pp, qq] of tests) {
+        if (Math.abs(pp) < 1e-9) { if (qq < 0) return false; continue; }
+        const r = qq / pp;
+        if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+        else { if (r < t0) return false; if (r < t1) t1 = r; }
       }
-      if (Math.abs(p.y - q.y) < 1.5) {
-        return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: (p.x + q.x) / 2, ly: p.y - 10, vertical: false };
+      return true;
+    }
+
+    // One slanted line beats a stair when the two ports are nearly in one
+    // column: the eye reads a single run instead of three. Offered only for a
+    // small residual offset — the route still reads as vertical — and only
+    // when the line keeps half a cell clear of every other box. A diagonal
+    // that scrapes a corner, or one flat enough to be mistaken for a run
+    // along a row, falls back to the orthogonal route.
+    function diagonalOk(a, b, p, q, nodes) {
+      const dx = Math.abs(p.x - q.x);
+      const dy = Math.abs(p.y - q.y);
+      if (dx < 1.5 || dx > CELL * 2 || dy < CELL * 2 || dx > dy) return false;
+      return !(nodes || []).some((o) =>
+        o.id !== a.id && o.id !== b.id && !isFence(o) && segHitsBox(p, q, o, CELL / 2));
+    }
+
+    // Two boxes stacked in one column deserve one straight line, not a stair
+    // with a 16px jog in it. Every port already sits on a cell centre of its
+    // own side, so an edge whose ends face each other across a corridor is
+    // usually one cell away from straight: pull both ends onto a shared
+    // centre when the boxes overlap there, the slot is free on both sides,
+    // and the straight run is clear of everything else.
+    function alignPorts(nodes, edges, pos, fromP, toP, plan) {
+      const taken = new Map();
+      const key = (id, side) => id + "\t" + side;
+      const hold = (id, side, v) => {
+        const k = key(id, side);
+        if (!taken.has(k)) taken.set(k, new Set());
+        taken.get(k).add(v);
+      };
+      const vert = (side) => side === "top" || side === "bottom";
+      const list = [];
+      edges.forEach((e, i) => {
+        if (e.via) return;
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b || !fromP[i] || !toP[i]) return;
+        const sa = sideOf(a, fromP[i]);
+        const sb = sideOf(b, toP[i]);
+        hold(a.id, sa, vert(sa) ? fromP[i].x : fromP[i].y);
+        hold(b.id, sb, vert(sb) ? toP[i].x : toP[i].y);
+        // A rail edge keeps its ports but is never straightened: it goes the
+        // long way round on purpose.
+        if (plan && plan[i] && plan[i].rail !== undefined) return;
+        if (vert(sa) !== vert(sb)) return; // an elbow: nothing to line up
+        list.push({ i, a, b, sa, sb, v: vert(sa) });
+      });
+      const off = (it) => it.v
+        ? Math.abs(fromP[it.i].x - toP[it.i].x)
+        : Math.abs(fromP[it.i].y - toP[it.i].y);
+      // Nearest to straight first, so the easy wins take the shared centre
+      // before an edge that would have to drag it far off its own port.
+      list.sort((A, B) => off(A) - off(B));
+      list.forEach((it) => {
+        const p = fromP[it.i], q = toP[it.i];
+        const V = it.v;
+        const pv = V ? p.x : p.y;
+        const qv = V ? q.x : q.y;
+        if (Math.abs(pv - qv) < 1.5) return;
+        const lo = Math.max(V ? it.a.x : it.a.y, V ? it.b.x : it.b.y) + CELL / 2;
+        const hi = Math.min(V ? it.a.x + it.a.w : it.a.y + it.a.h,
+                            V ? it.b.x + it.b.w : it.b.y + it.b.h) - CELL / 2;
+        if (lo > hi) return; // the boxes do not overlap: no straight run exists
+        const want = (pv + qv) / 2;
+        const base = Math.min(hi, Math.max(lo, Math.floor(want / CELL) * CELL + CELL / 2));
+        for (let step = 0; step <= 4; step++) {
+          for (const dir of (step ? [-1, 1] : [0])) {
+            const v = base + dir * step * CELL;
+            if (v < lo - 0.01 || v > hi + 0.01) continue;
+            if (v !== pv && taken.get(key(it.a.id, it.sa)).has(v)) continue;
+            if (v !== qv && taken.get(key(it.b.id, it.sb)).has(v)) continue;
+            const s0 = V ? `${v} ${p.y}` : `${p.x} ${v}`;
+            const s1 = V ? `${v} ${q.y}` : `${q.x} ${v}`;
+            if (pathBlocked(nodes, new Set([it.a.id, it.b.id]), `M ${s0} L ${s1}`)) continue;
+            taken.get(key(it.a.id, it.sa)).delete(pv);
+            taken.get(key(it.b.id, it.sb)).delete(qv);
+            taken.get(key(it.a.id, it.sa)).add(v);
+            taken.get(key(it.b.id, it.sb)).add(v);
+            if (V) { p.x = v; q.x = v; } else { p.y = v; q.y = v; }
+            return;
+          }
+        }
+      });
+    }
+
+    // The shape of a route follows the SIDES its two ports sit on, not the
+    // ratio between the two centres. Reading it off dx/dy is what used to lay
+    // a horizontal run at a top/bottom port's own y — i.e. exactly along the
+    // border of every box in that row.
+    function orthoPath(a, b, p, q, lane, laneCount, bands, nodes) {
+      const sa = sideOf(a, p);
+      const sb = sideOf(b, q);
+      const va = sa === "top" || sa === "bottom";
+      const vb = sb === "top" || sb === "bottom";
+      if (va !== vb) {
+        // One end leaves through a face, the other arrives through a side:
+        // one elbow, and neither leg can run along the box it starts on.
+        const c = va ? { x: p.x, y: q.y } : { x: q.x, y: p.y };
+        return {
+          d: `M ${p.x} ${p.y} L ${c.x} ${c.y} L ${q.x} ${q.y}`,
+          lx: va ? p.x + 10 : (p.x + q.x) / 2,
+          ly: va ? (p.y + c.y) / 2 + 3 : p.y - 10,
+          vertical: va
+        };
       }
-      const t = laneCount > 1 ? (lane + 1) / (laneCount + 1) : 0.5;
-      const strip = corridor(bands || [], p.y, q.y);
-      const midY = strip.y1 > strip.y0 ? strip.y0 + (strip.y1 - strip.y0) * t : p.y + (q.y - p.y) * t;
-      if (Math.abs(a.y - b.y) >= Math.abs(a.x - b.x) * 0.35) {
+      if (va) {
+        if (Math.abs(p.x - q.x) < 1.5) {
+          return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: p.x + 10, ly: (p.y + q.y) / 2 + 3, vertical: true };
+        }
+        if (diagonalOk(a, b, p, q, nodes)) {
+          return {
+            d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`,
+            lx: (p.x + q.x) / 2 + 10,
+            ly: (p.y + q.y) / 2 + 3,
+            vertical: true
+          };
+        }
+        const midY = laneY(bands || [], p, q, sa, lane, laneCount);
         return {
           d: `M ${p.x} ${p.y} L ${p.x} ${midY} L ${q.x} ${midY} L ${q.x} ${q.y}`,
           lx: p.x + 10,
@@ -1807,13 +2027,70 @@
           vertical: true
         };
       }
-      const midX = (p.x + q.x) / 2;
+      if (Math.abs(p.y - q.y) < 1.5) {
+        return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: (p.x + q.x) / 2, ly: p.y - 10, vertical: false };
+      }
+      const midX = Math.floor((p.x + q.x) / 2 / CELL) * CELL + CELL / 2;
       return {
         d: `M ${p.x} ${p.y} L ${midX} ${p.y} L ${midX} ${q.y} L ${q.x} ${q.y}`,
         lx: midX + 10,
         ly: (p.y + q.y) / 2 + 3,
         vertical: true
       };
+    }
+
+    /* ---------- route plan ----------
+       Two passes, because what an edge does changes where its ports belong.
+       The first lays every edge out naively and finds the ones that cannot go
+       the direct way: a same-row edge with a sibling in between (it hops over
+       the row instead) and a run that would cut through a box (it leaves for
+       the right-hand rail). The second fan then places the ports knowing all
+       of that, so an edge on the rail no longer holds a slot on a side it
+       never uses, and the edges that stayed keep their centres.
+    */
+    // Which side an edge leaves through on its way to the rail. Straight out
+    // the right when nothing is in the way; otherwise over the row through a
+    // corridor — and then through the roomier of the two, since the strip
+    // above a row is often one lane wide while the one below is empty. It
+    // used to slide up the box's own right border instead, which drew the
+    // arrow along the shape it was leaving.
+    function railSide(nodes, bands, n, railX) {
+      const port = pointOnSide(n, "right", 0, 1);
+      if (railClear(nodes, n, port.x, railX, port.y)) return "right";
+      const up = corridor(bands, n.y, n.y - 1);
+      const down = corridor(bands, n.y + n.h, n.y + n.h + 1);
+      return cellSlots(down.y0, down.y1).length > cellSlots(up.y0, up.y1).length ? "bottom" : "top";
+    }
+
+    function routePlan(nodes, edges, pos, bands) {
+      const plan = edges.map(() => ({}));
+      const { fromP, toP } = fanPorts(nodes, edges, null);
+      const { laneOf, countOf } = lanePlan(edges, fromP, toP, pos, bands, null);
+      let railX = Math.max(0, ...nodes.map((n) => n.x + n.w)) + CELL * 3;
+      edges.forEach((e, ei) => {
+        if (e.via) return;
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b || !fromP[ei] || !toP[ei]) return;
+        const p = fromP[ei], q = toP[ei];
+        const own = new Set([a.id, b.id]);
+        const natural = orthoPath(a, b, p, q, laneOf[ei] || 0, countOf[ei] || 1, bands, nodes);
+        if (!pathBlocked(nodes, own, natural.d)) return;
+        const sa = sideOf(a, p);
+        if (sa === "left" || sa === "right") {
+          // Same row with something in between: go over the row through the
+          // corridor rather than all the way out to the rail — the hop stays
+          // local and keeps the two boxes visibly connected.
+          const side = bandIndex(bands, p.y) > 0 ? "top" : "bottom";
+          const hop = orthoPath(a, b, pointOnSide(a, side, 0, 1), pointOnSide(b, side, 0, 1), 0, 1, bands, nodes);
+          if (!pathBlocked(nodes, own, hop.d)) {
+            plan[ei] = { sideFrom: side, sideTo: side, hop: true };
+            return;
+          }
+        }
+        plan[ei] = { rail: railX, sideFrom: railSide(nodes, bands, a, railX), sideTo: railSide(nodes, bands, b, railX) };
+        railX += CELL * 2;
+      });
+      return { plan, railX };
     }
 
     function nudgeLabel(x, y, text, placed, anchorStart, nodes) {
@@ -2140,32 +2417,19 @@
       const nodes = layoutNodes(graph.nodes, graph.edges);
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
       const edgesAll = graph.edges;
-      const { fromP, toP } = fanPorts(nodes, edgesAll);
       const bands = rowBands(nodes);
-      const { laneOf, countOf } = lanePlan(edgesAll, fromP, toP, pos, bands);
       // A route is fine when it's short and local — e.g. two siblings in
       // one group — and keeping it there is what keeps it compact. It needs
       // the dedicated rail (see below) only when it would cut through some
       // OTHER node's body. Corridor routing keeps adjacent-rank edges clear
       // on its own, so what reaches the rail is what actually spans rows: a
       // long back-edge up a column, or a forward edge that skips ranks.
-      const maxNodeX = Math.max(0, ...nodes.map((n) => n.x + n.w));
-      const backRailOf = {};
-      let railCursor = maxNodeX + CELL * 3;
-      edgesAll.forEach((e, ei) => {
-        if (e.via) return;
-        const a = pos[e.from], b = pos[e.to];
-        if (!a || !b || !fromP[ei] || !toP[ei]) return;
-        const spans = Math.abs(bandIndex(bands, fromP[ei].y) - bandIndex(bands, toP[ei].y));
-        if (e.kind !== "back" && spans < 2) return;
-        const natural = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands);
-        if (pathBlocked(nodes, new Set([a.id, b.id]), natural.d)) {
-          backRailOf[ei] = railCursor;
-          railCursor += CELL * 2;
-        }
-      });
-      const hasBackRail = Object.keys(backRailOf).length > 0;
-      const maxX = Math.max(CELL * 26, ...nodes.map((n) => n.x + n.w + M.pad), hasBackRail ? railCursor + M.pad : 0);
+      const { plan, railX: railEnd } = routePlan(nodes, edgesAll, pos, bands);
+      const { fromP, toP } = fanPorts(nodes, edgesAll, plan);
+      alignPorts(nodes, edgesAll, pos, fromP, toP, plan);
+      const { laneOf, countOf } = lanePlan(edgesAll, fromP, toP, pos, bands, plan);
+      const hasBackRail = plan.some((r) => r && r.rail !== undefined);
+      const maxX = Math.max(CELL * 26, ...nodes.map((n) => n.x + n.w + M.pad), hasBackRail ? railEnd + M.pad : 0);
       const maxY = Math.max(CELL * 15, ...nodes.map((n) => n.y + n.h + M.pad));
       const svg = $("flow");
       WORLD = { w: maxX, h: maxY };
@@ -2210,30 +2474,30 @@
           const m = { x: mid.x + mid.w / 2, y: mid.y + mid.h / 2 };
           d = `M ${p.x} ${p.y} L ${m.x} ${m.y} L ${q.x} ${q.y}`;
           lx = m.x + 10; ly = m.y - 6; vertical = false;
-        } else if (backRailOf[ei] !== undefined) {
-          // Forced mid-right ports (not the fanned ones from fanPorts) —
-          // this edge is leaving its normal side entirely for the rail, so
-          // it no longer shares a side-bucket with whatever else attaches
-          // to a's/b's natural side.
-          const p = pointOnSide(a, "right", 0, 1);
-          const q = pointOnSide(b, "right", 0, 1);
-          const railX = backRailOf[ei];
-          // A same-rank sibling can sit directly between a port and the
-          // rail; detour above the row (to the node's own top edge) when
-          // the straight approach at port height would cut through it.
-          const detourSrc = !railClear(nodes, a, p.x, railX, p.y);
-          const detourTgt = !railClear(nodes, b, q.x, railX, q.y);
-          const py = detourSrc ? a.y - CELL : p.y;
-          const qy = detourTgt ? b.y - CELL : q.y;
+        } else if (plan[ei] && plan[ei].rail !== undefined) {
+          // Ports fanned like every other side: two edges out to the rail
+          // from one box must not leave through the same point. A same-rank
+          // sibling between the port and the rail sends the edge over its
+          // own row instead — out of a top or bottom port, into a corridor
+          // lane of its own.
+          const p = fromP[ei] || pointOnSide(a, "right", 0, 1);
+          const q = toP[ei] || pointOnSide(b, "right", 0, 1);
+          const railX = plan[ei].rail;
+          const sa = sideOf(a, p);
+          const sb = sideOf(b, q);
+          const cross = (port, side, id) => laneY(bands, port, { x: railX, y: port.y }, side,
+            laneOf[id] || 0, countOf[id] || 1);
+          const py = sa === "right" ? p.y : cross(p, sa, ei + ":from");
+          const qy = sb === "right" ? q.y : cross(q, sb, ei + ":to");
           d = `M ${p.x} ${p.y}`;
-          if (detourSrc) d += ` L ${p.x} ${py}`;
+          if (sa !== "right") d += ` L ${p.x} ${py}`;
           d += ` L ${railX} ${py} L ${railX} ${qy}`;
-          if (detourTgt) d += ` L ${q.x} ${qy}`;
+          if (sb !== "right") d += ` L ${q.x} ${qy}`;
           d += ` L ${q.x} ${q.y}`;
           lx = railX + 8; ly = (py + qy) / 2; vertical = true;
         } else {
           if (!fromP[ei] || !toP[ei]) return;
-          ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands));
+          ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands, nodes));
         }
         const liveEdge = live.has(e.from) && live.has(e.to);
         const mk = edgeMarks(e, liveEdge);
