@@ -9,7 +9,7 @@ silently skipped.
 
 ## Precedence
 
-1. `SKILL.md` — Hard gates, Color lock, Rationalizations. Always wins.
+1. `SKILL.md` — Hard gates, Colour roles, Rationalizations. Always wins.
 2. This checklist — fills gaps SKILL.md doesn't cover (a11y, motion,
    typography mechanics, touch). Never contradicts #1.
 3. Anything else (external skill, personal taste) — proposal only, filtered
@@ -24,6 +24,12 @@ silently skipped.
 | [on-1.ru/ai-skills.md](https://on-1.ru) | the *process*: filter every external suggestion through the project's own lock before applying | Its concrete rules (fonts, hex colors, Framer Motion) — for a different project |
 | Anthropic Canvas Design skill | nothing operational — "stay original" duplicates SKILL.md's own Rationalizations table | — |
 | [21st.dev](https://21st.dev) | nothing — React/Tailwind/shadcn component-copy workflow, incompatible with a single dependency-free HTML file and the Artifact CDN allowlist | entire mechanism |
+
+Rounds 1–7 below are a dated log and are left as they were written. Where
+they name a surface token (`--lacquer`, `--raised`, `--graphite`) or a region
+(`.inspector`, `.notes`), read Round 8: the shell was re-based on the `<AG/>`
+design system and those names are history. The *rules* they establish still
+stand; only the vocabulary moved.
 
 ## Checklist
 
@@ -51,15 +57,16 @@ silently skipped.
 - [x] Numbers that are compared/aligned (counter, line numbers) stay `font-variant-numeric: tabular-nums` (already true).
 
 ### Dark mode / meta
-- [x] `<meta name="theme-color" content="#0c0b09">` matching `--lacquer`.
+- [x] `<meta name="theme-color">` matches the page ground — `#0b0712`, i.e. `--color-bg`, since Round 8.
 - [x] `color-scheme: dark` stays on `html` (already true).
 
 ### Touch
 - [x] `touch-action: manipulation` on nodes, `.ctrl`, `.step`, `.fn`.
-- [ ] A chrome mode that removes page rows (Dzen drops the notes footer and
-  the inspector) has to be re-checked at ≤1100px, where `body` rows are all
-  `auto`: leftover height is shared out among them unless `align-content:
-  start` parks it, and the header silently grows instead of the canvas.
+- [x] A chrome mode that removes page rows has to be re-checked at ≤1100px.
+  Round 8 hit exactly this again from the other side: `body` kept a row
+  template wider than its new child count, `.stage` resolved to `auto`, and
+  the canvas took no height at all. Any change to `body`'s children needs its
+  `grid-template-rows` re-counted, in both media queries.
 
 ### Shape / color / tactile (taste-skill subset)
 - [x] One corner-radius scale (`--r`) for rects; circular exceptions (the kind dot, junction nodes, `.fn`) stay the only documented exception — verified, not changed.
@@ -69,7 +76,13 @@ silently skipped.
 ### Sheen — tried, reverted
 - [x] Spacing scale audited (`grep -oE '(padding|margin|gap): [^;]+;'`): consistent 2px-step grid off a 4/8px base (4·6·8·10·12·14·16·20·24), no stray odd values. No changes made — it was already coherent.
 - [x] Tried a top-highlight sheen on `.inspector` / `.code-head` / `.pop`, and an inset gloss edge on `button.ctrl.primary`. Reverted — the only justification was "the token is named `--lacquer`," not an actual legibility/hierarchy problem the flat surfaces had. `--hairline` borders and the distinct `--lacquer`/`--raised`/`--graphite` fills already separate the zones. Don't re-add this without a concrete problem it solves (see Motion Motivation rule below, same logic applies to any visual treatment, not just animation).
-- [ ] Deliberately left flat: `.top` header, `.rail`, `.stage`, `.notes` footer, `.step`/node fills — flush-in-grid panels, not floating cards (taste-skill: "cards only when elevation communicates real hierarchy").
+- [x] Elevation is earned, not decorative. Flat: `.top`, `.stage`, node
+  fills, and the rail at rest — it is a dimension line drawn on the sheet,
+  with no plate under it. Raised, because each one genuinely floats over the
+  canvas and has to be readable against whatever is beneath it: the dock, the
+  open rail, the zoombar, the aside pop, the brief. That is the system's own
+  rule — elevation by stepping the surface plus the two shadows it defines,
+  and nothing else.
 
 ### Rule for future rounds
 Before adding any visual treatment (shadow, gradient, gloss, elevation), name the concrete problem it fixes in one sentence. "It matches the token name" or "it looks nicer" is not a reason — see the sheen revert above.
@@ -221,6 +234,72 @@ row reads as a wasted stair); a `via` edge legitimately passes through the
 middle of the node it names; and the right-hand rail is a large deliberate
 deviation, so measure a stair by how far the intermediate points sit off the
 line between the ports, not by the distance between the ports themselves.
+
+## Round 8 — the redesign onto the `<AG/>` design system
+
+Not a correctness pass like rounds 3–7: a deliberate redesign of the artifact,
+against the user's own design system (`https://on-1.ru/ui`, tokens in
+`DESIGN.md`). Direction agreed up front — **stage-first layout, dark only,
+shell only**: CSS and markup may change, the `lesson.json` contract and the
+engine's geometry may not.
+
+What the baseline screenshots actually showed, before any code was read:
+
+- the canvas got under half the screen while the inspector sat ~70% empty and
+  the notes footer held ~110px on every step;
+- `dense-request` was clipped top and bottom at fit-to-screen — `WAL / fsync`
+  off the bottom edge at step 1 and step 4;
+- the kicker, the stage label and the footer headings were all the same
+  mono-uppercase treatment, so nothing signalled importance.
+
+- [x] **Full-bleed canvas, floating chrome.** Slim top bar (eyebrow, title,
+  two-line thesis), rail in the left margin, dock bottom-left, brief behind a
+  button as a native `<dialog>`.
+- [x] **The frame is computed around the dock, not around the canvas.** The
+  first version of this shrank the fit box, which wasted the whole area above
+  the dock; the second centred the box in whichever free rectangle was
+  larger, which pinned the diagram to the right edge with empty canvas beside
+  it. What works is separating the two questions: take the *scale* from the
+  larger of the two rectangles that clear the dock, then start the *position*
+  at the centre of the whole canvas and displace it only as far as it takes
+  to clear the panel — right if that is the shorter move, up otherwise, and
+  if neither fits, park it at the top rather than centred behind the panel.
+- [x] **One graticule on the layout's own 16px cell**, at the system's weight
+  (`--graticule-line`, 5% ink-soft), replacing the fine + every-fourth pair.
+  `MAJOR` is gone with it — it described nothing once the second layer went.
+- [x] **Three colour roles that do not trade places.** The three accents by
+  `kind` could not survive the move: the system has no blue, and a new hex is
+  forbidden by the system's own rule. Repainting the shell coral or peach
+  instead would spend the only colour meaning "act here" and the only one
+  meaning "careful". `kind` is a tone on one dot now.
+- [x] **Boundary reads as its own category.** At rest it is dashed peach, so
+  it is not mistaken for a second kind of coral highlight.
+- [x] **An open group fence no longer takes the highlight colour.** Caught on
+  `dense-request` step 4, where a step about a five-node group turned the
+  whole screen coral. The children carry the highlight; the fence does not.
+
+Two bugs I introduced and caught in the same pass, both worth recording
+because neither would have shown up in a code read:
+
+- [x] **Live arrowheads went black.** The `<defs>` markers were filled with
+  `var(--primary)`, which the token rename deleted. An invalid `var()` makes
+  `fill` fall back to its initial value — black on a near-black ground, so
+  every live edge would have lost its head. Found by grepping the file for
+  the old token names after the CSS was done, not by looking at it.
+- [x] **The narrow layout collapsed to nothing.** `body` kept a three-row
+  grid template from the old markup, which now has two children, so `.stage`
+  resolved to `auto` and took no height at all. The screenshot at 900px was a
+  header over an empty page. The stage is its own two-row grid at that width
+  now, with the rail a horizontal strip and the canvas a real block.
+
+Still open, and deliberately not touched — it is engine geometry, which this
+pass was scoped out of:
+
+- [ ] Edge labels that land on a group fence rather than in the gap beside it
+  (`TLS 1.3` and `остаток` on `dense-request`). The round-7 checker would
+  still flag these; they are a routing question, not a styling one.
+- [ ] The round-2 accessibility item (keyboard nav on SVG nodes) is still
+  unstarted.
 
 ## Workflow
 
