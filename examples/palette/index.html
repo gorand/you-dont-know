@@ -2954,15 +2954,85 @@
       viewAnim = requestAnimationFrame(tick);
     }
 
-    function viewFor(box, maxScale, pad) {
+    // The dock floats ON the canvas, so the canvas rectangle is not the
+    // area a diagram can actually use: framing against it centres the
+    // diagram underneath the panel the reader is reading.
+    //
+    // Scale and position are two separate questions. The scale comes from
+    // the larger of the two rectangles that clear the dock — everything
+    // above it, or everything beside it. The position then starts at the
+    // centre of the WHOLE canvas and is displaced only as far as it takes
+    // to clear the dock, so a diagram that already fits beside the panel is
+    // not also shoved into the corner.
+    const DOCK_GAP = 16;
+
+    function dockRect() {
+      const dock = $("dock");
+      if (!dock || !dock.offsetParent) return null;
       const b = canvasBox();
+      const d = dock.getBoundingClientRect();
+      if (!d.width || !d.height) return null;
+      return { left: d.left - b.left, top: d.top - b.top, right: d.right - b.left, bottom: d.bottom - b.top };
+    }
+
+    function freeRects() {
+      const b = canvasBox();
+      const full = { x: 0, y: 0, w: b.w, h: b.h };
+      const d = dockRect();
+      if (!d) return [full];
+      const above = { x: 0, y: 0, w: b.w, h: Math.max(1, d.top - DOCK_GAP) };
+      const beside = { x: d.right + DOCK_GAP, y: 0, w: Math.max(1, b.w - d.right - DOCK_GAP), h: b.h };
+      return [above, beside, full];
+    }
+
+    // Where the box lands on screen, in canvas pixels, once it is drawn at `s`.
+    function placeBox(box, s) {
+      const b = canvasBox();
+      const bw = box.w * s;
+      const bh = box.h * s;
+      let left = (b.w - bw) / 2;
+      let top = (b.h - bh) / 2;
+      const d = dockRect();
+      const hits = d && left < d.right + DOCK_GAP && left + bw > d.left - DOCK_GAP
+                     && top < d.bottom + DOCK_GAP && top + bh > d.top - DOCK_GAP;
+      if (hits) {
+        // Two ways out, each only valid if it actually clears: slide right
+        // of the dock, or sit above it. Take the shorter move.
+        const right = d.right + DOCK_GAP;
+        const up = d.top - DOCK_GAP - bh;
+        const okRight = right + bw <= b.w + 0.5;
+        const okUp = up >= -0.5;
+        const costRight = okRight ? Math.abs(right - left) : Infinity;
+        const costUp = okUp ? Math.abs(up - top) : Infinity;
+        if (costRight <= costUp && okRight) left = right;
+        else if (okUp) top = Math.max(0, up);
+        // Neither escape fits — the window is too small for this diagram
+        // beside or above the panel. Park it at the top of the canvas
+        // anyway: as much of it as can be seen at once, rather than the
+        // middle of it centred behind the panel.
+        else top = 0;
+      }
+      return { cx: box.x + (b.w / 2 - left) / s, cy: box.y + (b.h / 2 - top) / s };
+    }
+
+    function viewFor(box, maxScale, pad) {
       const m = pad == null ? 28 : pad;
-      const s = clampScale(Math.min(
-        (b.w - m * 2) / Math.max(1, box.w),
-        (b.h - m * 2) / Math.max(1, box.h),
-        maxScale || 2
+      const cap = maxScale || 2;
+      const fit = (r) => clampScale(Math.min(
+        (r.w - m * 2) / Math.max(1, box.w),
+        (r.h - m * 2) / Math.max(1, box.h),
+        cap
       ));
-      return { cx: box.x + box.w / 2, cy: box.y + box.h / 2, s };
+      const rects = freeRects();
+      const full = rects[rects.length - 1];
+      let bestS = 0;
+      for (const r of rects.slice(0, -1)) bestS = Math.max(bestS, fit(r));
+      // Clearing the dock is not worth halving the diagram: in a window
+      // that small, partly covered beats illegible.
+      const fullS = fit(full);
+      const s = bestS < fullS * 0.62 ? fullS : bestS;
+      const at = placeBox(box, s);
+      return { cx: at.cx, cy: at.cy, s };
     }
 
     function fitAll(animate) {
