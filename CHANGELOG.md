@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] — 2026-09-27
+
+Tooling only. The published artifact is byte-identical to 0.6.1.
+
+### Added
+
+- **`npm run release`** — a gate that runs before a version leaves the repo
+  and refuses rather than warns. It checks that the version agrees across
+  `package.json`, `SKILL.md` and README's badge and prose; that `CHANGELOG.md`
+  documents it; that the tree is clean **and** that no untracked file sits
+  inside a directory `files` publishes wholesale; that rebuilding the examples
+  changes nothing, so the artifacts in the tarball are what the current
+  template produces; and that the version is not already on the registry.
+  It never publishes and never pushes — `--tag` adds the annotated tag once
+  the rest pass, taking its message from the CHANGELOG, and it runs from a
+  detached HEAD so an older version can be published after the fact.
+- **`RELEASING.md`** — the procedure, written for a machine that has never
+  seen this project. It leads with the fact the rest follows from: `npm
+  publish` packs the working directory and ignores git entirely.
+
 ## [0.6.1] — 2026-09-27
 
 Measured against the rendered page rather than read off the palette. No
