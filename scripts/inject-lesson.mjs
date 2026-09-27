@@ -68,10 +68,13 @@ if (data.detail && !KNOWN_DETAIL.has(data.detail)) {
   process.exit(1);
 }
 
-const KNOWN_ACCENTS = new Set(["iris", "glacier", "dusk"]);
-if (data.accent && !KNOWN_ACCENTS.has(data.accent)) {
-  console.error(`accent "${data.accent}" is not iris | glacier | dusk`);
-  process.exit(1);
+// `accent` no longer paints anything — the shell has three fixed colour
+// roles and `kind` only tones one dot. Failing a build over an inert field
+// would be wrong, so a recognised legacy value passes in silence and
+// anything else is a warning that says the field is ignored.
+const LEGACY_ACCENTS = new Set(["iris", "glacier", "dusk", "cinnabar", "patina", "kinpaku"]);
+if (data.accent && !LEGACY_ACCENTS.has(data.accent)) {
+  console.warn(`accent "${data.accent}" is not a known value — the field is legacy and ignored either way`);
 }
 
 const asideIds = new Set((data.asides || []).map((a) => a.id));
