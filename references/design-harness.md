@@ -34,7 +34,7 @@ stand; only the vocabulary moved.
 ## Checklist
 
 ### Accessibility
-- [ ] Every clickable SVG node (`.node`) is keyboard-reachable: `tabindex="0"`, `role="button"`, `aria-label`, and responds to `Enter`/`Space`, not just `click`.
+- [x] Every clickable SVG node (`.node`) is keyboard-reachable: `tabindex="0"`, `role="button"`, `aria-label`, and responds to `Enter`/`Space`, not just `click` — done in round 9, three rounds after it was first written down. The name says what activating it *does*, not only what it is called. Two things this turned up: an expanded fence renders as two `<g class="node">` and only the late pass (the one with the hit rect) may be a control, and the SVG itself had `role="img"` with no name.
 - [x] Icon-only controls get `aria-label`, not just `title` — the chrome toggles do. (The accent swatches that first raised this are gone; the accent follows `kind`.)
 - [x] A control that toggles chrome (Dzen, the inspector panel) carries
   `aria-pressed` and an `aria-label` that says what it does, both re-read
@@ -44,7 +44,7 @@ stand; only the vocabulary moved.
 - [x] Chrome toggles are real `<button>`s, so `Enter`/`Space` activate them
   without extra key handling — verified in Playwright, not assumed.
 - [ ] Decorative `<svg class="ico">` stay `aria-hidden="true"` (already true — keep it true for any new icon).
-- [ ] `:focus-visible` ring stays visible on every new interactive element (nodes included) — don't rely on the global rule alone if the element sits inside an SVG.
+- [x] `:focus-visible` ring stays visible on every new interactive element (nodes included) — the global `outline` is not dependable on an SVG `<g>`, so the ring is carried on the shape: `.node-shell` for an ordinary node, `.hit` for a fence whose shell is in the other pass.
 
 ### Motion
 - [x] `prefers-reduced-motion: reduce` must stop the SVG `<animateMotion>` token on live edges too — done via `REDUCE_MOTION` + `tokenMark()` (JS `matchMedia` check; static dot instead of `<animateMotion>`).
@@ -300,6 +300,45 @@ pass was scoped out of:
   still flag these; they are a routing question, not a styling one.
 - [ ] The round-2 accessibility item (keyboard nav on SVG nodes) is still
   unstarted.
+
+## Round 9 — what the page measures, not what the palette promises
+
+A short pass with no design intent: measure the shipped 0.6.0 artifact and
+fix what the numbers say. Two instruments, both driven from Playwright
+against the live page.
+
+**Contrast.** Resolve every colour through a 1×1 canvas rather than parsing
+the computed string — that way `oklch()`, `color-mix()` and a plain hex all
+come back as the same RGB triple, and an element's own `opacity` can be
+composited against its real ground. Five texts were under the 4.5:1 that
+small text needs: line numbers 2.91, the canvas marginalia and the Ctrl+wheel
+hint 3.29, a code comment 2.91, a keyword 4.14.
+
+Four of the five were self-inflicted, and the lesson is worth keeping:
+`--color-ink-soft` is 7.62:1 on the void and passes with room to spare, but
+`color-mix(… 55-60%, transparent)` over it lands near 3 — mixing toward
+transparent eats contrast much faster than the percentage suggests. Read the
+token and lose weight with a small `opacity` instead: it is measurable and it
+stops at a floor you can name. The fifth was a role error — `--color-primary`
+is the focus and structure colour, and asking it to be a code keyword puts it
+at 4.14 on the code surface.
+
+**Keyboard.** 12 nodes, 0 with `tabindex`, 0 with a role, 0 with a name, while
+the chevrons were 6 of 6. Fixed; see the accessibility checklist above.
+
+Two notes for whoever measures next:
+
+- **Check which build the browser actually has.** The first run of both
+  instruments was against `main`'s working tree — the pre-redesign shell —
+  and then against a cached copy of it. Every number was wrong and two of
+  them looked plausible. Assert something structural about the page (here:
+  `document.querySelector('.dock')`) before trusting a single measurement.
+- **A crude geometric checker over-reports.** Counting an edge label as bad
+  because it overlaps a group's *bounding box* flags 33 cases on
+  `dense-request`, every one of them a label legitimately sitting inside the
+  fence where its children live. The real defect is a label on the fence's
+  *stroke*, which is 6 cases: `TLS 1.3`, `400`, `проброс`, `остаток`,
+  `та же tx`, `201`. Still open — it is edge routing, not styling.
 
 ## Workflow
 
