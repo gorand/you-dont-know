@@ -49,11 +49,10 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 ## Rules
 
 - `lang`: chrome (`Назад` / `Back`, transport labels) ships translations for `en` and `ru` only — set either to match the lesson's prose. Any other value falls back to the English chrome while the lesson content itself may still be authored in that language.
-- `kind`: `how` | `concept` | `api` → **iris**; `architecture` | `repo` → glacier; `security` | `vuln` → dusk. Default iris.
-- Optional `accent` overrides `kind`: `iris` | `glacier` | `dusk` only. Forbidden as primary: red, amber, green (and old names `cinnabar`, `patina`, `kinpaku`). This is an **author** override — the reader has no accent control, and nothing about the accent is remembered between loads.
-- The header names the `kind` next to a dot in that accent. `how` · `concept` · `api` · `architecture` · `repo` · `security` · `vuln` have `en`/`ru` names in the shell; any other value is shown as written.
-- State colors are shell tokens `--state-error` / `--state-warn` / `--state-ok`. JSON must not restyle them. `kind: "boundary"` stays error-red in every accent.
-- `--node-fill` is achromatic. Do not put red / amber / green in `accent`.
+- `kind`: `how` | `concept` | `api` | `architecture` | `repo` | `security` | `vuln`. It sets the tone of the dot in the kicker — violet, muted ink, peach — and **nothing else**. The shell does not repaint per lesson.
+- The header names the `kind` next to that dot. The seven kinds above have `en`/`ru` names in the shell; any other value is shown as written and gets the default tone.
+- Optional `accent` is legacy and no longer repaints anything. Old values (`iris` | `glacier` | `dusk`, and the older `cinnabar` | `patina` | `kinpaku`) still parse and map onto a tone, so a lesson written against the three-accent shell rebuilds untouched. New lessons should leave it out.
+- Colour is the shell's, in three fixed roles: `--color-primary` (violet) focus and structure, `--color-accent` (coral) the current material, `--color-accent-2` (peach) status. JSON must not restyle them, and `kind: "boundary"` is peach in every lesson.
 - Optional `layout`: `"timeline"` | `"layers"` | `"tree"` | `"auto"`. `"tree"` indents `folder` / `file` by `parent`. `"auto"` uses tree only when every node is folder/file; uses group layout if any `kind: "group"`.
 - Optional `detail`: `"auto"` (default) | `"progressive"` | `"full"` — how much of the diagram is open at once. See **Staged detail** below.
 - Optional `nodes[].parent`: id of a `group` (fence) or, in `layout: "tree"`, a folder
@@ -79,13 +78,14 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 | `frame` (`hoc`) | dashed frame | wrapper |
 | `inbox` (`consumer`) | tray | sink |
 | `action` | rect | event |
-| `boundary` | rect, `--state-error` | isolation |
+| `boundary` | rect, dashed peach | isolation |
 | `subroutine` | rect | predefined process |
 - **Every `nodes[].id` appears in at least one `steps[].highlight`.** Otherwise the node is dead (not clickable).
 - 4–8 `steps` that follow **runtime**, not a file-tree tour
 - Architecture lessons: `code.text` copied from the cited file; trim, do not invent
 - Concept lessons: snippet may be canonical; `code.file` says so (e.g. `spec: Promise`)
 - `repeats` may be `[]`
+- `thesis`, `problem`, `whyNotBasic`, `cost` and `repeats` are the lesson's **brief**: the thesis also sits in the top bar, the rest live behind the `Бриф` / `Brief` button. They are read once, so they do not hold canvas height on every step — write them as standing context, not as commentary on the current step
 - Surface copy 1–2 sentences. Depth in `asides[]`. Plant `[[asideId]]`. Overlay, not in-flow
 - `asides[].id` is `[A-Za-z0-9_-]+`. No nested `[[…]]`
 - Prose may use `` `identifier` ``; no HTML in JSON
@@ -137,14 +137,17 @@ plain wheel pans, dragging empty canvas moves it, and `+` `-` `0` (fit) `1`
 (100%) `2` (zoom to the current step) work bare or with `Ctrl`/`⌘`. The
 zoombar in the corner does the same for the mouse. Until the reader touches
 the canvas the shell frames each step itself: fit-to-screen while that stays
-readable, otherwise the step's own nodes. After that the frame is theirs — it
-only follows when a step's nodes would sit off screen.
+readable, otherwise the step's own nodes. The frame is computed around the
+dock, not around the bare canvas — the scale comes from the larger of the two
+areas that clear the panel, and the diagram is then displaced from centre only
+as far as it takes to get out from under it. After that the frame is theirs —
+it only follows when a step's nodes would sit off screen.
 
 ## The grid
 
 Every box, gap and pad in the layout is a whole number of one 16px cell, and
-the canvas paints a line every cell with a heavier one every four. Nothing in
-the JSON sets these — they are here so you know what a label has to fit in:
+the canvas paints one graticule line on that same cell. Nothing in the JSON
+sets these — they are here so you know what a label has to fit in:
 
 | | cells | px |
 |---|---|---|

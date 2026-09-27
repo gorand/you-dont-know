@@ -5,6 +5,82 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-09-27
+
+The artifact is redesigned onto the `<AG/>` design system (on-1.ru). The
+`lesson.json` contract is unchanged and every existing lesson rebuilds
+untouched — what changed is the shell it is poured into.
+
+### Changed
+
+- **The canvas is the page now.** The old three-column layout gave the diagram
+  under half the screen while the inspector sat about 70% empty and the notes
+  footer held ~110px hostage on every step. The canvas is full-bleed, the
+  chrome floats over it: a slim top bar, a step rail in the left margin, and a
+  dock for narration and code.
+- **The step rail is a dimension line.** Collapsed it is the scale — a tick per
+  step, the current one circled as a drafting callout, coral end caps. It opens
+  its titles *over* the canvas on hover or keyboard focus, so the diagram never
+  reflows to make room for them.
+- **Narration and code moved into a floating dock**, and the shell now frames
+  the diagram *around* it: the scale comes from the larger of the two areas
+  that clear the panel, and the diagram is displaced from centre only as far as
+  it takes to get out from under it. This is what fixes the clipping that
+  `dense-request` showed at fit-to-screen — step 1 went from 106% and cut off
+  at both edges to 75% and whole.
+- **Type is Unbounded (display) / Onest (text) / JetBrains Mono (labels and
+  code)**, replacing Albert Sans everywhere, on the design system's own scale.
+- **The canvas graticule is one density on the layout's 16px cell**, at the
+  sheet's weight, instead of a fine grid plus a heavier line every four cells.
+  The edges are the loudest line on the canvas again.
+- **Surfaces, radii and strokes** follow the system: void → surface →
+  surface-2 for elevation, radii capped at 6px, hairline 1px / tick 1.4px /
+  mark 1.5px, and the two shadows the system has. No `backdrop-filter`, no
+  fourth hue, no hand-picked hex.
+- **Buttons have no filled variant.** Emphasis is an accent border; a held
+  toggle carries its state on a coral underline rather than on colour alone.
+- A step with no `code` no longer renders an empty code block.
+
+### Removed
+
+- **The three accents by `kind` (iris · glacier · dusk) are gone**, and with
+  them `data-accent` and the `--state-*` tokens. The system has no blue, and
+  inventing one would have meant a hand-picked hex; repainting the shell coral
+  or peach instead would have spent the only colour that means "act here" and
+  the only one that means "careful". Colour now has three fixed roles —
+  violet for focus and structure, coral for the current material, peach for
+  status — and they do not trade places.
+- **The notes footer is no longer part of the layout.** The thesis, the catch,
+  the naive alternative, the cost and the repeats are the lesson's brief, and
+  they live behind a `Бриф` / `Brief` button as a native `<dialog>`.
+
+### Added
+
+- **The kind is stated as a tone, not a repaint**: the dot in the kicker takes
+  violet (`how` · `concept` · `api`), muted ink (`architecture` · `repo`) or
+  peach (`security` · `vuln`). The chrome still names the kind in words.
+- Drafting apparatus from the design system, all inert: viewfinder corner
+  marks on the canvas, sheet marginalia, one static bloom under the diagram,
+  the page grain, and a chevron cut line above the brief's repeats.
+- `--gradient-wave` appears exactly once, as the brief's 2px top bar.
+
+### Fixed
+
+- `kind: "boundary"` reads as its own category again rather than as a second
+  kind of highlight: dashed peach at rest, solid peach when the step is on it.
+- An open group fence no longer takes the highlight colour — its children
+  carry it, so a step about a five-node group stops flooding the screen.
+- The narrow layout (≤1100px) is rebuilt: the rail becomes a horizontal strip
+  with the rule running across it, the canvas takes real height in a two-row
+  stage grid, and the dock becomes a bottom sheet.
+
+### Compatibility
+
+- `accent` in the lesson JSON still parses. `iris` | `glacier` | `dusk` — and
+  the older `cinnabar` | `patina` | `kinpaku` — map onto a kind tone, so a
+  lesson written against any earlier shell rebuilds without edits. It no
+  longer repaints anything, and new lessons should leave it out.
+
 ## [0.5.4] — 2026-09-27
 
 ### Fixed

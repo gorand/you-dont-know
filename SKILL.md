@@ -8,7 +8,7 @@ description: >-
   /understand maps.
 license: MIT
 metadata:
-  version: "0.5.4"
+  version: "0.6.0"
 disable-model-invocation: true
 argument-hint: "[topic-or-path]"
 ---
@@ -19,35 +19,34 @@ Interactive HTML lesson — You Don't Know JS vibe. Same locked shell for **any*
 
 **Core principle:** Propose the lesson shape. Build after confirmation. Artifact under `tmp/you-dont-know/<slug>/`.
 
-**REQUIRED SUB-SKILL:** locked shell [templates/lesson.html](templates/lesson.html). Lacquer surfaces. Default accent **iris** (`kind: "how"`). Do not invent a skin. Primary is never red / amber / green.  
+**REQUIRED SUB-SKILL:** locked shell [templates/lesson.html](templates/lesson.html). Built on the `<AG/>` design system: void ground, Unbounded / Onest / JetBrains Mono, radii ≤6px, hairline strokes, elevation by stepping the surface. Do not invent a skin.  
 **REQUIRED BACKGROUND:** [references/lesson-contract.md](references/lesson-contract.md). Inject with `node scripts/inject-lesson.mjs`.
 
-## Accents by kind
+## Colour roles
 
-| `kind` | Accent | Use |
-|--------|--------|-----|
-| `how` `concept` `api` | **iris** (violet) | How it works |
-| `architecture` `repo` | glacier (blue) | Structure of *this* system |
-| `security` `vuln` | dusk (blue-violet) | Attacks, trust, isolation |
+Three hues, and they never trade places.
 
-The accent is the shell's, not the reader's: `kind` picks it, an optional `accent` in the JSON overrides it, and there is no picker in the chrome. The header states the kind instead — a dot in that accent plus its name, `en` / `ru`.
+| Token | Value | Role |
+|-------|-------|------|
+| `--color-primary` | violet `#8b5cf6` | focus rings, structural marks |
+| `--color-accent` | coral `#ff6f5e` | the one "you are here / you can act here" colour: current step, highlighted node, live edge |
+| `--color-accent-2` | peach `#ffc24b` | status: a `kind: "boundary"` node, the lesson's «Проблема» |
 
-`--state-error` / `--state-warn` / `--state-ok` are locked (red / amber / green). They never follow `data-accent`. Do not use those hues as `--primary`.
+`--gradient-wave` (violet → coral → peach) appears exactly once in the shell — the brief's top bar. It is not a decoration to reach for again.
+
+**The shell does not repaint per lesson.** `kind` picks the tone of the dot in the kicker and nothing else:
+
+| `kind` | dot |
+|--------|-----|
+| `how` `concept` `api` | violet |
+| `architecture` `repo` | muted ink |
+| `security` `vuln` | peach |
+
+A lesson that washed coral or peach across its chrome would spend the only colour that means "act here" and the only one that means "careful". `accent` in the JSON is legacy: old values (`iris` · `glacier` · `dusk`, and the older `cinnabar` · `kinpaku` · `patina`) still parse and map onto a tone, so every existing lesson rebuilds untouched — but nothing repaints.
+
+Derive anything new with `color-mix()` from the tokens above. Never a hand-picked hex, never a fourth hue, never a radius past 6px, never `backdrop-filter`.
 
 Do not restyle `:root` per lesson.
-
-## Color lock
-
-Traffic-light hues are **state**, not brand.
-
-| Token | Hue window (oklch) | Role |
-|-------|--------------------|------|
-| `--state-error` | 20–50 | error / `kind: "boundary"` |
-| `--state-warn` | 70–110 | warning / «Проблема» |
-| `--state-ok` | 125–165 | success |
-| `--primary` | 200–320 only | iris · glacier · dusk |
-
-`--state-*` never follow `data-accent`. Node titles use `--node-ink` (`#f4f2ee`) on achromatic `--node-fill` (chroma 0). Mix highlight in `srgb`, not `oklch` — oklch hue interpolation through 95→232 crosses green.
 
 ## Hard gates
 
@@ -87,7 +86,7 @@ For each confirmed item:
      tmp/you-dont-know/<slug>/index.html
    ```
    (From a clone of this skill: `node scripts/inject-lesson.mjs templates/lesson.html …`.)
-4. Visual-QA `index.html`: node labels readable on dark fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; live/error/ok strokes still distinct from `--primary`. Selected step in the rail must visibly hover darker than the selected rest state. Dzen (focus mode) must keep the title, the transport and the rail, and give the canvas the rest; leaving it must bring back exactly the chrome the reader had. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
+4. Visual-QA `index.html`: node labels readable on the surface fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; coral marks only the current material, peach only a boundary. The rail reads as a dimension line collapsed and opens its titles **over** the canvas — the diagram must not reflow when it does. The dock must never sit on top of the diagram it explains: the shell frames around it, so if a step's nodes end up under the panel, that is a bug, not a layout. Dzen (focus mode) keeps the title, the transport and the rail and gives the canvas the rest; leaving it brings back exactly the chrome the reader had. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
 
 ### Complex diagrams (>12 nodes)
 
@@ -109,9 +108,10 @@ Default dest is `tmp/`. Never `docs/` unless asked.
 ## Red flags — STOP
 
 - Building before confirmation
-- Gold / kinpaku / cream paper
-- Primary accent in red / amber / green (steals error / warning / success)
-- Node label that inherits SVG black (`currentColor`) — ink must be `--node-ink`
+- Gold / kinpaku / cream paper, or any hue outside the three tokens
+- Coral spent on something that is not the current material (it stops meaning "here")
+- A hand-picked hex, a radius past 6px, a `backdrop-filter`, a second gradient
+- Node label that inherits SVG black (`currentColor`) — ink must be `--color-ink`
 - Shared collinear edge bus that hides where an arrow goes
 - Tab / sheet polygon for `folder` or `file` — Lucide glyph + path label already say directory; shell is a rounded rect
 - Node with no `highlight` (dead click)
@@ -124,9 +124,10 @@ Default dest is `tmp/`. Never `docs/` unless asked.
 | Excuse | Reality |
 |--------|---------|
 | «Тема очевидна, сразу HTML» | Outline first, then confirm |
-| «Жёлтый/красный акцент выразительнее» | Primary = iris / glacier / dusk. Red stays error |
-| «Cinnabar для security» | Security = dusk. Boundary/error keeps `--state-error` |
-| «Пусть читатель выберет акцент» | The accent states the lesson's `kind`. A picker would make it a preference |
+| «Жёлтый/красный акцент выразительнее» | Coral is already the accent — and it is spoken for. It marks the current material, nothing else |
+| «Перекрасим оболочку под тип урока» | Three tokens, three fixed roles. The `kind` is a tone on one dot |
+| «Пусть читатель выберет акцент» | There is nothing to choose. The shell states the kind; it does not offer a preference |
+| «Подберём синий под архитектуру» | The system has no blue, and a new hex is not a decision this lesson gets to make |
 | «Стрелки сошлись на одной линии — так короче» | Separate rails or a visible overpass |
 | «Ступенька в один кубик — мелочь» | Two boxes in one column get one straight line. A stair means the ports never lined up |
 | «Узел декоративный, клик не нужен» | Every node id is in at least one step.highlight |

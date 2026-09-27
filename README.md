@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.5.4-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 [![npm](https://img.shields.io/badge/npm-%40gorand%2Fyou--dont--know-cb3837.svg)](https://www.npmjs.com/package/@gorand/you-dont-know)
 
@@ -68,23 +68,30 @@ about. Any chevron toggles a group by hand, and the `Detail` switch flips the
 whole canvas between `auto`, `all` and `step`. See
 [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 
+The chrome stays out of the diagram's way. The step rail is a dimension line
+down the left margin — a tick per step, the current one circled — and it opens
+its titles *over* the canvas on hover or keyboard focus, so the diagram never
+reflows. Narration and code sit in a dock the shell frames *around*: the scale
+comes from the larger of the two areas that clear it, and the diagram is moved
+off centre only as far as it takes to get out from under the panel. Everything
+read once rather than per step — the thesis, the catch, the naive alternative,
+the cost — is behind the `Brief` button.
+
 Default working copy for a repo session: `tmp/you-dont-know/<slug>/`.
 
-## Accents
+## Colour
 
-Lacquer surfaces. Node ink is always light (`--node-ink`). Primary is never traffic-light.
+The shell is built on the `<AG/>` design system: a void ground (`#0b0712`), Unbounded / Onest / JetBrains Mono, radii no larger than 6px, hairline strokes, and elevation by stepping the surface rather than by shadow. Three hues, each with one job:
 
-| kind in JSON | color |
-|--------------|--------|
-| `how` / `concept` / `api` | iris (violet) — default |
-| `architecture` / `repo` | glacier (blue) |
-| `security` / `vuln` | dusk (blue-violet) |
+| Token | | Role |
+|-------|---|------|
+| `--color-primary` | violet | focus rings, structural marks |
+| `--color-accent` | coral | the current material — this step, this node, this edge |
+| `--color-accent-2` | peach | status: a `boundary` node, the lesson's catch |
 
-The `kind` picks the accent; an optional `accent` in the JSON overrides it. The reader does not choose — the chrome names the kind rather than offering a palette.
+The shell does not repaint per lesson. `kind` sets the tone of one dot in the kicker (violet · muted ink · peach) and the chrome names the kind in words — the reader has nothing to choose. `accent` in the JSON is legacy: old values still parse so existing lessons rebuild untouched, but nothing repaints.
 
-Error / warning / success live in `--state-*` and never follow `data-accent`.
-
-Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). Card shells are rect, stadium, diamond, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
+Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). Card shells are rect, stadium, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
 
 ## Roadmap
 
@@ -94,7 +101,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.5.4** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.6.0** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 
