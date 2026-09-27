@@ -61,8 +61,11 @@ npm dist-tag add @gorand/you-dont-know@0.6.1 latest
 2. Merge the PR into `main` with a merge commit.
 3. `git checkout main && git pull`
 4. `npm run release` — it refuses if anything is off.
-5. `npm run release -- --tag` — creates the annotated tag on `main`'s tip,
-   with its message taken from the CHANGELOG.
+5. `npm run release -- --tag` — creates the annotated tag on `main`'s tip.
+   Its message is the paragraph the CHANGELOG section opens with. A section
+   that goes straight to `### Fixed` and a list has no such paragraph, so the
+   script refuses rather than quoting half a bullet: give it one with
+   `npm run release -- --tag -m "…"`.
 6. `git push origin vX.Y.Z`
 7. `npm publish`
 8. Make a GitHub Release from the tag, body = that CHANGELOG section:
@@ -85,4 +88,9 @@ It never publishes and never pushes. It fails, rather than warns, when:
 - the version is already on the registry.
 
 `--offline` skips the registry check. `--tag` adds the tag after the rest
-pass.
+pass, and `-m "…"` spells out its message instead of taking it from the
+CHANGELOG.
+
+**Writing a release section so the tag writes itself:** open it with one
+sentence of prose before the `###` subheadings. That sentence becomes the
+tag message and the first thing a reader sees on the GitHub release.
