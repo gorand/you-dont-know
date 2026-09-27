@@ -90,7 +90,7 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - `asides[].id` is `[A-Za-z0-9_-]+`. No nested `[[…]]`
 - Prose may use `` `identifier` ``; no HTML in JSON
 - Node `label` ≤ ~40 characters
-- Edges: the shell places split-row arrows on **separate rails** with a lacquer overpass. Do not pack four labels onto one shared bus in JSON either — keep labels short (see **The grid** below for how much room a label actually gets)
+- Edges: the shell places split-row arrows on **separate rails**, the overpass knocking a hole in the line beneath it. Do not pack four labels onto one shared bus in JSON either — keep labels short (see **The grid** below for how much room a label actually gets)
 
 ## Staged detail
 
