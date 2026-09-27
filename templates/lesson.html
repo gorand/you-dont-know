@@ -656,7 +656,10 @@
 
     /* ---- diagram -------------------------------------------------------- */
     .node { cursor: pointer; touch-action: manipulation; }
-    .node:focus-visible { outline: none; }
+    /* The reset has to be on :focus, not :focus-visible. A <g tabindex="0">
+       is not a button, so the UA draws its own ring on a plain mouse focus —
+       5px of system blue, a colour this palette does not contain. */
+    .node:focus { outline: none; }
     /* A fence's shell rect lives in the other render pass, so the ring has
        to be able to land on the hit rect too. */
     .node:focus-visible .node-shell,
@@ -757,7 +760,7 @@
     .disclose:focus-visible .disclose-mark.hint { opacity: 1; }
     /* Focus wins over hover, and it is violet — the role the system reserves
        for a focus ring. An outline on an SVG <g> is not dependable. */
-    .disclose:focus-visible { outline: none; }
+    .disclose:focus { outline: none; }
     .disclose:focus-visible .disclose-bg {
       stroke: var(--color-primary);
       stroke-width: 3;
