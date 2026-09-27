@@ -11,8 +11,8 @@
   "asides": [
     {
       "id": "color-lock",
-      "title": "Primary is never traffic-light",
-      "body": "`--primary` stays iris / glacier / dusk. `--state-error` on `boundary` does not follow the accent switcher. Node ink is `#f4f2ee` on achromatic fill."
+      "title": "Three hues, three fixed roles",
+      "body": "Three roles, fixed: `--color-primary` is focus and structure, `--color-accent` marks the current material, `--color-accent-2` is status. `boundary` is peach in every lesson. `kind` tones one dot and repaints nothing."
     },
     {
       "id": "group-parent",
@@ -69,7 +69,7 @@
     {
       "id": "runtime",
       "title": "Architecture glyphs",
-      "narration": "Lucide 24×24, `currentColor`, stroke 2. `boundary` keeps `--state-error`. `child` / `other` / `hoc` still alias.",
+      "narration": "Lucide 24×24, `currentColor`, stroke 2. `boundary` keeps `--color-accent-2`. `child` / `other` / `hoc` still alias.",
       "highlight": ["g-run", "provider", "host", "frame", "inbox", "action", "boundary", "junction", "subroutine"],
       "code": {
         "file": "templates/lesson.html",

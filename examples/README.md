@@ -2,7 +2,7 @@
 
 ## `how-promise`
 
-General `kind: "how"` lesson (iris, microtask queue).
+General `kind: "how"` lesson (microtask queue).
 
 ## `palette`
 
@@ -10,11 +10,11 @@ Abstract debug surface: ISO shapes, Lucide architecture glyphs, group fences, fo
 
 ## `inject-pipeline`
 
-Real `kind: "architecture"` lesson (glacier, ru), grounded in this skill's own build pipeline (`SKILL.md` → `inject-lesson.mjs` → `templates/lesson.html`). Unlike `palette`, content is realistic: 11 nodes across 9 kinds (`start`/`process`/`decision`/`group`/`file`/`subroutine`/`boundary`/`action`/`inbox`), a `group` with a nested `file`, two `back` edges, one `dashed` edge, 8 steps, 6 asides, full-length Cyrillic narration, and code excerpts up to 12 lines. Use this one — not `palette` — to judge real-world layout, wrapping, and inspector-panel behavior; `palette` stays the shape-vocabulary reference.
+Real `kind: "architecture"` lesson (ru), grounded in this skill's own build pipeline (`SKILL.md` → `inject-lesson.mjs` → `templates/lesson.html`). Unlike `palette`, content is realistic: 11 nodes across 9 kinds (`start`/`process`/`decision`/`group`/`file`/`subroutine`/`boundary`/`action`/`inbox`), a `group` with a nested `file`, two `back` edges, one `dashed` edge, 8 steps, 6 asides, full-length Cyrillic narration, and code excerpts up to 12 lines. Use this one — not `palette` — to judge real-world layout, wrapping, and dock behavior; `palette` stays the shape-vocabulary reference.
 
 ## `dense-request`
 
-The staged-detail reference: 31 nodes (25 of them inside groups), 6 groups, 29 edges, `detail: "progressive"` (ru, iris). Deliberately past the point where one flat diagram stops being readable — the top level is six blocks, each step opens the group it narrates, and the rest stay folded. Use this one to judge the canvas viewport (Ctrl+wheel zoom, Shift+wheel, drag), the collapsed-block treatment, merged `×N` edges, and the auto-framing floor that keeps a step legible instead of fitting everything to nothing. Content is canonical, not from this repo.
+The staged-detail reference: 31 nodes (25 of them inside groups), 6 groups, 29 edges, `detail: "progressive"` (ru). Deliberately past the point where one flat diagram stops being readable — the top level is six blocks, each step opens the group it narrates, and the rest stay folded. Use this one to judge the canvas viewport (Ctrl+wheel zoom, Shift+wheel, drag), the collapsed-block treatment, merged `×N` edges, and the auto-framing floor that keeps a step legible instead of fitting everything to nothing. Content is canonical, not from this repo.
 
 Build (from the skill root):
 
