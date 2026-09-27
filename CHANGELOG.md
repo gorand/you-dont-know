@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] — 2026-09-27
+
+Tooling only, and it fixes something 0.6.3 shipped with. The published
+artifact is byte-identical to 0.6.3.
+
+### Fixed
+
+- **`npm run release --tag` no longer invents a tag message from half a
+  bullet.** v0.6.3 was tagged `0.6.3 — - The fold/unfold mark no longer moves
+  when you use it. It sat at the`, because the script took the first
+  non-heading line of the release section and cut it at 72 characters — and
+  that section opens with `### Fixed` and a list. A section either opens with
+  a paragraph that summarises it, in which case that paragraph is the
+  summary, or it has none to borrow; the script now refuses in the second
+  case and says how to supply one.
+- The lead paragraph is joined across the lines it wraps over instead of
+  being read one line deep, kept whole when it fits, and cut on a word rather
+  than inside one when it does not.
+
+### Added
+
+- `--message` / `-m` on `scripts/release.mjs`, to spell the tag message out.
+- `RELEASING.md` says where a tag message comes from, and that opening a
+  CHANGELOG section with a sentence of prose makes it write itself.
+
 ## [0.6.3] — 2026-09-27
 
 ### Fixed
