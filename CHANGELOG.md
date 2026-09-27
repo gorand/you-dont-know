@@ -5,6 +5,39 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] — 2026-09-27
+
+Measured against the rendered page rather than read off the palette. No
+design intent in this one — it fixes what the numbers said about 0.6.0.
+
+### Fixed
+
+- **The diagram is reachable from the keyboard.** Of 12 nodes, none had
+  `tabindex`, a role or an accessible name — the group chevrons were wired
+  but the nodes were not, so a keyboard user could fold and unfold groups and
+  could not open a single step from the diagram. Every node is now
+  `role="button"`, `tabindex="0"`, activated by `Enter` and `Space`, and
+  named by what activating it does rather than only by its label. The `<svg>`
+  itself had `role="img"` with no name and took the lesson's title.
+- An expanded group fence renders as two `<g class="node">`, so only the pass
+  carrying the hit rect is a control; the other is `aria-hidden`. Without
+  that split one fence sat in the tab order twice under the same name.
+- **Five texts were below WCAG AA** (4.5:1 for small text): line numbers
+  2.91:1, the canvas marginalia and the `Ctrl`+wheel hint 3.29:1, a code
+  comment 2.91:1, a code keyword 4.14:1. Now 6.69 · 5.39 · 5.39 · 5.2 · 7.17.
+  Four were caused by dimming `--color-ink-soft` with `color-mix(… N%,
+  transparent)`, which costs far more contrast than the percentage suggests —
+  they read the token directly and lose weight to a small `opacity` instead.
+  The fifth was `--color-primary` doing duty as body text, which is not its
+  role; it is lifted toward the ink for code keywords only.
+
+### Known and not fixed
+
+- Six edge labels land on a group fence's stroke rather than in the gap
+  beside it (`TLS 1.3`, `400`, `проброс`, `остаток`, `та же tx`, `201` on
+  `dense-request`). That is edge routing, not styling, and it deserves its
+  own pass with a geometric checker the way rounds 6 and 7 had.
+
 ## [0.6.0] — 2026-09-27
 
 The artifact is redesigned onto the `<AG/>` design system (on-1.ru). The

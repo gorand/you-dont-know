@@ -344,7 +344,8 @@
       font-size: var(--text-3xs);
       letter-spacing: var(--track-5);
       text-transform: uppercase;
-      color: color-mix(in srgb, var(--color-ink-soft) 60%, transparent);
+      color: var(--color-ink-soft);
+      opacity: 0.82;
     }
     .hint {
       position: absolute;
@@ -358,7 +359,8 @@
       font-family: var(--font-mono);
       font-size: var(--text-3xs);
       letter-spacing: var(--track-1);
-      color: color-mix(in srgb, var(--color-ink-soft) 60%, transparent);
+      color: var(--color-ink-soft);
+      opacity: 0.82;
     }
     .hint kbd {
       font-family: var(--font-mono);
@@ -584,7 +586,7 @@
       min-width: 0;
     }
     .ln {
-      color: color-mix(in srgb, var(--color-ink-soft) 55%, transparent);
+      color: var(--color-ink-soft);
       text-align: right;
       padding: 0 0.7rem 0 var(--space-1);
       user-select: none;
@@ -600,10 +602,13 @@
     }
     /* Three hues, all from the tokens. Coral stays out of the code: inside
        the dock it would read as something the reader can click. */
-    .tok-kw { color: var(--color-primary); }
+    /* --color-primary is a focus/structure colour, not a text one: straight
+       from the token it lands at 4.14:1 on the code surface. Lifted toward
+       the ink so a keyword clears AA without leaving the violet role. */
+    .tok-kw { color: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink)); }
     .tok-str { color: var(--color-accent-2); }
     .tok-num { color: color-mix(in srgb, var(--color-primary) 55%, var(--color-ink)); }
-    .tok-cmt { color: color-mix(in srgb, var(--color-ink-soft) 55%, transparent); font-style: italic; }
+    .tok-cmt { color: var(--color-ink-soft); opacity: 0.85; font-style: italic; }
     .tok-type { color: var(--color-ink-soft); }
 
     /* ---- zoombar -------------------------------------------------------- */
@@ -651,6 +656,14 @@
 
     /* ---- diagram -------------------------------------------------------- */
     .node { cursor: pointer; touch-action: manipulation; }
+    .node:focus-visible { outline: none; }
+    /* A fence's shell rect lives in the other render pass, so the ring has
+       to be able to land on the hit rect too. */
+    .node:focus-visible .node-shell,
+    .node:focus-visible .hit {
+      stroke: var(--color-primary);
+      stroke-width: 3;
+    }
     .node .node-shell {
       fill: var(--color-surface);
       stroke: var(--color-line);
@@ -1702,7 +1715,7 @@
         cost: "Cost", steps: "Steps", more: "More",
         zoomIn: "Zoom in (+)", zoomOut: "Zoom out (−)", zoomReset: "Zoom 100% (1)",
         fit: "Fit the whole diagram (0)", focus: "Zoom to this step (2)",
-        expand: "Expand", collapse: "Collapse",
+        expand: "Expand", collapse: "Collapse", opensStep: "opens step",
         detailTitle: "Detail: auto · all open · current step only",
         detail: { auto: "auto", full: "all", step: "step" },
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
@@ -1720,7 +1733,7 @@
         cost: "Цена", steps: "Шаги", more: "Подробнее",
         zoomIn: "Приблизить (+)", zoomOut: "Отдалить (−)", zoomReset: "Масштаб 100% (1)",
         fit: "Вписать схему целиком (0)", focus: "Приблизить к текущему шагу (2)",
-        expand: "Раскрыть", collapse: "Свернуть",
+        expand: "Раскрыть", collapse: "Свернуть", opensStep: "открывает шаг",
         detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
         detail: { auto: "авто", full: "всё", step: "шаг" },
         hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
@@ -3026,6 +3039,16 @@
       </g>`;
     }
 
+    function nodeName(n) {
+      const t = ui();
+      const label = n.label || n.id;
+      if (n._collapsed) return `${t.expand} — ${label} (${n._kids})`;
+      const si = stepForNode(n.id);
+      const step = si >= 0 && (LESSON.steps || [])[si];
+      const title = step ? String(step.title || "").replace(/`/g, "") : "";
+      return title ? `${label} — ${t.opensStep}: ${title}` : label;
+    }
+
     function renderNode(n, live, part) {
       const on = live.has(n.id) ? "on" : "";
       const k = kindOf(n);
@@ -3053,7 +3076,14 @@
         ${label}
         <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>
         ${badge}`;
-      return `<g class="node ${on}${n._collapsed ? " collapsed" : ""} kind-${escapeHtml(k)}" data-id="${n.id}">
+      // An expanded fence renders as TWO <g class="node">, so only the late
+      // pass — the one carrying the full-size hit rect — may be a control.
+      // Naming both would put one fence in the tab order twice under the
+      // same name.
+      const a11y = part === "shell"
+        ? 'aria-hidden="true"'
+        : `role="button" tabindex="0" aria-label="${escapeHtml(nodeName(n))}"`;
+      return `<g class="node ${on}${n._collapsed ? " collapsed" : ""} kind-${escapeHtml(k)}" data-id="${n.id}" ${a11y}>
         ${shellHtml}
         ${contentHtml}
       </g>`;
@@ -3446,17 +3476,26 @@
       const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live)).join("");
       svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
       svg.querySelectorAll(".node").forEach((el) => {
-        el.addEventListener("click", (ev) => {
-          if (ev.target.closest(".disclose")) return;
-          if (justDragged) return;
+        const activate = () => {
           const id = el.getAttribute("data-id");
           // A folded block is a closed container first and a step link
-          // second: clicking it means "open this", not "jump somewhere
+          // second: activating it means "open this", not "jump somewhere
           // else". Its step stays reachable from the rail, and from the
           // fence itself once it is open.
           if (el.classList.contains("collapsed")) { setCollapsed(id, false); return; }
           const stepIdx = stepForNode(id);
           if (stepIdx >= 0) show(stepIdx);
+        };
+        el.addEventListener("click", (ev) => {
+          if (ev.target.closest(".disclose")) return;
+          if (justDragged) return;
+          activate();
+        });
+        el.addEventListener("keydown", (ev) => {
+          if (ev.key !== "Enter" && ev.key !== " ") return;
+          // Space would otherwise pan the page out from under the reader.
+          ev.preventDefault();
+          activate();
         });
       });
       svg.querySelectorAll(".disclose").forEach((el) => {
@@ -3538,6 +3577,8 @@
       $("lbl-back").textContent = t.back;
       $("lbl-next").textContent = t.next;
       $("stage-copy").textContent = t.stage;
+      // role="img" with no name announces as an unlabelled graphic.
+      $("flow").setAttribute("aria-label", `${String(LESSON.title || "").replace(/`/g, "")} — ${t.stage}`);
       $("lbl-problem").textContent = t.problem;
       $("lbl-why").textContent = t.why;
       $("lbl-cost").textContent = t.cost;
