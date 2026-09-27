@@ -3,8 +3,9 @@
 // one question that matters before either: is this tree exactly what the
 // version on it claims to be?
 //
-//   node scripts/release.mjs            check the current checkout
-//   node scripts/release.mjs --tag      also create the annotated tag
+//   node scripts/release.mjs                    check the current checkout
+//   node scripts/release.mjs --tag              also create the annotated tag
+//   node scripts/release.mjs --tag -m "…"       with the tag message spelled out
 //
 // It is written to be runnable from a fresh clone on a machine that has
 // never seen this project, including from a detached HEAD at a tag, which is
@@ -12,9 +13,12 @@
 import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 
-const args = new Set(process.argv.slice(2));
-const WANT_TAG = args.has("--tag");
-const SKIP_NET = args.has("--offline");
+const argv = process.argv.slice(2);
+const has = (f) => argv.includes(f);
+const valueOf = (f) => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined; };
+const WANT_TAG = has("--tag");
+const SKIP_NET = has("--offline");
+const MESSAGE = valueOf("--message") || valueOf("-m");
 
 const git = (...a) => execFileSync("git", a, { encoding: "utf8" }).trim();
 // Asking about a tag that is not there is an expected answer, not an error —
@@ -107,9 +111,47 @@ if (problems.length) {
   process.exit(1);
 }
 
+// The tag's own message. A release section either opens with a paragraph
+// that summarises it, in which case that paragraph IS the summary, or it
+// goes straight to `### Fixed` and a list — and then the section has no
+// summary to borrow. Taking the first line regardless is how v0.6.3 got
+// tagged "0.6.3 — - The fold/unfold mark no longer moves when you use it. It
+// sat at the": a bullet, cut mid-sentence at a fixed 72 characters.
+function leadParagraph(section) {
+  const para = [];
+  for (const raw of section.split("\n").slice(1)) {
+    const line = raw.trim();
+    if (!line) { if (para.length) break; continue; }   // blank closes the paragraph
+    if (line.startsWith("#")) { if (para.length) break; continue; }
+    if (/^[-*+]\s/.test(line)) break;                  // a list ends it, or precedes it
+    para.push(line);                                   // the paragraph is wrapped: join it
+  }
+  return para.length ? para.join(" ") : null;
+}
+
+// Keep the whole lead when it fits — "Tooling only" alone says less than
+// "Tooling only. The published artifact is byte-identical to 0.6.1." Fall
+// back to its first sentence, and only then cut, on a word and never inside
+// one.
+function summarise(text, limit) {
+  const plain = text.replace(/[*_`]/g, "").trim();
+  if (plain.length <= limit) return plain.replace(/\.$/, "");
+  const stop = plain.search(/\.\s/);
+  const sentence = stop > 0 ? plain.slice(0, stop + 1) : plain;
+  if (sentence.length <= limit) return sentence.replace(/\.$/, "");
+  const cut = sentence.lastIndexOf(" ", limit);
+  return sentence.slice(0, cut > 0 ? cut : limit).replace(/[,;:]$/, "") + "…";
+}
+
 if (WANT_TAG && tagState === "absent") {
-  const headline = (changelog.split(`## [${version}]`)[1] || "").split("\n").slice(1).find((l) => l.trim() && !l.startsWith("#")) || "";
-  execFileSync("git", ["tag", "-a", tag, "-m", `${version} — ${headline.trim().replace(/[*_`]/g, "").slice(0, 72)}`]);
+  const section = changelog.split(`## [${version}]`)[1].split(/^## \[/m)[0];
+  const lead = MESSAGE || leadParagraph(section);
+  if (!lead) {
+    console.error(`\n  FAIL  the ${version} section opens with a list, so there is no summary to`);
+    console.error("        take for the tag. Give one: npm run release -- --tag -m \"…\"");
+    process.exit(1);
+  }
+  execFileSync("git", ["tag", "-a", tag, "-m", `${version} — ${MESSAGE ? MESSAGE : summarise(lead, 96)}`]);
   console.log(`\n  made  annotated tag ${tag}`);
 }
 
