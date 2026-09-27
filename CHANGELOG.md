@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] — 2026-09-27
+
+### Fixed
+
+- **The contract described `decision` as a diamond.** It has rendered as the
+  same rounded rect as `process`, distinguished by a Lucide fork glyph, since
+  the round-3 shape pass — the rotated polygon was the one shape breaking an
+  otherwise rectilinear vocabulary, and its slanted sides cramped the label.
+  The shape table and the `palette` fixture's own prose had gone on saying
+  diamond.
+- Edge routing is described by what it does rather than by the surface token
+  it used to be painted with: where two runs cross, the upper one knocks a
+  hole in the lower.
+
+### Changed
+
+- `.playwright-mcp/` is ignored, alongside the `.playwright-cli/` that was
+  already there — both are scratch output from screenshot runs.
+
 ## [0.5.3] — 2026-09-04
 
 ### Removed
