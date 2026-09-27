@@ -68,7 +68,7 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 |------|--------|-----|
 | `process` (`child`, `other`) | rounded rect | step / module |
 | `start` | stadium | terminator |
-| `decision` | diamond | branch |
+| `decision` | rounded rect + fork glyph | branch |
 | `cloud` | stadium + Lucide cloud | network / SaaS |
 | `queue` | stadium | delay / queue |
 | `folder` / `file` | rounded rect + Lucide glyph | tree / path |
