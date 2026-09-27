@@ -5,6 +5,42 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] — 2026-09-27
+
+### Fixed
+
+- **The fold/unfold mark no longer moves when you use it.** It sat at the
+  top-right of an open fence but dead centre on the right edge of a folded
+  block, so the one control whose entire job is to toggle jumped 40px on
+  every toggle. It is now the design system's numbered callout at the
+  top-right corner in both states — a disc filled with the canvas ground so
+  it knocks a hole in the border it straddles, which is what makes it read as
+  chrome applied on top rather than as content.
+- Folded, the mark used to sit in the label's own row, so a block read as a
+  list item with a trailing control instead of as a container. The label gets
+  back the 40px that were reserved for it.
+- The right edge at mid-height is where horizontal edges arrive, and an
+  arrowhead measured 6px from the old mark. Across all seven steps of
+  `dense-request`, no arrowhead now lands within 6px of a disc.
+- A pill with a chevron was `<select>` vocabulary in a language otherwise
+  made of corner marks, callouts and dimension lines — and it dressed a count
+  as a button.
+- **A bare numeral did not say what it counted**, and the step rail draws an
+  identical disc with a numeral in it. A folded group reads `+N` now, which
+  separates it from the rail's zero-padded `04` at a glance.
+- **Open and folded show different things**, because they know different
+  things. Open, the children are on screen and counting them again is noise,
+  while the disc is the only way to close the fence — so it carries the
+  chevron alone — up to close, down to open. Folded, the count is all that is
+  known about what is hidden, so it leads and the chevron arrives on hover
+  and focus. Focus stays violet and outranks the coral hover.
+- **A mouse click no longer leaves the system focus ring on a node.** A
+  `<g tabindex="0">` is not a button, so the UA paints its own ring on a
+  plain `:focus` instead of waiting for `:focus-visible`; clicking a node
+  left 5px of `rgb(153, 200, 255)` — a blue absent from this palette — until
+  focus moved on. Introduced in 0.6.1, where the reset only covered
+  `:focus-visible`.
+
 ## [0.6.2] — 2026-09-27
 
 Tooling only. The published artifact is byte-identical to 0.6.1.

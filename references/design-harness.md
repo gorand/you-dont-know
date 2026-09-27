@@ -340,6 +340,69 @@ Two notes for whoever measures next:
   *stroke*, which is 6 cases: `TLS 1.3`, `400`, `проброс`, `остаток`,
   `та же tx`, `201`. Still open — it is edge routing, not styling.
 
+## Round 10 — the disclosure mark
+
+Raised from a screenshot: the fold/unfold control read as a form element and
+sat in the wrong place. Six findings, and they compounded.
+
+- **It moved with its own state.** `y = open ? n.y + 6 : n.y + (n.h - bh) / 2`
+  — top-right when open, centred on the right edge when folded. A control
+  whose only job is to toggle jumped 40px on every toggle. This was the
+  worst of the six and the least visible in code review.
+- Folded, it sat in the label's optical row, so the block read as a list item
+  with a trailing control rather than as a container.
+- A pill with a chevron is `<select>` vocabulary, foreign to a language made
+  of corner marks, callouts, dimension lines and detail bubbles.
+- The count is information wearing a button.
+- It landed where horizontal edges arrive: the right edge at mid-height is
+  where ports sit, and an arrowhead measured 6px from it.
+- It duplicated the stack ghost, which already offsets up-right by half a
+  cell to say "more underneath".
+
+Now the design system's numbered callout at the top-right corner in both
+states, filled with the canvas ground so it knocks a hole in the border it
+straddles.
+
+Two things the first pass got wrong, both caught by looking at it again:
+
+- **A bare numeral does not say what it counts**, and the step rail draws an
+  identical disc with a numeral in it. Folded groups read `+N` now; the rail's
+  zero-padded `04` and a group's `+4` separate at a glance.
+- **Open and folded want different content.** Open, the children are on
+  screen: counting them again is noise, and the disc is the only way to close
+  the fence — so it carries the glyph alone. Folded, the count is all that is
+  known about what is hidden, so it leads and the glyph waits for hover or
+  focus. The symmetry of "count at rest, glyph on hover" looked tidy and
+  served neither state. Carrying both when open was tried in between and
+  dropped: two marks crowd a 26px disc, and the second is information the
+  reader already has. A control that shows everything it knows is not
+  thorough, it is loud.
+
+The glyph is **one** chevron, up to close and down to open. A converging
+pair says "collapse" more literally and was tried first, but at the size a
+26px disc allows, its two tips sit close enough to merge into an X — and an
+X beside a numeral reads as "times N". Widening the gap to 5.6px fixed the
+reading and cost the disc its Callout size to seat both marks. A single
+chevron has the room to stay a chevron at 26px, which is the size the design
+system actually specifies. Two attempts to make a two-part glyph fit are two
+more than the problem deserved.
+
+Also found here, and unrelated to the mark: **a `<g tabindex="0">` is not a
+button.** The UA draws its focus ring on a plain `:focus` rather than waiting
+for `:focus-visible` the way it does for real controls, so a mouse click on a
+node left 5px of system blue — `rgb(153, 200, 255)`, a colour this palette
+does not contain — until focus moved on. The reset written in round 9 only
+covered `:focus-visible`. Reset `:focus` on any focusable SVG group, and keep
+the real ring on `:focus-visible`.
+
+What the measurement taught, and worth keeping: **a negative clearance
+between an edge and an opaque mark is not automatically a collision.** The
+disc paints after the edges, so a line passing behind it is occluded — which
+is the knock-out effect, not a defect. The test that means something is
+whether an *arrowhead* disappears under it. Seven of those against the whole
+path, zero against endpoints; the first number would have sent the design
+back for no reason.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**
