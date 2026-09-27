@@ -344,7 +344,8 @@
       font-size: var(--text-3xs);
       letter-spacing: var(--track-5);
       text-transform: uppercase;
-      color: color-mix(in srgb, var(--color-ink-soft) 60%, transparent);
+      color: var(--color-ink-soft);
+      opacity: 0.82;
     }
     .hint {
       position: absolute;
@@ -358,7 +359,8 @@
       font-family: var(--font-mono);
       font-size: var(--text-3xs);
       letter-spacing: var(--track-1);
-      color: color-mix(in srgb, var(--color-ink-soft) 60%, transparent);
+      color: var(--color-ink-soft);
+      opacity: 0.82;
     }
     .hint kbd {
       font-family: var(--font-mono);
@@ -584,7 +586,7 @@
       min-width: 0;
     }
     .ln {
-      color: color-mix(in srgb, var(--color-ink-soft) 55%, transparent);
+      color: var(--color-ink-soft);
       text-align: right;
       padding: 0 0.7rem 0 var(--space-1);
       user-select: none;
@@ -600,10 +602,13 @@
     }
     /* Three hues, all from the tokens. Coral stays out of the code: inside
        the dock it would read as something the reader can click. */
-    .tok-kw { color: var(--color-primary); }
+    /* --color-primary is a focus/structure colour, not a text one: straight
+       from the token it lands at 4.14:1 on the code surface. Lifted toward
+       the ink so a keyword clears AA without leaving the violet role. */
+    .tok-kw { color: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink)); }
     .tok-str { color: var(--color-accent-2); }
     .tok-num { color: color-mix(in srgb, var(--color-primary) 55%, var(--color-ink)); }
-    .tok-cmt { color: color-mix(in srgb, var(--color-ink-soft) 55%, transparent); font-style: italic; }
+    .tok-cmt { color: var(--color-ink-soft); opacity: 0.85; font-style: italic; }
     .tok-type { color: var(--color-ink-soft); }
 
     /* ---- zoombar -------------------------------------------------------- */
