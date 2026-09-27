@@ -717,27 +717,45 @@
     }
     .node.on .node-stack { stroke: color-mix(in srgb, var(--color-accent) 50%, var(--color-line)); }
     .disclose { cursor: pointer; touch-action: manipulation; }
+    /* Filled with the canvas ground, not a surface: that is what knocks the
+       hole in the border the disc straddles. --stroke-tick is the drafting
+       weight the design system gives a callout ring. */
     .disclose-bg {
-      fill: var(--color-surface-2);
+      fill: var(--color-bg);
       stroke: var(--color-line);
-      stroke-width: var(--stroke-hairline);
-      transition: fill var(--dur-hover) var(--ease-out), stroke var(--dur-hover) var(--ease-out);
+      stroke-width: var(--stroke-tick);
+      transition: stroke var(--dur-hover) var(--ease-out), stroke-width var(--dur-hover) var(--ease-out);
     }
     .disclose:hover .disclose-bg { stroke: var(--color-accent); }
+    /* At rest the disc carries a count, which is information and should not
+       shout; the chevron — the invitation — arrives on hover and on focus. */
+    .disclose-n {
+      fill: var(--color-ink-soft);
+      font: 500 11px var(--font-mono);
+      pointer-events: none;
+      dominant-baseline: middle;
+      transition: opacity var(--dur-hover) var(--ease-out);
+    }
     .disclose-mark {
       fill: none;
-      stroke: var(--color-ink-soft);
+      stroke: var(--color-accent);
       stroke-width: var(--stroke-mark);
       stroke-linecap: round;
       stroke-linejoin: round;
       pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--dur-hover) var(--ease-out);
     }
-    .disclose:hover .disclose-mark { stroke: var(--color-accent); }
-    .disclose-n {
-      fill: var(--color-ink-soft);
-      font: 500 10px var(--font-mono);
-      pointer-events: none;
-      dominant-baseline: middle;
+    .disclose:hover .disclose-n,
+    .disclose:focus-visible .disclose-n { opacity: 0; }
+    .disclose:hover .disclose-mark,
+    .disclose:focus-visible .disclose-mark { opacity: 1; }
+    /* Focus wins over hover, and it is violet — the role the system reserves
+       for a focus ring. An outline on an SVG <g> is not dependable. */
+    .disclose:focus-visible { outline: none; }
+    .disclose:focus-visible .disclose-bg {
+      stroke: var(--color-primary);
+      stroke-width: 3;
     }
     .node-ico {
       overflow: visible;
@@ -2822,22 +2840,32 @@
       return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
     }
 
+    // A drafting callout straddling the box's top-right corner, in both
+    // states and at one position. It used to move — top-right when open,
+    // centred on the right edge when folded — so the one control whose whole
+    // job is to toggle jumped 40px on every toggle. Centred on the right
+    // edge it also sat in the label's own row, and landed where horizontal
+    // edges arrive: an arrowhead measured 6px from it on `dense-request`.
+    //
+    // Straddling the border is what makes it read as chrome applied on top
+    // rather than as content: the disc knocks a hole in the line it crosses.
+    // It is held 4px below the corner so its upper half stays out of the
+    // corridor the row gap reserves for edge runs.
+    const DISC_R = 13;
     function discloseMark(n) {
       if (!n._kids) return "";
       const t = ui();
       const open = !n._collapsed;
-      const bw = 32, bh = 18;
-      const x = n.x + n.w - bw - 6;
-      const y = open ? n.y + 6 : n.y + (n.h - bh) / 2;
-      const cy = y + bh / 2;
+      const cx = n.x + n.w - DISC_R - 5;
+      const cy = n.y + 4;
       const chev = open
-        ? `M ${x + 19} ${cy + 2.4} L ${x + 22.5} ${cy - 2.2} L ${x + 26} ${cy + 2.4}`
-        : `M ${x + 19} ${cy - 2.4} L ${x + 22.5} ${cy + 2.2} L ${x + 26} ${cy - 2.4}`;
+        ? `M ${cx - 4.2} ${cy + 2} L ${cx} ${cy - 2.4} L ${cx + 4.2} ${cy + 2}`
+        : `M ${cx - 4.2} ${cy - 2} L ${cx} ${cy + 2.4} L ${cx + 4.2} ${cy - 2}`;
       const name = `${open ? t.collapse : t.expand} — ${n.label || n.id} (${n._kids})`;
       return `<g class="disclose" data-group="${escapeHtml(n.id)}" role="button" tabindex="0"
           aria-expanded="${open}" aria-label="${escapeHtml(name)}">
-        <rect class="disclose-bg" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="9"/>
-        <text class="disclose-n" x="${x + 10}" y="${cy + 0.5}" text-anchor="middle">${n._kids}</text>
+        <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
+        <text class="disclose-n" x="${cx}" y="${cy + 0.5}" text-anchor="middle">${n._kids}</text>
         <path class="disclose-mark" d="${chev}"/>
       </g>`;
     }
@@ -2860,7 +2888,7 @@
       const foY = group ? n.y + 2 : n.y;
       const foH = group ? 50 : n.h;
       const badge = discloseMark(n);
-      const labelW = Math.max(24, n.w - 30 - (badge ? 40 : 0));
+      const labelW = Math.max(24, n.w - 30 - (badge && group ? 40 : 0));
       const label = n.label
         ? `<foreignObject x="${n.x + 26}" y="${foY}" width="${labelW}" height="${foH}" color="#f4f2ee">
             <div xmlns="http://www.w3.org/1999/xhtml" class="node-label" style="color:#f4f2ee;-webkit-text-fill-color:#f4f2ee"><span class="txt">${escapeHtml(n.label)}</span></div>
