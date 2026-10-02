@@ -871,6 +871,26 @@
     .edge-label.tone-accent-2 { fill: var(--color-accent-2); }
     .edge-label.live { fill: var(--color-accent); }
     .token { fill: var(--color-accent); }
+    /* Where the thing you just folded or unfolded went. The design system's
+       viewfinder corners close in on its new place once, then let go —
+       violet, because this marks focus, not the current material. Under
+       reduced motion the corners simply stand there for the same time. */
+    .locator {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: var(--stroke-mark);
+      stroke-linecap: square;
+      pointer-events: none;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: lock-on 1.5s var(--ease-out) 0.18s both;
+    }
+    @keyframes lock-on {
+      0% { opacity: 0; transform: scale(1.22); }
+      22% { opacity: 1; transform: scale(1); }
+      72% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1); }
+    }
 
     /* ---- asides --------------------------------------------------------- */
     .fn {
@@ -3118,8 +3138,100 @@
       if (box && !boxVisible(box)) setView(viewFor(inflate(box, 32), VIEW.s), true);
     }
 
+    // A fold, an unfold, or a step that opens another group re-lays the
+    // whole canvas out. Cut straight to the new picture and the reader has
+    // to find their place in it again, so the change is shown instead:
+    // whatever stayed glides from where it was, what was just unfolded
+    // comes out of the block that held it, what was just folded slides
+    // into the block that now stands for it, and the edges — which cannot
+    // be in two places at once — fade back in once the boxes have landed.
+    // Driven through the SVG `transform` attribute, not CSS: a CSS
+    // transform on a <g> holding a foreignObject misplaces it in Safari.
+    let ANCHOR_OF = {};
+    let relayoutAnim = 0;
+    const RELAYOUT_MS = 420;
+    const centreOf = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+
+    function animateRelayout(svg, prevBox, prevAnchor, anchorOf, oldEls) {
+      cancelAnimationFrame(relayoutAnim);
+      if (REDUCE_MOTION || !Object.keys(prevBox).length) return;
+      const items = [];
+      svg.querySelectorAll(".node[data-id]").forEach((el) => {
+        const id = el.getAttribute("data-id");
+        const now = NODE_BOX[id];
+        if (!now) return;
+        const fresh = !prevBox[id];
+        const was = prevBox[id] || prevBox[prevAnchor[id]];
+        if (!was) { items.push({ el, x0: 0, y0: 0, x1: 0, y1: 0, o0: 0, o1: 1 }); return; }
+        const a = centreOf(was);
+        const b = centreOf(now);
+        if (!fresh && Math.abs(a.x - b.x) + Math.abs(a.y - b.y) < 0.5) return;
+        items.push({ el, x0: a.x - b.x, y0: a.y - b.y, x1: 0, y1: 0, o0: fresh ? 0 : 1, o1: 1 });
+      });
+      const ghosts = document.createElementNS(svg.namespaceURI, "g");
+      ghosts.setAttribute("aria-hidden", "true");
+      oldEls.forEach((els, id) => {
+        if (NODE_BOX[id]) return;
+        const was = prevBox[id];
+        const into = NODE_BOX[anchorOf[id]];
+        if (!was || !into) return;
+        const a = centreOf(was);
+        const b = centreOf(into);
+        els.forEach((el) => {
+          el.removeAttribute("tabindex");
+          el.removeAttribute("role");
+          ghosts.append(el);
+          items.push({ el, x0: 0, y0: 0, x1: b.x - a.x, y1: b.y - a.y, o0: 1, o1: 0 });
+        });
+      });
+      if (!items.length) return;
+      // Under the live boxes, so what folds away disappears INTO its block.
+      svg.insertBefore(ghosts, svg.querySelector(".node:not(.kind-group), .node.collapsed"));
+      const lines = [...svg.querySelectorAll(".edge, .edge-halo, .edge-label, .token")];
+      const t0 = performance.now();
+      const frame = (now) => {
+        const p = Math.min(1, (now - t0) / RELAYOUT_MS);
+        const e = 1 - Math.pow(1 - p, 3);
+        items.forEach((it) => {
+          const x = it.x0 + (it.x1 - it.x0) * e;
+          const y = it.y0 + (it.y1 - it.y0) * e;
+          it.el.setAttribute("transform", `translate(${r2(x)} ${r2(y)})`);
+          if (it.o0 !== it.o1) it.el.style.opacity = String(it.o0 + (it.o1 - it.o0) * e);
+        });
+        const lo = String(Math.max(0, (p - 0.45) / 0.55));
+        lines.forEach((el) => { el.style.opacity = lo; });
+        if (p < 1) { relayoutAnim = requestAnimationFrame(frame); return; }
+        items.forEach((it) => { it.el.removeAttribute("transform"); it.el.style.opacity = ""; });
+        lines.forEach((el) => { el.style.opacity = ""; });
+        ghosts.remove();
+      };
+      // The first frame is applied now, before the browser paints the new
+      // layout — otherwise it flashes once in its final state.
+      frame(t0);
+    }
+
+    function locate(svg, id) {
+      const box = NODE_BOX[id];
+      if (!box) return;
+      const x = box.x - 6;
+      const y = box.y - 6;
+      const w = box.w + 12;
+      const h = box.h + 12;
+      const l = Math.min(14, w / 3, h / 3);
+      const mark = document.createElementNS(svg.namespaceURI, "path");
+      mark.setAttribute("class", "locator");
+      mark.setAttribute("aria-hidden", "true");
+      mark.setAttribute("d", `M ${x} ${y + l} V ${y} H ${x + l} M ${x + w - l} ${y} H ${x + w} V ${y + l} `
+        + `M ${x + w} ${y + h - l} V ${y + h} H ${x + w - l} M ${x + l} ${y + h} H ${x} V ${y + h - l}`);
+      svg.append(mark);
+      setTimeout(() => mark.remove(), 1900);
+    }
+
     function renderFlow(highlight, step, keep) {
+      const prevBox = NODE_BOX;
+      const prevAnchor = ANCHOR_OF;
       const graph = visibleGraph(collapsedSet(highlight, step));
+      ANCHOR_OF = graph.anchorOf;
       const nodes = layoutNodes(graph.nodes, graph.edges);
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
       const edgesAll = graph.edges;
@@ -3210,7 +3322,13 @@
       const fenceShellEls = fences.map((n) => renderNode(n, live, "shell")).join("");
       const fenceLabelEls = fences.map((n) => renderNode(n, live, "content")).join("");
       const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live)).join("");
+      const oldEls = new Map();
+      svg.querySelectorAll(".node[data-id]").forEach((el) => {
+        const id = el.getAttribute("data-id");
+        oldEls.set(id, (oldEls.get(id) || []).concat(el));
+      });
       svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
+      animateRelayout(svg, prevBox, prevAnchor, graph.anchorOf, oldEls);
       svg.querySelectorAll(".node").forEach((el) => {
         const activate = () => {
           const id = el.getAttribute("data-id");
@@ -3247,6 +3365,7 @@
       });
       syncDetailUi();
       syncViewport([...live], keep);
+      if (keep) locate(svg, keep);
     }
 
     function stepForNode(id) {
