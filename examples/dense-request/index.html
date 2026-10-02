@@ -499,6 +499,37 @@
       border-radius: var(--radius-2);
       box-shadow: var(--shadow-sheet);
     }
+    /* The top edge is a grip: drag it, or focus it and use the arrows. What
+       it sets is a CAP, not a height — a step with less to say still
+       shrinks to fit — and the cap holds across steps for the session. */
+    .dock.sized { max-height: min(var(--dock-cap), calc(100% - var(--space-2) * 2)); }
+    .dock-grip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+      height: 0.75rem;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+    .dock-grip::before {
+      content: "";
+      position: absolute;
+      top: 0.35rem;
+      left: 50%;
+      width: 2.25rem;
+      border-top: var(--stroke-tick) solid var(--color-line);
+      transform: translateX(-50%);
+      transition: width var(--dur-hover) var(--ease-out),
+                  border-color var(--dur-hover) var(--ease-out);
+    }
+    .dock-grip:hover::before,
+    .dock.resizing .dock-grip::before { width: 3.25rem; border-top-color: var(--color-ink-soft); }
+    .dock-grip:focus { outline: none; }
+    .dock-grip:focus-visible::before { width: 3.25rem; border-top-color: var(--color-primary); }
+    .dock-grip:focus-visible { box-shadow: inset 0 var(--stroke-mark) 0 var(--color-primary); }
+    body.dock-resizing { cursor: ns-resize; user-select: none; }
     .dock-head {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
@@ -1146,6 +1177,7 @@
       </div>
     </div>
     <aside class="dock" id="dock">
+      <div class="dock-grip" id="dock-grip" role="separator" aria-orientation="horizontal" tabindex="0" aria-valuemin="0" aria-valuemax="100"></div>
       <div class="dock-head">
         <span class="dock-n" id="dock-n" aria-hidden="true"></span>
         <h2 class="dock-title" id="dock-title"></h2>
@@ -1756,6 +1788,7 @@
         zoomIn: "Zoom in (+)", zoomOut: "Zoom out (−)", zoomReset: "Zoom 100% (1)",
         fit: "Fit the whole diagram (0)", focus: "Zoom to this step (2)",
         expand: "Expand", collapse: "Collapse", opensStep: "opens step",
+        grip: "Panel height", gripHint: "Panel height — drag, or ↑ ↓; Enter or double-click: full height and back",
         detailTitle: "Detail: auto · all open · current step only",
         detail: { auto: "auto", full: "all", step: "step" },
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
@@ -1774,6 +1807,7 @@
         zoomIn: "Приблизить (+)", zoomOut: "Отдалить (−)", zoomReset: "Масштаб 100% (1)",
         fit: "Вписать схему целиком (0)", focus: "Приблизить к текущему шагу (2)",
         expand: "Раскрыть", collapse: "Свернуть", opensStep: "открывает шаг",
+        grip: "Высота панели", gripHint: "Высота панели — тяните или ↑ ↓; Enter или двойной клик: во всю высоту и обратно",
         detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
         detail: { auto: "авто", full: "всё", step: "шаг" },
         hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
@@ -2170,6 +2204,104 @@
       p.setAttribute("aria-pressed", panelOpen ? "true" : "false");
       p.setAttribute("aria-label", t.panel);
       p.title = t.panel;
+    }
+
+    // The dock's cap, in px. null is the stylesheet's own cap.
+    let dockCap = null;
+
+    function dockLimits() {
+      const dock = $("dock");
+      const d = dock.getBoundingClientRect();
+      const c = $("canvas").getBoundingClientRect();
+      const head = dock.querySelector(".dock-head").offsetHeight;
+      const narr = $("narration").offsetHeight;
+      // Never taller than the canvas above the dock's foot, never so short
+      // that the excerpt is a sliver under the narration.
+      const max = Math.max(head, d.bottom - Math.max(c.top, 0) - 16);
+      const min = Math.min(max, head + narr + ($("code").classList.contains("on") ? 88 : 0));
+      return { min, max, now: d.height };
+    }
+
+    function applyDockCap(px, reframe) {
+      const dock = $("dock");
+      const grip = $("dock-grip");
+      if (px == null) {
+        dockCap = null;
+        dock.classList.remove("sized");
+        dock.style.removeProperty("--dock-cap");
+      } else {
+        const { min, max } = dockLimits();
+        dockCap = Math.round(Math.min(max, Math.max(min, px)));
+        dock.classList.add("sized");
+        dock.style.setProperty("--dock-cap", dockCap + "px");
+      }
+      // The value is the cap the reader set, not the box: at End a short
+      // step still sits below it, and that is not "68% of the way up".
+      const { min, max, now } = dockLimits();
+      const at = Math.min(max, Math.max(min, dockCap == null ? now : dockCap));
+      grip.setAttribute("aria-valuenow", String(Math.round(max > min ? ((at - min) / (max - min)) * 100 : 100)));
+      if (reframe) { if (viewPinned) applyView(); else autoFrame(true); }
+    }
+
+    // Full height and back. "Back" is the stylesheet's cap, not whatever
+    // the reader dragged to last: a toggle that remembered a third state
+    // would stop being predictable after the second press.
+    function toggleDock() {
+      const { max } = dockLimits();
+      applyDockCap(dockCap != null && dockCap >= max - 2 ? null : max, true);
+    }
+
+    function wireDockGrip() {
+      const t = ui();
+      const dock = $("dock");
+      const grip = $("dock-grip");
+      grip.setAttribute("aria-label", t.grip);
+      grip.title = t.gripHint;
+      let drag = null;
+      grip.addEventListener("pointerdown", (ev) => {
+        if (ev.pointerType === "mouse" && ev.button !== 0) return;
+        ev.preventDefault();
+        drag = { id: ev.pointerId, y: ev.clientY, h: dock.getBoundingClientRect().height };
+        try { grip.setPointerCapture(ev.pointerId); } catch (e) { /* pointer already gone */ }
+        dock.classList.add("resizing");
+        document.body.classList.add("dock-resizing");
+      });
+      grip.addEventListener("pointermove", (ev) => {
+        if (!drag || ev.pointerId !== drag.id) return;
+        applyDockCap(drag.h + (drag.y - ev.clientY), false);
+      });
+      const end = (ev) => {
+        if (!drag || ev.pointerId !== drag.id) return;
+        drag = null;
+        dock.classList.remove("resizing");
+        document.body.classList.remove("dock-resizing");
+        // Re-frame once, on release: chasing every pointer move would make
+        // the diagram swim under the reader's hand.
+        if (viewPinned) applyView(); else autoFrame(true);
+      };
+      grip.addEventListener("pointerup", end);
+      grip.addEventListener("pointercancel", end);
+      grip.addEventListener("dblclick", toggleDock);
+      grip.addEventListener("keydown", (ev) => {
+        const { min, max, now } = dockLimits();
+        // From the cap, not the box: a short step sits below its cap, and
+        // stepping from there would shrink the cap on the first ↑.
+        const base = dockCap == null ? now : dockCap;
+        const quarter = (max - min) / 4;
+        let next = null;
+        if (ev.key === "ArrowUp") next = base + (ev.shiftKey ? quarter : 32);
+        else if (ev.key === "ArrowDown") next = base - (ev.shiftKey ? quarter : 32);
+        else if (ev.key === "PageUp") next = base + quarter;
+        else if (ev.key === "PageDown") next = base - quarter;
+        else if (ev.key === "Home") next = min;
+        else if (ev.key === "End") next = max;
+        else if (ev.key === "Enter") { ev.preventDefault(); toggleDock(); return; }
+        else return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        applyDockCap(next, true);
+      });
+      applyDockCap(null, false);
     }
 
     function setPanel(open, byReader) {
@@ -3845,8 +3977,13 @@
       if (window.ResizeObserver) {
         // Re-frame, don't blind-fit: on a narrow canvas fitting the whole
         // graph is exactly what makes it unreadable.
-        new ResizeObserver(() => { if (viewPinned) applyView(); else autoFrame(false); }).observe(canvas);
+        new ResizeObserver(() => {
+          // A cap that fit the old window may not fit this one.
+          if (dockCap != null) applyDockCap(dockCap, false);
+          if (viewPinned) applyView(); else autoFrame(false);
+        }).observe(canvas);
       }
+      wireDockGrip();
 
       show(0);
     }
