@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] — 2026-10-02
+
+Tooling only: the release gate now works on Windows. The lesson shell and
+examples are byte-identical to 0.7.0.
+
+### Fixed
+
+- **`npm run release` runs npm on Windows.** It started npm with
+  `execFileSync("npm", …)`, which cannot launch `npm.cmd`. The build check
+  reported "npm run build failed" without building anything. The registry
+  check hit the same error and read it as "not published yet", so on Windows
+  it passed for a version that was already on npm. npm now runs through
+  `cmd.exe` on Windows; other platforms are unchanged.
+- **A Windows checkout builds the same bytes as any other.** With
+  `core.autocrlf=true`, the Git for Windows default, the template was checked
+  out CRLF and the inject script carried that into the examples, so the
+  gate's rebuild check failed on a correct tree. `.gitattributes` now checks
+  out every text file as LF. No file in the repository changed.
+
 ## [0.7.0] — 2026-10-02
 
 Three things a real lesson ran into: a dock too short for a long excerpt, a

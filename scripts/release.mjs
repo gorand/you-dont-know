@@ -20,6 +20,14 @@ const WANT_TAG = has("--tag");
 const SKIP_NET = has("--offline");
 const MESSAGE = valueOf("--message") || valueOf("-m");
 
+// On Windows `npm` is a `.cmd`, which CreateProcess cannot launch directly —
+// execFileSync needs a real interpreter in front of it, or every call fails
+// before it ever runs the build or hits the registry.
+const npm = (...a) =>
+  process.platform === "win32"
+    ? execFileSync("cmd.exe", ["/d", "/s", "/c", "npm", ...a], { stdio: "pipe" })
+    : execFileSync("npm", a, { stdio: "pipe" });
+
 const git = (...a) => execFileSync("git", a, { encoding: "utf8" }).trim();
 // Asking about a tag that is not there is an expected answer, not an error —
 // git still prints "unknown revision" to stderr on the way to the exception.
@@ -70,7 +78,7 @@ else if (packedDirs.length) ok(`no untracked files under ${packedDirs.join(", ")
 // examples/ is published, so a stale index.html is a wrong artifact in the
 // tarball rather than a cosmetic lapse.
 try {
-  execFileSync("npm", ["run", "build"], { stdio: "pipe" });
+  npm("run", "build");
   const after = git("status", "--porcelain");
   if (after && after !== dirty) fail("rebuilding changed the examples — the published ones were stale:\n" + after.split("\n").map((l) => "        " + l).join("\n"));
   else ok("examples reproduce from the template");
@@ -82,7 +90,7 @@ try {
 if (SKIP_NET) notes.push("  skip  registry check (--offline)");
 else {
   try {
-    execFileSync("npm", ["view", `${pkg.name}@${version}`, "version"], { stdio: "pipe" });
+    npm("view", `${pkg.name}@${version}`, "version");
     fail(`${pkg.name}@${version} is already published — bump the version`);
   } catch {
     ok(`${pkg.name}@${version} is not on the registry yet`);
