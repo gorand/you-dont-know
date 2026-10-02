@@ -63,8 +63,9 @@ rows is the corridor each horizontal edge run is routed into. So arrows go
 carry its label.
 
 Past ~12 nodes the shell also stages the diagram: groups fold into single
-blocks with a child count, and each step opens exactly the group it talks
-about. Any chevron toggles a group by hand, and the `Detail` switch flips the
+blocks, and each step opens exactly the group it talks about. The disc on a
+group's corner toggles it by hand — its corner marks point out to open and in
+to close — and the `Detail` switch flips the
 whole canvas between `auto`, `all` and `step`. See
 [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 

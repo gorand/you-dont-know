@@ -453,6 +453,30 @@ screenshots.
   1.9px round caps on a 4px period, a step heavier than the 1.4px tick of a
   solid edge.
 
+## Round 12 — the disclosure glyph, once more
+
+Round 10 settled on `+N` folded and one chevron open. The author overruled
+both from use: the count on a folded block is not needed, and the open
+state wanted something that fits the disc better than a chevron.
+
+Four candidates were drawn at the shell's real geometry (r=13 disc, 1.4px
+ring, 1.5px round-capped glyph in a ~9px box), at rest, hovered and focused,
+natural size and ×4: a minus, a minus with end ticks (the design system's
+DimensionLine), two viewfinder corners turned inward, and a shallow arc.
+Inward corners won, and expand became the same mark turned outward — the
+author's call, and the right one: **one mark that turns inside out reads as
+one control**; a plus paired with anything else reads as two.
+
+- It is the same vocabulary as the lock-on corners from round 11, so the
+  control and the feedback it triggers look related.
+- At natural size the corners were the faintest of the four (two short L's
+  carry less ink than a cross), so the legs went from 3.4px to 4.4px.
+- No count anywhere on the disc. The stack ghost behind a folded block
+  already says "more underneath", and a numeral in a disc is the rail's
+  vocabulary for a step. The number stays in the accessible name.
+- With one glyph at rest in both states, the hover/focus swap between a
+  count and a hint glyph is gone; hover and focus only recolour the mark.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

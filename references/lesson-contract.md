@@ -102,13 +102,14 @@ screen and nothing is legible. The shell answers that in two ways, and both
 are automatic — a lesson that says nothing about either still works.
 
 **Folding.** A `kind: "group"` node can stand in FOR its children instead of
-fencing them. Collapsed it draws as one solid block with the child count and
-a chevron; every edge that touched a hidden child re-anchors onto the block
+fencing them. Collapsed it draws as one solid block with a disc on its corner
+whose viewfinder corners point out (open me) — open, they point in (close me);
+every edge that touched a hidden child re-anchors onto the block
 (edges wholly inside it disappear, parallel ones merge into a `label ×N`).
 
 A folded block is a closed container first and a step link second: clicking
-its body opens it, and so does the chevron (`Enter` / `Space` on the chevron
-too). Its own step stays reachable from the rail, and from the fence itself
+its body opens it, and so does the disc (`Enter` / `Space` on the disc
+too). How many children it holds is in the disc's accessible name, not on it. Its own step stays reachable from the rail, and from the fence itself
 once it is open — an expanded fence opens its step on a body click like any
 other node. Neither fold nor unfold changes the current step or moves the
 frame: the reader who opened a group is looking at that group, and the view
@@ -116,7 +117,7 @@ only shifts when what they just opened no longer fits on screen.
 
 Which groups are open comes from three layers, most specific first:
 
-1. the reader's own chevron toggle on that group;
+1. the reader's own toggle on that group's disc;
 2. the canvas-wide `Детали / Detail` switch — `auto` · `all` (nothing folds)
    · `step` (only the current step opens);
 3. `auto`, i.e. the lesson's own default: a group opens when the current step
