@@ -499,6 +499,37 @@
       border-radius: var(--radius-2);
       box-shadow: var(--shadow-sheet);
     }
+    /* The top edge is a grip: drag it, or focus it and use the arrows. What
+       it sets is a CAP, not a height — a step with less to say still
+       shrinks to fit — and the cap holds across steps for the session. */
+    .dock.sized { max-height: min(var(--dock-cap), calc(100% - var(--space-2) * 2)); }
+    .dock-grip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+      height: 0.75rem;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+    .dock-grip::before {
+      content: "";
+      position: absolute;
+      top: 0.35rem;
+      left: 50%;
+      width: 2.25rem;
+      border-top: var(--stroke-tick) solid var(--color-line);
+      transform: translateX(-50%);
+      transition: width var(--dur-hover) var(--ease-out),
+                  border-color var(--dur-hover) var(--ease-out);
+    }
+    .dock-grip:hover::before,
+    .dock.resizing .dock-grip::before { width: 3.25rem; border-top-color: var(--color-ink-soft); }
+    .dock-grip:focus { outline: none; }
+    .dock-grip:focus-visible::before { width: 3.25rem; border-top-color: var(--color-primary); }
+    .dock-grip:focus-visible { box-shadow: inset 0 var(--stroke-mark) 0 var(--color-primary); }
+    body.dock-resizing { cursor: ns-resize; user-select: none; }
     .dock-head {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
@@ -812,8 +843,19 @@
       stroke-linecap: butt;
       pointer-events: none;
     }
-    .edge.live { stroke: var(--color-accent); stroke-width: var(--stroke-mark); }
+    /* Line types from the drafting table: continuous, dashed, dotted and
+       chain (the dash-dot of a centre line). */
     .edge.dashed { stroke-dasharray: 5 4; }
+    .edge.dotted { stroke-dasharray: 0 4; stroke-linecap: round; stroke-width: 1.9px; }
+    .edge.chain { stroke-dasharray: 10 3 1.5 3; }
+    /* `tone` names a token, not a hex. Coral is not one of the choices: it
+       is the live edge, and a live edge is coral whatever its tone, which
+       is why `.live` comes after these. The line type survives being lit. */
+    .edge.tone-ink { stroke: color-mix(in srgb, var(--color-ink) 72%, transparent); }
+    .edge.tone-primary { stroke: var(--color-primary); }
+    .edge.tone-accent-2 { stroke: color-mix(in srgb, var(--color-accent-2) 82%, transparent); }
+    .edge.live { stroke: var(--color-accent); stroke-width: var(--stroke-mark); }
+    .edge.dotted.live { stroke-width: 2.2px; }
     .edge-label {
       fill: var(--color-ink-soft);
       font: 400 11px/1 var(--font-mono);
@@ -824,8 +866,33 @@
       stroke-width: 4px;
       stroke-linejoin: round;
     }
+    .edge-label.tone-ink { fill: var(--color-ink); }
+    .edge-label.tone-primary { fill: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink)); }
+    .edge-label.tone-accent-2 { fill: var(--color-accent-2); }
     .edge-label.live { fill: var(--color-accent); }
     .token { fill: var(--color-accent); }
+    /* Where the thing you just folded or unfolded went. The design system's
+       viewfinder corners close in on its new place once, then let go. A
+       violet, because this marks focus and not the current material — but
+       lifted toward the ink, so it is not mistaken for the keyboard ring or
+       a `frame` border, which are the token itself. Under reduced motion the
+       corners simply stand there for the same time. */
+    .locator {
+      fill: none;
+      stroke: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink));
+      stroke-width: var(--stroke-mark);
+      stroke-linecap: square;
+      pointer-events: none;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: lock-on 1.5s var(--ease-out) 0.18s both;
+    }
+    @keyframes lock-on {
+      0% { opacity: 0; transform: scale(1.22); }
+      22% { opacity: 1; transform: scale(1); }
+      72% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1); }
+    }
 
     /* ---- asides --------------------------------------------------------- */
     .fn {
@@ -1132,6 +1199,7 @@
       </div>
     </div>
     <aside class="dock" id="dock">
+      <div class="dock-grip" id="dock-grip" role="separator" aria-orientation="horizontal" tabindex="0" aria-valuemin="0" aria-valuemax="100"></div>
       <div class="dock-head">
         <span class="dock-n" id="dock-n" aria-hidden="true"></span>
         <h2 class="dock-title" id="dock-title"></h2>
@@ -1384,7 +1452,22 @@
     {
       "from": "host",
       "to": "boundary",
-      "label": "isolate"
+      "label": "isolate",
+      "tone": "accent-2"
+    },
+    {
+      "from": "provider",
+      "to": "host",
+      "label": "dotted",
+      "line": "dotted",
+      "tone": "primary"
+    },
+    {
+      "from": "frame",
+      "to": "subroutine",
+      "label": "chain",
+      "line": "chain",
+      "tone": "ink"
     }
   ],
   "steps": [
@@ -1473,12 +1556,30 @@
         "junction",
         "inbox",
         "host",
-        "boundary"
+        "boundary",
+        "provider",
+        "frame",
+        "subroutine"
       ],
       "code": {
         "file": "lesson.json",
         "startLine": 1,
         "text": "{ \"from\": \"cloud\", \"to\": \"queue\", \"kind\": \"back\", \"label\": \"retry\" }\n{ \"from\": \"action\", \"to\": \"inbox\", \"via\": \"junction\" }"
+      }
+    },
+    {
+      "id": "lines",
+      "title": "Line types and tones",
+      "narration": "`line`: solid · dashed · dotted · chain. `tone`: ink-soft · ink · primary · accent-2 — a token, never coral. Nothing is lit here; on the previous step the same three edges are, and turn coral whatever their tone while keeping their line.",
+      "highlight": [
+        "g-run",
+        "provider",
+        "frame"
+      ],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"from\": \"provider\", \"to\": \"host\", \"line\": \"dotted\", \"tone\": \"primary\" }\n{ \"from\": \"frame\", \"to\": \"subroutine\", \"line\": \"chain\", \"tone\": \"ink\" }\n{ \"from\": \"host\", \"to\": \"boundary\", \"tone\": \"accent-2\" }"
       }
     }
   ]
@@ -1543,6 +1644,7 @@
         zoomIn: "Zoom in (+)", zoomOut: "Zoom out (−)", zoomReset: "Zoom 100% (1)",
         fit: "Fit the whole diagram (0)", focus: "Zoom to this step (2)",
         expand: "Expand", collapse: "Collapse", opensStep: "opens step",
+        grip: "Panel height", gripHint: "Panel height — drag, or ↑ ↓; Enter or double-click: full height and back",
         detailTitle: "Detail: auto · all open · current step only",
         detail: { auto: "auto", full: "all", step: "step" },
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
@@ -1561,6 +1663,7 @@
         zoomIn: "Приблизить (+)", zoomOut: "Отдалить (−)", zoomReset: "Масштаб 100% (1)",
         fit: "Вписать схему целиком (0)", focus: "Приблизить к текущему шагу (2)",
         expand: "Раскрыть", collapse: "Свернуть", opensStep: "открывает шаг",
+        grip: "Высота панели", gripHint: "Высота панели — тяните или ↑ ↓; Enter или двойной клик: во всю высоту и обратно",
         detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
         detail: { auto: "авто", full: "всё", step: "шаг" },
         hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
@@ -1724,10 +1827,12 @@
         if (prev) {
           prev._n += 1;
           if ((e.label || "") !== prev._label) prev._mixed = true;
-          if ((e.kind || "flow") !== (prev.kind || "flow")) prev.kind = "flow";
+          if (edgeDir(e) !== prev.kind) prev.kind = "flow";
+          if (edgeLine(e) !== prev.line) prev.line = "solid";
+          if (edgeTone(e) !== edgeTone(prev)) delete prev.tone;
           return;
         }
-        const ne = { ...e, from, to, _n: 1, _label: e.label || "" };
+        const ne = { ...e, from, to, kind: edgeDir(e), line: edgeLine(e), _n: 1, _label: e.label || "" };
         if (ne.via && (hidden.has(ne.via) || !visible.has(ne.via))) delete ne.via;
         merged.set(key, ne);
         edges.push(ne);
@@ -1955,6 +2060,104 @@
       p.setAttribute("aria-pressed", panelOpen ? "true" : "false");
       p.setAttribute("aria-label", t.panel);
       p.title = t.panel;
+    }
+
+    // The dock's cap, in px. null is the stylesheet's own cap.
+    let dockCap = null;
+
+    function dockLimits() {
+      const dock = $("dock");
+      const d = dock.getBoundingClientRect();
+      const c = $("canvas").getBoundingClientRect();
+      const head = dock.querySelector(".dock-head").offsetHeight;
+      const narr = $("narration").offsetHeight;
+      // Never taller than the canvas above the dock's foot, never so short
+      // that the excerpt is a sliver under the narration.
+      const max = Math.max(head, d.bottom - Math.max(c.top, 0) - 16);
+      const min = Math.min(max, head + narr + ($("code").classList.contains("on") ? 88 : 0));
+      return { min, max, now: d.height };
+    }
+
+    function applyDockCap(px, reframe) {
+      const dock = $("dock");
+      const grip = $("dock-grip");
+      if (px == null) {
+        dockCap = null;
+        dock.classList.remove("sized");
+        dock.style.removeProperty("--dock-cap");
+      } else {
+        const { min, max } = dockLimits();
+        dockCap = Math.round(Math.min(max, Math.max(min, px)));
+        dock.classList.add("sized");
+        dock.style.setProperty("--dock-cap", dockCap + "px");
+      }
+      // The value is the cap the reader set, not the box: at End a short
+      // step still sits below it, and that is not "68% of the way up".
+      const { min, max, now } = dockLimits();
+      const at = Math.min(max, Math.max(min, dockCap == null ? now : dockCap));
+      grip.setAttribute("aria-valuenow", String(Math.round(max > min ? ((at - min) / (max - min)) * 100 : 100)));
+      if (reframe) { if (viewPinned) applyView(); else autoFrame(true); }
+    }
+
+    // Full height and back. "Back" is the stylesheet's cap, not whatever
+    // the reader dragged to last: a toggle that remembered a third state
+    // would stop being predictable after the second press.
+    function toggleDock() {
+      const { max } = dockLimits();
+      applyDockCap(dockCap != null && dockCap >= max - 2 ? null : max, true);
+    }
+
+    function wireDockGrip() {
+      const t = ui();
+      const dock = $("dock");
+      const grip = $("dock-grip");
+      grip.setAttribute("aria-label", t.grip);
+      grip.title = t.gripHint;
+      let drag = null;
+      grip.addEventListener("pointerdown", (ev) => {
+        if (ev.pointerType === "mouse" && ev.button !== 0) return;
+        ev.preventDefault();
+        drag = { id: ev.pointerId, y: ev.clientY, h: dock.getBoundingClientRect().height };
+        try { grip.setPointerCapture(ev.pointerId); } catch (e) { /* pointer already gone */ }
+        dock.classList.add("resizing");
+        document.body.classList.add("dock-resizing");
+      });
+      grip.addEventListener("pointermove", (ev) => {
+        if (!drag || ev.pointerId !== drag.id) return;
+        applyDockCap(drag.h + (drag.y - ev.clientY), false);
+      });
+      const end = (ev) => {
+        if (!drag || ev.pointerId !== drag.id) return;
+        drag = null;
+        dock.classList.remove("resizing");
+        document.body.classList.remove("dock-resizing");
+        // Re-frame once, on release: chasing every pointer move would make
+        // the diagram swim under the reader's hand.
+        if (viewPinned) applyView(); else autoFrame(true);
+      };
+      grip.addEventListener("pointerup", end);
+      grip.addEventListener("pointercancel", end);
+      grip.addEventListener("dblclick", toggleDock);
+      grip.addEventListener("keydown", (ev) => {
+        const { min, max, now } = dockLimits();
+        // From the cap, not the box: a short step sits below its cap, and
+        // stepping from there would shrink the cap on the first ↑.
+        const base = dockCap == null ? now : dockCap;
+        const quarter = (max - min) / 4;
+        let next = null;
+        if (ev.key === "ArrowUp") next = base + (ev.shiftKey ? quarter : 32);
+        else if (ev.key === "ArrowDown") next = base - (ev.shiftKey ? quarter : 32);
+        else if (ev.key === "PageUp") next = base + quarter;
+        else if (ev.key === "PageDown") next = base - quarter;
+        else if (ev.key === "Home") next = min;
+        else if (ev.key === "End") next = max;
+        else if (ev.key === "Enter") { ev.preventDefault(); toggleDock(); return; }
+        else return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        applyDockCap(next, true);
+      });
+      applyDockCap(null, false);
     }
 
     function setPanel(open, byReader) {
@@ -2942,14 +3145,46 @@
       </g>`;
     }
 
+    // `line` is how an edge is drawn and `kind` which way it points.
+    // `kind: "dashed"` predates `line` and still means a dashed flow arrow.
+    const EDGE_LINES = new Set(["solid", "dashed", "dotted", "chain"]);
+    const EDGE_TONES = new Set(["ink-soft", "ink", "primary", "accent-2"]);
+    function edgeLine(e) {
+      if (EDGE_LINES.has(e.line)) return e.line;
+      return e.kind === "dashed" ? "dashed" : "solid";
+    }
+    function edgeDir(e) { return e.kind === "back" || e.kind === "both" ? e.kind : "flow"; }
+    // ink-soft is the default stroke, so it needs no class of its own.
+    function edgeTone(e) { return EDGE_TONES.has(e.tone) && e.tone !== "ink-soft" ? e.tone : ""; }
+
+    const TIP_FILL = {
+      "": "color-mix(in srgb, var(--color-ink-soft) 62%, transparent)",
+      live: "var(--color-accent)",
+      ink: "color-mix(in srgb, var(--color-ink) 72%, transparent)",
+      primary: "var(--color-primary)",
+      "accent-2": "color-mix(in srgb, var(--color-accent-2) 82%, transparent)"
+    };
+    function arrowMarkers() {
+      return Object.entries(TIP_FILL).map(([tone, fill]) => {
+        const id = tone ? `arrow-${tone}` : "arrow";
+        return `<marker id="${id}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="${fill}"></path>
+        </marker>
+        <marker id="${id}-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 10 0 L 0 5 L 10 10 z" fill="${fill}"></path>
+        </marker>`;
+      }).join("");
+    }
+
     function edgeMarks(e, liveEdge) {
-      const ek = e.kind || "flow";
-      const live = liveEdge ? " live" : "";
-      const dash = ek === "dashed" ? " dashed" : "";
-      const tip = liveEdge ? "arrow-live" : "arrow";
-      const start = (ek === "back" || ek === "both") ? ` marker-start="url(#${tip}-rev)"` : "";
-      const end = ek === "back" ? "" : ` marker-end="url(#${tip})"`;
-      return { cls: `edge${live}${dash}`, start, end };
+      const dir = edgeDir(e);
+      const line = edgeLine(e);
+      const tone = liveEdge ? "" : edgeTone(e);
+      const tip = liveEdge ? "arrow-live" : tone ? `arrow-${tone}` : "arrow";
+      const start = (dir === "back" || dir === "both") ? ` marker-start="url(#${tip}-rev)"` : "";
+      const end = dir === "back" ? "" : ` marker-end="url(#${tip})"`;
+      const cls = ["edge", liveEdge && "live", line !== "solid" && line, tone && `tone-${tone}`].filter(Boolean).join(" ");
+      return { cls, start, end, tone };
     }
 
     /* ---------- viewport: pan + zoom ----------
@@ -3224,8 +3459,100 @@
       if (box && !boxVisible(box)) setView(viewFor(inflate(box, 32), VIEW.s), true);
     }
 
+    // A fold, an unfold, or a step that opens another group re-lays the
+    // whole canvas out. Cut straight to the new picture and the reader has
+    // to find their place in it again, so the change is shown instead:
+    // whatever stayed glides from where it was, what was just unfolded
+    // comes out of the block that held it, what was just folded slides
+    // into the block that now stands for it, and the edges — which cannot
+    // be in two places at once — fade back in once the boxes have landed.
+    // Driven through the SVG `transform` attribute, not CSS: a CSS
+    // transform on a <g> holding a foreignObject misplaces it in Safari.
+    let ANCHOR_OF = {};
+    let relayoutAnim = 0;
+    const RELAYOUT_MS = 420;
+    const centreOf = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+
+    function animateRelayout(svg, prevBox, prevAnchor, anchorOf, oldEls) {
+      cancelAnimationFrame(relayoutAnim);
+      if (REDUCE_MOTION || !Object.keys(prevBox).length) return;
+      const items = [];
+      svg.querySelectorAll(".node[data-id]").forEach((el) => {
+        const id = el.getAttribute("data-id");
+        const now = NODE_BOX[id];
+        if (!now) return;
+        const fresh = !prevBox[id];
+        const was = prevBox[id] || prevBox[prevAnchor[id]];
+        if (!was) { items.push({ el, x0: 0, y0: 0, x1: 0, y1: 0, o0: 0, o1: 1 }); return; }
+        const a = centreOf(was);
+        const b = centreOf(now);
+        if (!fresh && Math.abs(a.x - b.x) + Math.abs(a.y - b.y) < 0.5) return;
+        items.push({ el, x0: a.x - b.x, y0: a.y - b.y, x1: 0, y1: 0, o0: fresh ? 0 : 1, o1: 1 });
+      });
+      const ghosts = document.createElementNS(svg.namespaceURI, "g");
+      ghosts.setAttribute("aria-hidden", "true");
+      oldEls.forEach((els, id) => {
+        if (NODE_BOX[id]) return;
+        const was = prevBox[id];
+        const into = NODE_BOX[anchorOf[id]];
+        if (!was || !into) return;
+        const a = centreOf(was);
+        const b = centreOf(into);
+        els.forEach((el) => {
+          el.removeAttribute("tabindex");
+          el.removeAttribute("role");
+          ghosts.append(el);
+          items.push({ el, x0: 0, y0: 0, x1: b.x - a.x, y1: b.y - a.y, o0: 1, o1: 0 });
+        });
+      });
+      if (!items.length) return;
+      // Under the live boxes, so what folds away disappears INTO its block.
+      svg.insertBefore(ghosts, svg.querySelector(".node:not(.kind-group), .node.collapsed"));
+      const lines = [...svg.querySelectorAll(".edge, .edge-halo, .edge-label, .token")];
+      const t0 = performance.now();
+      const frame = (now) => {
+        const p = Math.min(1, (now - t0) / RELAYOUT_MS);
+        const e = 1 - Math.pow(1 - p, 3);
+        items.forEach((it) => {
+          const x = it.x0 + (it.x1 - it.x0) * e;
+          const y = it.y0 + (it.y1 - it.y0) * e;
+          it.el.setAttribute("transform", `translate(${r2(x)} ${r2(y)})`);
+          if (it.o0 !== it.o1) it.el.style.opacity = String(it.o0 + (it.o1 - it.o0) * e);
+        });
+        const lo = String(Math.max(0, (p - 0.45) / 0.55));
+        lines.forEach((el) => { el.style.opacity = lo; });
+        if (p < 1) { relayoutAnim = requestAnimationFrame(frame); return; }
+        items.forEach((it) => { it.el.removeAttribute("transform"); it.el.style.opacity = ""; });
+        lines.forEach((el) => { el.style.opacity = ""; });
+        ghosts.remove();
+      };
+      // The first frame is applied now, before the browser paints the new
+      // layout — otherwise it flashes once in its final state.
+      frame(t0);
+    }
+
+    function locate(svg, id) {
+      const box = NODE_BOX[id];
+      if (!box) return;
+      const x = box.x - 6;
+      const y = box.y - 6;
+      const w = box.w + 12;
+      const h = box.h + 12;
+      const l = Math.min(14, w / 3, h / 3);
+      const mark = document.createElementNS(svg.namespaceURI, "path");
+      mark.setAttribute("class", "locator");
+      mark.setAttribute("aria-hidden", "true");
+      mark.setAttribute("d", `M ${x} ${y + l} V ${y} H ${x + l} M ${x + w - l} ${y} H ${x + w} V ${y + l} `
+        + `M ${x + w} ${y + h - l} V ${y + h} H ${x + w - l} M ${x + l} ${y + h} H ${x} V ${y + h - l}`);
+      svg.append(mark);
+      setTimeout(() => mark.remove(), 1900);
+    }
+
     function renderFlow(highlight, step, keep) {
+      const prevBox = NODE_BOX;
+      const prevAnchor = ANCHOR_OF;
       const graph = visibleGraph(collapsedSet(highlight, step));
+      ANCHOR_OF = graph.anchorOf;
       const nodes = layoutNodes(graph.nodes, graph.edges);
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
       const edgesAll = graph.edges;
@@ -3258,18 +3585,7 @@
             font-family: "Onest", "Avenir Next", "Segoe UI", sans-serif;
           }
         </style>
-        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="color-mix(in srgb, var(--color-ink-soft) 62%, transparent)"></path>
-        </marker>
-        <marker id="arrow-live" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-accent)"></path>
-        </marker>
-        <marker id="arrow-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 10 0 L 0 5 L 10 10 z" fill="color-mix(in srgb, var(--color-ink-soft) 62%, transparent)"></path>
-        </marker>
-        <marker id="arrow-live-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 10 0 L 0 5 L 10 10 z" fill="var(--color-accent)"></path>
-        </marker>
+        ${arrowMarkers()}
       </defs>`;
       const placed = [];
       const edgeEls = [];
@@ -3317,7 +3633,7 @@
         edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
         if (e.label) {
           const y = nudgeLabel(lx, ly, e.label, placed, vertical, nodes);
-          labelEls.push(`<text class="edge-label${liveEdge ? " live" : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
+          labelEls.push(`<text class="edge-label${liveEdge ? " live" : mk.tone ? ` tone-${mk.tone}` : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
         }
       });
       // Only an EXPANDED fence splits into two passes (translucent shell
@@ -3327,7 +3643,13 @@
       const fenceShellEls = fences.map((n) => renderNode(n, live, "shell")).join("");
       const fenceLabelEls = fences.map((n) => renderNode(n, live, "content")).join("");
       const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live)).join("");
+      const oldEls = new Map();
+      svg.querySelectorAll(".node[data-id]").forEach((el) => {
+        const id = el.getAttribute("data-id");
+        oldEls.set(id, (oldEls.get(id) || []).concat(el));
+      });
       svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
+      animateRelayout(svg, prevBox, prevAnchor, graph.anchorOf, oldEls);
       svg.querySelectorAll(".node").forEach((el) => {
         const activate = () => {
           const id = el.getAttribute("data-id");
@@ -3364,6 +3686,7 @@
       });
       syncDetailUi();
       syncViewport([...live], keep);
+      if (keep) locate(svg, keep);
     }
 
     function stepForNode(id) {
@@ -3609,8 +3932,13 @@
       if (window.ResizeObserver) {
         // Re-frame, don't blind-fit: on a narrow canvas fitting the whole
         // graph is exactly what makes it unreadable.
-        new ResizeObserver(() => { if (viewPinned) applyView(); else autoFrame(false); }).observe(canvas);
+        new ResizeObserver(() => {
+          // A cap that fit the old window may not fit this one.
+          if (dockCap != null) applyDockCap(dockCap, false);
+          if (viewPinned) applyView(); else autoFrame(false);
+        }).observe(canvas);
       }
+      wireDockGrip();
 
       show(0);
     }

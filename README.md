@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.6.4-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 [![npm](https://img.shields.io/badge/npm-%40gorand%2Fyou--dont--know-cb3837.svg)](https://www.npmjs.com/package/@gorand/you-dont-know)
 
@@ -73,7 +73,12 @@ down the left margin — a tick per step, the current one circled — and it ope
 its titles *over* the canvas on hover or keyboard focus, so the diagram never
 reflows. Narration and code sit in a dock the shell frames *around*: the scale
 comes from the larger of the two areas that clear it, and the diagram is moved
-off centre only as far as it takes to get out from under the panel. Everything
+off centre only as far as it takes to get out from under the panel. Its top
+edge is a grip — drag it, or focus it and use ↑ ↓, Enter for full height and
+back — and the diagram re-frames around whatever height the reader picks.
+Folding or unfolding a group re-lays the canvas out, so the change is shown:
+boxes glide to their new places, children come out of (or slide into) their
+block, and viewfinder corners close in on the group that was toggled. Everything
 read once rather than per step — the thesis, the catch, the naive alternative,
 the cost — is behind the `Brief` button.
 
@@ -89,6 +94,8 @@ The shell is built on the `<AG/>` design system: a void ground (`#0b0712`), Unbo
 | `--color-accent` | coral | the current material — this step, this node, this edge |
 | `--color-accent-2` | peach | status: a `boundary` node, the lesson's catch |
 
+Edges are the one place a lesson picks a colour, and it picks a token, not a value: `edges[].tone` is `ink-soft` (default), `ink`, `primary` or `accent-2`, next to `edges[].line`, which is `solid`, `dashed`, `dotted` or `chain`. Coral is refused: a lit edge is coral whatever its tone.
+
 The shell does not repaint per lesson. `kind` sets the tone of one dot in the kicker (violet · muted ink · peach) and the chrome names the kind in words — the reader has nothing to choose. `accent` in the JSON is legacy: old values still parse so existing lessons rebuild untouched, but nothing repaints.
 
 Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). Card shells are rect, stadium, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
@@ -101,7 +108,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.6.4** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.7.0** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 

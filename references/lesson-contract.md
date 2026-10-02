@@ -52,14 +52,17 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - `kind`: `how` | `concept` | `api` | `architecture` | `repo` | `security` | `vuln`. It sets the tone of the dot in the kicker — violet, muted ink, peach — and **nothing else**. The shell does not repaint per lesson.
 - The header names the `kind` next to that dot. The seven kinds above have `en`/`ru` names in the shell; any other value is shown as written and gets the default tone.
 - Optional `accent` is legacy and no longer repaints anything. Old values (`iris` | `glacier` | `dusk`, and the older `cinnabar` | `patina` | `kinpaku`) still parse and map onto a tone, so a lesson written against the three-accent shell rebuilds untouched. New lessons should leave it out.
-- Colour is the shell's, in three fixed roles: `--color-primary` (violet) focus and structure, `--color-accent` (coral) the current material, `--color-accent-2` (peach) status. JSON must not restyle them, and `kind: "boundary"` is peach in every lesson.
+- Colour is the shell's, in three fixed roles: `--color-primary` (violet) focus and structure, `--color-accent` (coral) the current material, `--color-accent-2` (peach) status. JSON must not restyle them, and `kind: "boundary"` is peach in every lesson. The one place JSON picks a colour is `edges[].tone`, and it picks a token from a fixed list, never a value.
 - Optional `layout`: `"timeline"` | `"layers"` | `"tree"` | `"auto"`. `"tree"` indents `folder` / `file` by `parent`. `"auto"` uses tree only when every node is folder/file; uses group layout if any `kind: "group"`.
 - Optional `detail`: `"auto"` (default) | `"progressive"` | `"full"` — how much of the diagram is open at once. See **Staged detail** below.
 - Optional `nodes[].parent`: id of a `group` (fence) or, in `layout: "tree"`, a folder
 - Optional `nodes[].collapsed`: boolean, `kind: "group"` only — that group's own default state (overrides the `detail` heuristic for it)
 - Optional `steps[].expand`: group ids this step opens even though it highlights none of their children
 - Optional `nodes[].rank`: explicit row
-- Optional `edges[].kind`: `flow` (default) | `dashed` | `back` | `both`
+- Optional `edges[].kind`: `flow` (default) | `back` | `both` — which way it points. `dashed` still parses and means a dashed `flow`; it predates `line`.
+- Optional `edges[].line`: `solid` (default) | `dashed` | `dotted` | `chain` — how it is drawn. `chain` is the dash-dot of a drafting centre line. A line type means something only if the lesson says what and keeps it: one meaning per type, the same on every step.
+- Optional `edges[].tone`: `ink-soft` (default) | `ink` | `primary` | `accent-2` — a token name. `accent` is refused at build time: coral is the live edge, and an edge that is coral at rest would read as lit. A lit edge turns coral whatever its tone and keeps its `line`. One or two tones a lesson, each with a stated meaning; a tone on every edge is a legend nobody reads.
+- Parallel edges merged into one `label ×N` keep a `kind`, `line` or `tone` only where all of them agree; any disagreement falls back to the default.
 - Optional `edges[].via`: junction node id (polyline through that node)
 - Node `kind` (shape + Lucide glyph). Aliases in parentheses stay valid:
 

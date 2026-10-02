@@ -8,7 +8,7 @@ description: >-
   /understand maps.
 license: MIT
 metadata:
-  version: "0.6.4"
+  version: "0.7.0"
 disable-model-invocation: true
 argument-hint: "[topic-or-path]"
 ---
@@ -31,6 +31,8 @@ Three hues, and they never trade places.
 | `--color-primary` | violet `#8b5cf6` | focus rings, structural marks |
 | `--color-accent` | coral `#ff6f5e` | the one "you are here / you can act here" colour: current step, highlighted node, live edge |
 | `--color-accent-2` | peach `#ffc24b` | status: a `kind: "boundary"` node, the lesson's «Проблема» |
+
+An edge may take a token through `edges[].tone` — `ink`, `primary` or `accent-2` (`ink-soft` is the default) — and a line type through `edges[].line`: `dashed`, `dotted`, `chain`. Coral is not on the tone list and the build refuses it: a lit edge is coral whatever its tone. Give each tone and line type one stated meaning, or leave them out.
 
 `--gradient-wave` (violet → coral → peach) appears exactly once in the shell — the brief's top bar. It is not a decoration to reach for again.
 
@@ -86,7 +88,7 @@ For each confirmed item:
      tmp/you-dont-know/<slug>/index.html
    ```
    (From a clone of this skill: `node scripts/inject-lesson.mjs templates/lesson.html …`.)
-4. Visual-QA `index.html`: node labels readable on the surface fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; coral marks only the current material, peach only a boundary. The rail reads as a dimension line collapsed and opens its titles **over** the canvas — the diagram must not reflow when it does. The dock must never sit on top of the diagram it explains: the shell frames around it, so if a step's nodes end up under the panel, that is a bug, not a layout. Dzen (focus mode) keeps the title, the transport and the rail and gives the canvas the rest; leaving it brings back exactly the chrome the reader had. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
+4. Visual-QA `index.html`: node labels readable on the surface fill; Lucide glyphs not a 2px circle; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; coral marks only the current material, peach only a boundary. The rail reads as a dimension line collapsed and opens its titles **over** the canvas — the diagram must not reflow when it does. The dock must never sit on top of the diagram it explains: the shell frames around it, so if a step's nodes end up under the panel, that is a bug, not a layout. Dzen (focus mode) keeps the title, the transport and the rail and gives the canvas the rest; leaving it brings back exactly the chrome the reader had. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the chevron badge is not covered by a label. A fold, an unfold or a step change that re-lays the canvas out shows the move — boxes glide, the toggled one gets the viewfinder corners — and never just cuts to a new picture. The dock's top edge resizes it; a long excerpt must be readable whole once the reader drags it up. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
 
 ### Complex diagrams (>12 nodes)
 
@@ -101,7 +103,7 @@ Shift+wheel, drag) and toggles any group by its chevron. Details and the
 A flat 25-node lesson with no groups gets no staging — it is still one wall
 of boxes, just zoomable. Group it.
 
-Shell vocabulary (shapes, groups, tree, edge kinds) lives in `examples/palette/` — rebuild after template edits. `examples/dense-request/` is the staged-detail reference (31 nodes, 6 groups).
+Shell vocabulary (shapes, groups, tree, edge kinds) lives in `examples/palette/` — rebuild after template edits. `examples/dense-request/` is the staged-detail reference (31 nodes, 6 groups). `examples/mfe-architecture/` is a real agent-written lesson kept with its flaws — check shell changes against it, not only against canonical content.
 
 Default dest is `tmp/`. Never `docs/` unless asked.
 

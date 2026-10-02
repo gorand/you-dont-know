@@ -5,6 +5,45 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-10-02
+
+Three things a real lesson ran into: a dock too short for a long excerpt, a
+re-layout that hid where things went, and edges that could only be solid or
+dashed. Every existing lesson rebuilds untouched.
+
+### Added
+
+- **The dock's top edge resizes it.** Drag it, or focus it and use ↑ ↓
+  (Shift for a quarter), Home and End; Enter or a double-click goes to full
+  height and back. It sets a cap, not a height — a short step still shrinks
+  to fit — and the cap holds across steps for the session. The diagram
+  re-frames around whatever height the reader picks.
+- **A re-layout shows where things went.** Folding, unfolding, or a step that
+  opens another group used to cut straight to a new picture. Boxes now glide
+  from where they were, unfolded children come out of their block, folded
+  ones slide into it, edges fade back in once everything lands, and the group
+  that was toggled gets the design system's viewfinder corners in violet.
+  Reduced motion skips the glide and keeps the corners.
+- **`edges[].line`**: `solid` (default) · `dashed` · `dotted` · `chain`, the
+  dash-dot of a drafting centre line. `kind` now says direction only;
+  `kind: "dashed"` still parses as a dashed flow.
+- **`edges[].tone`**: `ink-soft` (default) · `ink` · `primary` · `accent-2` —
+  a token name, never a value, with an arrowhead per tone. `accent` is
+  refused at build time: coral is the live edge. A lit edge goes coral
+  whatever its tone and keeps its line type.
+- **`examples/mfe-architecture`**, an anonymised agent-written lesson about a
+  Module Federation repo (30 nodes, 6 groups, 22 edges), kept with its flaws
+  as the fixture to test shell changes against. `npm run mfe` builds it.
+
+### Changed
+
+- `inject-lesson.mjs` fails on an unknown `edges[].line` or `edges[].tone`
+  instead of rendering the default without a word.
+- Parallel edges merged into one `label ×N` keep a `line` or `tone` only
+  where all of them agree.
+- The palette example demonstrates every line type and tone, unlit on its
+  last step and lit on the one before.
+
 ## [0.6.4] — 2026-09-27
 
 Tooling only, and it fixes something 0.6.3 shipped with. The published
