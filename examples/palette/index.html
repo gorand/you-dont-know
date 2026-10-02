@@ -761,34 +761,17 @@
       transition: stroke var(--dur-hover) var(--ease-out), stroke-width var(--dur-hover) var(--ease-out);
     }
     .disclose:hover .disclose-bg { stroke: var(--color-accent); }
-    /* At rest the disc carries a count, which is information and should not
-       shout; the chevron — the invitation — arrives on hover and on focus. */
-    .disclose-n {
-      fill: var(--color-ink-soft);
-      font: 500 11px var(--font-mono);
-      pointer-events: none;
-      dominant-baseline: middle;
-      transition: opacity var(--dur-hover) var(--ease-out), fill var(--dur-hover) var(--ease-out);
-    }
     .disclose-mark {
       fill: none;
+      stroke: var(--color-ink-soft);
       stroke-width: var(--stroke-mark);
       stroke-linecap: round;
       stroke-linejoin: round;
       pointer-events: none;
-      transition: opacity var(--dur-hover) var(--ease-out), stroke var(--dur-hover) var(--ease-out);
+      transition: stroke var(--dur-hover) var(--ease-out);
     }
-    /* Open: the glyph is the point of the control and is always there — it
-       is the only way to close a fence. Folded: the count leads and the
-       glyph is the invitation, so it waits for hover or focus. */
-    .disclose-mark.lead { stroke: var(--color-ink-soft); opacity: 1; }
-    .disclose-mark.hint { stroke: var(--color-accent); opacity: 0; }
-    .disclose:hover .disclose-mark.lead,
-    .disclose:focus-visible .disclose-mark.lead { stroke: var(--color-accent); }
-    .disclose:hover .disclose-n,
-    .disclose:focus-visible .disclose-n { opacity: 0; }
-    .disclose:hover .disclose-mark.hint,
-    .disclose:focus-visible .disclose-mark.hint { opacity: 1; }
+    .disclose:hover .disclose-mark,
+    .disclose:focus-visible .disclose-mark { stroke: var(--color-accent); }
     /* Focus wins over hover, and it is violet — the role the system reserves
        for a focus ring. An outline on an SVG <g> is not dependable. */
     .disclose:focus { outline: none; }
@@ -3061,15 +3044,16 @@
     // It is held 4px below the corner so its upper half stays out of the
     // corridor the row gap reserves for edge runs.
     const DISC_R = 13;
-    // Chevrons that converge mean collapse; chevrons that diverge mean
-    // expand. Lucide's chevrons-down-up / chevrons-up-down, drawn small.
-    // One chevron, not two. A converging pair says "collapse" more literally,
-    // but at the size this disc allows its tips sit close enough to merge
-    // into an X — and an X beside a numeral reads as "times N". A single
-    // chevron has the room to stay a chevron: up closes, down opens.
-    const chevron = (x, y, up) => up
-      ? `M ${x - 4.6} ${y + 2.3} L ${x} ${y - 2.4} L ${x + 4.6} ${y + 2.3}`
-      : `M ${x - 4.6} ${y - 2.3} L ${x} ${y + 2.4} L ${x + 4.6} ${y - 2.3}`;
+    // Two of the design system's viewfinder corners on one diagonal, and
+    // the toggle flips them: pointing out on a folded block (open it up),
+    // pointing in on an open fence (gather it back in). They are the same
+    // marks that close in on a group after it is toggled, so the control
+    // and its feedback speak one language — and one mark that turns inside
+    // out reads as one control, where a plus and something else read as two.
+    const cornersOut = (x, y) =>
+      `M ${x + 1.2} ${y - 5.6} H ${x + 5.6} V ${y - 1.2} M ${x - 5.6} ${y + 1.2} V ${y + 5.6} H ${x - 1.2}`;
+    const cornersIn = (x, y) =>
+      `M ${x + 1.2} ${y - 5.6} V ${y - 1.2} H ${x + 5.6} M ${x - 5.6} ${y + 1.2} H ${x - 1.2} V ${y + 5.6}`;
 
     function discloseMark(n) {
       if (!n._kids) return "";
@@ -3077,16 +3061,10 @@
       const open = !n._collapsed;
       const cx = n.x + n.w - DISC_R - 5;
       const cy = n.y + 4;
-      // The two states know different things, so they say different things.
-      // Open, the children are on screen and counting them again is noise —
-      // what the reader needs is the one way to close the fence. Folded, the
-      // count is all that is known about what is hidden, and `+N` says it
-      // counts things inside, where a bare numeral could be an index, or the
-      // step number the rail draws in an identical disc.
-      const inner = open
-        ? `<path class="disclose-mark lead" d="${chevron(cx, cy, true)}"/>`
-        : `<text class="disclose-n" x="${cx}" y="${cy + 0.5}" text-anchor="middle">+${n._kids}</text>
-           <path class="disclose-mark hint" d="${chevron(cx, cy, false)}"/>`;
+      // One glyph at rest in either state, and no count: the stack behind a
+      // folded block already says "more underneath", and a numeral in a disc
+      // is what the rail uses for a step. How many is still in the name.
+      const inner = `<path class="disclose-mark" d="${open ? cornersIn(cx, cy) : cornersOut(cx, cy)}"/>`;
       const name = `${open ? t.collapse : t.expand} — ${n.label || n.id} (${n._kids})`;
       return `<g class="disclose" data-group="${escapeHtml(n.id)}" role="button" tabindex="0"
           aria-expanded="${open}" aria-label="${escapeHtml(name)}">
