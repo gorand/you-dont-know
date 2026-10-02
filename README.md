@@ -1,7 +1,7 @@
 # You Don't Know
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.7.1-violet.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.2-violet.svg)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-spec-informational.svg)](https://agentskills.io/specification)
 [![npm](https://img.shields.io/badge/npm-%40gorand%2Fyou--dont--know-cb3837.svg)](https://www.npmjs.com/package/@gorand/you-dont-know)
 
@@ -63,8 +63,9 @@ rows is the corridor each horizontal edge run is routed into. So arrows go
 carry its label.
 
 Past ~12 nodes the shell also stages the diagram: groups fold into single
-blocks with a child count, and each step opens exactly the group it talks
-about. Any chevron toggles a group by hand, and the `Detail` switch flips the
+blocks, and each step opens exactly the group it talks about. The disc on a
+group's corner toggles it by hand — its corner marks point out to open and in
+to close — and the `Detail` switch flips the
 whole canvas between `auto`, `all` and `step`. See
 [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 
@@ -108,7 +109,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 
 ## Versioning
 
-SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.7.1** (`package.json` and `SKILL.md` `metadata.version`).
+SemVer. See [CHANGELOG.md](CHANGELOG.md). Current: **0.7.2** (`package.json` and `SKILL.md` `metadata.version`).
 
 ## Contract
 
