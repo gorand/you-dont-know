@@ -403,6 +403,53 @@ whether an *arrowhead* disappears under it. Seven of those against the whole
 path, zero against endpoints; the first number would have sent the design
 back for no reason.
 
+## Round 11 — a real lesson as the fixture: dock, motion, edge vocabulary
+
+The first round driven by a real agent-written lesson rather than canonical
+content: `examples/mfe-architecture`, an anonymised Module Federation repo
+(30 nodes, 6 groups, 22 edges). Three findings, all from the author's own
+screenshots.
+
+- **The dock had one height, and a 15-line excerpt did not fit it.** The cap
+  `min(46%, 27rem)` was right for a short excerpt and wrong for a wide config
+  block, which wrapped and was cut at line 45. Its top edge is now a grip
+  (`role="separator"`): drag, ↑ ↓ (Shift for a quarter), Home/End,
+  Enter or double-click for full height and back. What it sets is a **cap**,
+  not a height — a step with less to say still shrinks to fit — and the cap
+  holds across steps for the session, like the other chrome modes. Two traps
+  met on the way: a toggle that compares the *box* with the maximum never
+  toggles back on a short step (the box sits below its cap), and
+  `aria-valuenow` computed from the box reports 68% at End. Both read the cap
+  now. The re-frame runs once, on release, so the diagram does not move under
+  the reader's hand mid-drag.
+- **A fold, an unfold, or a step that opens another group cut straight to a
+  new layout**, and the reader had to find the block they had just touched.
+  Now FLIP on every re-render: boxes that stayed glide from their old centre,
+  unfolded children come out of the block that held them, folded ones slide
+  into the block that replaces them (the old `<g>`s are re-parented into a
+  ghost layer under the live boxes and dropped afterwards), and edges, which
+  cannot be in two places at once, fade in over the last half. The toggled
+  element then gets the design system's viewfinder corners, closing in once —
+  violet, because this marks focus and not the current material. Driven
+  through the SVG `transform` attribute from `requestAnimationFrame`, not
+  CSS: a CSS transform on a `<g>` holding a `foreignObject` misplaces the
+  label in Safari. Reduced motion skips the glide; the corners still stand
+  there for the same time, because "where did it go" is a question reduced
+  motion does not stop the reader asking. Checked by diffing every edge path,
+  node and viewBox per step against the shipped template for `how-promise`,
+  `inject-pipeline` and `dense-request` once the motion settles: identical.
+- **One dash pattern and one stroke colour were not enough to say two
+  different things about two edges.** `edges[].line` adds `dotted` and
+  `chain` (the dash-dot of a drafting centre line) next to `dashed`, and
+  `kind` is left to say direction; `kind: "dashed"` still parses. A tone
+  is a **token name** (`ink`, `primary`, `accent-2`, `ink-soft` by default),
+  never a value, with an arrowhead marker per tone. Coral is refused by
+  `inject-lesson.mjs`, not just undocumented: an edge that is coral at rest
+  reads as lit. A lit edge goes coral whatever its tone, and keeps its line
+  type — a dotted path stays dotted when it is the current one. Dots are
+  1.9px round caps on a 4px period, a step heavier than the 1.4px tick of a
+  solid edge.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

@@ -73,7 +73,12 @@ down the left margin — a tick per step, the current one circled — and it ope
 its titles *over* the canvas on hover or keyboard focus, so the diagram never
 reflows. Narration and code sit in a dock the shell frames *around*: the scale
 comes from the larger of the two areas that clear it, and the diagram is moved
-off centre only as far as it takes to get out from under the panel. Everything
+off centre only as far as it takes to get out from under the panel. Its top
+edge is a grip — drag it, or focus it and use ↑ ↓, Enter for full height and
+back — and the diagram re-frames around whatever height the reader picks.
+Folding or unfolding a group re-lays the canvas out, so the change is shown:
+boxes glide to their new places, children come out of (or slide into) their
+block, and viewfinder corners close in on the group that was toggled. Everything
 read once rather than per step — the thesis, the catch, the naive alternative,
 the cost — is behind the `Brief` button.
 
@@ -88,6 +93,8 @@ The shell is built on the `<AG/>` design system: a void ground (`#0b0712`), Unbo
 | `--color-primary` | violet | focus rings, structural marks |
 | `--color-accent` | coral | the current material — this step, this node, this edge |
 | `--color-accent-2` | peach | status: a `boundary` node, the lesson's catch |
+
+Edges are the one place a lesson picks a colour, and it picks a token, not a value: `edges[].tone` is `ink-soft` (default), `ink`, `primary` or `accent-2`, next to `edges[].line`, which is `solid`, `dashed`, `dotted` or `chain`. Coral is refused: a lit edge is coral whatever its tone.
 
 The shell does not repaint per lesson. `kind` sets the tone of one dot in the kicker (violet · muted ink · peach) and the chrome names the kind in words — the reader has nothing to choose. `accent` in the JSON is legacy: old values still parse so existing lessons rebuild untouched, but nothing repaints.
 
