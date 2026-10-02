@@ -36,6 +36,22 @@ if (badVia.length) {
   process.exit(1);
 }
 
+const EDGE_LINES = new Set(["solid", "dashed", "dotted", "chain"]);
+const badLine = (data.edges || []).filter((e) => e.line !== undefined && !EDGE_LINES.has(e.line));
+if (badLine.length) {
+  console.error("edges[].line is solid | dashed | dotted | chain: " + badLine.map((e) => `${e.from}->${e.to} (${e.line})`).join(", "));
+  process.exit(1);
+}
+// A tone is a token name. Coral (`accent`) is not one of them on purpose:
+// it is the live edge, and an edge painted coral at rest would read as lit.
+const EDGE_TONES = new Set(["ink-soft", "ink", "primary", "accent-2"]);
+const badTone = (data.edges || []).filter((e) => e.tone !== undefined && !EDGE_TONES.has(e.tone));
+if (badTone.length) {
+  console.error("edges[].tone is ink-soft | ink | primary | accent-2 (accent is reserved for the live edge): "
+    + badTone.map((e) => `${e.from}->${e.to} (${e.tone})`).join(", "));
+  process.exit(1);
+}
+
 const KNOWN_KINDS = new Set([
   "process", "child", "other",
   "start", "decision", "cloud", "queue",

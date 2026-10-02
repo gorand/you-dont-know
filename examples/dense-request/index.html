@@ -812,8 +812,19 @@
       stroke-linecap: butt;
       pointer-events: none;
     }
-    .edge.live { stroke: var(--color-accent); stroke-width: var(--stroke-mark); }
+    /* Line types from the drafting table: continuous, dashed, dotted and
+       chain (the dash-dot of a centre line). */
     .edge.dashed { stroke-dasharray: 5 4; }
+    .edge.dotted { stroke-dasharray: 0 4; stroke-linecap: round; stroke-width: 1.9px; }
+    .edge.chain { stroke-dasharray: 10 3 1.5 3; }
+    /* `tone` names a token, not a hex. Coral is not one of the choices: it
+       is the live edge, and a live edge is coral whatever its tone, which
+       is why `.live` comes after these. The line type survives being lit. */
+    .edge.tone-ink { stroke: color-mix(in srgb, var(--color-ink) 72%, transparent); }
+    .edge.tone-primary { stroke: var(--color-primary); }
+    .edge.tone-accent-2 { stroke: color-mix(in srgb, var(--color-accent-2) 82%, transparent); }
+    .edge.live { stroke: var(--color-accent); stroke-width: var(--stroke-mark); }
+    .edge.dotted.live { stroke-width: 2.2px; }
     .edge-label {
       fill: var(--color-ink-soft);
       font: 400 11px/1 var(--font-mono);
@@ -824,6 +835,9 @@
       stroke-width: 4px;
       stroke-linejoin: round;
     }
+    .edge-label.tone-ink { fill: var(--color-ink); }
+    .edge-label.tone-primary { fill: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink)); }
+    .edge-label.tone-accent-2 { fill: var(--color-accent-2); }
     .edge-label.live { fill: var(--color-accent); }
     .token { fill: var(--color-accent); }
 
@@ -1923,10 +1937,12 @@
         if (prev) {
           prev._n += 1;
           if ((e.label || "") !== prev._label) prev._mixed = true;
-          if ((e.kind || "flow") !== (prev.kind || "flow")) prev.kind = "flow";
+          if (edgeDir(e) !== prev.kind) prev.kind = "flow";
+          if (edgeLine(e) !== prev.line) prev.line = "solid";
+          if (edgeTone(e) !== edgeTone(prev)) delete prev.tone;
           return;
         }
-        const ne = { ...e, from, to, _n: 1, _label: e.label || "" };
+        const ne = { ...e, from, to, kind: edgeDir(e), line: edgeLine(e), _n: 1, _label: e.label || "" };
         if (ne.via && (hidden.has(ne.via) || !visible.has(ne.via))) delete ne.via;
         merged.set(key, ne);
         edges.push(ne);
@@ -3141,14 +3157,46 @@
       </g>`;
     }
 
+    // `line` is how an edge is drawn and `kind` which way it points.
+    // `kind: "dashed"` predates `line` and still means a dashed flow arrow.
+    const EDGE_LINES = new Set(["solid", "dashed", "dotted", "chain"]);
+    const EDGE_TONES = new Set(["ink-soft", "ink", "primary", "accent-2"]);
+    function edgeLine(e) {
+      if (EDGE_LINES.has(e.line)) return e.line;
+      return e.kind === "dashed" ? "dashed" : "solid";
+    }
+    function edgeDir(e) { return e.kind === "back" || e.kind === "both" ? e.kind : "flow"; }
+    // ink-soft is the default stroke, so it needs no class of its own.
+    function edgeTone(e) { return EDGE_TONES.has(e.tone) && e.tone !== "ink-soft" ? e.tone : ""; }
+
+    const TIP_FILL = {
+      "": "color-mix(in srgb, var(--color-ink-soft) 62%, transparent)",
+      live: "var(--color-accent)",
+      ink: "color-mix(in srgb, var(--color-ink) 72%, transparent)",
+      primary: "var(--color-primary)",
+      "accent-2": "color-mix(in srgb, var(--color-accent-2) 82%, transparent)"
+    };
+    function arrowMarkers() {
+      return Object.entries(TIP_FILL).map(([tone, fill]) => {
+        const id = tone ? `arrow-${tone}` : "arrow";
+        return `<marker id="${id}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="${fill}"></path>
+        </marker>
+        <marker id="${id}-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 10 0 L 0 5 L 10 10 z" fill="${fill}"></path>
+        </marker>`;
+      }).join("");
+    }
+
     function edgeMarks(e, liveEdge) {
-      const ek = e.kind || "flow";
-      const live = liveEdge ? " live" : "";
-      const dash = ek === "dashed" ? " dashed" : "";
-      const tip = liveEdge ? "arrow-live" : "arrow";
-      const start = (ek === "back" || ek === "both") ? ` marker-start="url(#${tip}-rev)"` : "";
-      const end = ek === "back" ? "" : ` marker-end="url(#${tip})"`;
-      return { cls: `edge${live}${dash}`, start, end };
+      const dir = edgeDir(e);
+      const line = edgeLine(e);
+      const tone = liveEdge ? "" : edgeTone(e);
+      const tip = liveEdge ? "arrow-live" : tone ? `arrow-${tone}` : "arrow";
+      const start = (dir === "back" || dir === "both") ? ` marker-start="url(#${tip}-rev)"` : "";
+      const end = dir === "back" ? "" : ` marker-end="url(#${tip})"`;
+      const cls = ["edge", liveEdge && "live", line !== "solid" && line, tone && `tone-${tone}`].filter(Boolean).join(" ");
+      return { cls, start, end, tone };
     }
 
     /* ---------- viewport: pan + zoom ----------
@@ -3457,18 +3505,7 @@
             font-family: "Onest", "Avenir Next", "Segoe UI", sans-serif;
           }
         </style>
-        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="color-mix(in srgb, var(--color-ink-soft) 62%, transparent)"></path>
-        </marker>
-        <marker id="arrow-live" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-accent)"></path>
-        </marker>
-        <marker id="arrow-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 10 0 L 0 5 L 10 10 z" fill="color-mix(in srgb, var(--color-ink-soft) 62%, transparent)"></path>
-        </marker>
-        <marker id="arrow-live-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 10 0 L 0 5 L 10 10 z" fill="var(--color-accent)"></path>
-        </marker>
+        ${arrowMarkers()}
       </defs>`;
       const placed = [];
       const edgeEls = [];
@@ -3516,7 +3553,7 @@
         edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
         if (e.label) {
           const y = nudgeLabel(lx, ly, e.label, placed, vertical, nodes);
-          labelEls.push(`<text class="edge-label${liveEdge ? " live" : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
+          labelEls.push(`<text class="edge-label${liveEdge ? " live" : mk.tone ? ` tone-${mk.tone}` : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
         }
       });
       // Only an EXPANDED fence splits into two passes (translucent shell

@@ -6,7 +6,7 @@ General `kind: "how"` lesson (microtask queue).
 
 ## `palette`
 
-Abstract debug surface: ISO shapes, Lucide architecture glyphs, group fences, folder list, edge kinds (`flow` / `dashed` / `back` / `both` / `via`). Placeholder-length labels — not representative of real prose density.
+Abstract debug surface: ISO shapes, Lucide architecture glyphs, group fences, folder list, edge kinds (`flow` / `dashed` / `back` / `both` / `via`), and the `line` types and `tone`s — unlit on the last step, the same edges lit on the one before it. Placeholder-length labels — not representative of real prose density.
 
 ## `inject-pipeline`
 

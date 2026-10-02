@@ -52,7 +52,9 @@
     { "from": "cloud", "to": "queue", "label": "retry", "kind": "back" },
     { "from": "process", "to": "cloud", "label": "sync", "kind": "both" },
     { "from": "action", "to": "inbox", "label": "via node", "via": "junction" },
-    { "from": "host", "to": "boundary", "label": "isolate" }
+    { "from": "host", "to": "boundary", "label": "isolate", "tone": "accent-2" },
+    { "from": "provider", "to": "host", "label": "dotted", "line": "dotted", "tone": "primary" },
+    { "from": "frame", "to": "subroutine", "label": "chain", "line": "chain", "tone": "ink" }
   ],
   "steps": [
     {
@@ -103,11 +105,22 @@
       "id": "edges",
       "title": "Edge kinds",
       "narration": "`flow` default. `dashed` async. `back` reverse marker. `both` two heads. `via` bends through a junction.",
-      "highlight": ["start", "process", "decision", "cloud", "queue", "action", "junction", "inbox", "host", "boundary"],
+      "highlight": ["start", "process", "decision", "cloud", "queue", "action", "junction", "inbox", "host", "boundary", "provider", "frame", "subroutine"],
       "code": {
         "file": "lesson.json",
         "startLine": 1,
         "text": "{ \"from\": \"cloud\", \"to\": \"queue\", \"kind\": \"back\", \"label\": \"retry\" }\n{ \"from\": \"action\", \"to\": \"inbox\", \"via\": \"junction\" }"
+      }
+    },
+    {
+      "id": "lines",
+      "title": "Line types and tones",
+      "narration": "`line`: solid · dashed · dotted · chain. `tone`: ink-soft · ink · primary · accent-2 — a token, never coral. Nothing is lit here; on the previous step the same three edges are, and turn coral whatever their tone while keeping their line.",
+      "highlight": ["g-run", "provider", "frame"],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"from\": \"provider\", \"to\": \"host\", \"line\": \"dotted\", \"tone\": \"primary\" }\n{ \"from\": \"frame\", \"to\": \"subroutine\", \"line\": \"chain\", \"tone\": \"ink\" }\n{ \"from\": \"host\", \"to\": \"boundary\", \"tone\": \"accent-2\" }"
       }
     }
   ]
