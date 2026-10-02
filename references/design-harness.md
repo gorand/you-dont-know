@@ -430,7 +430,10 @@ screenshots.
   ghost layer under the live boxes and dropped afterwards), and edges, which
   cannot be in two places at once, fade in over the last half. The toggled
   element then gets the design system's viewfinder corners, closing in once —
-  violet, because this marks focus and not the current material. Driven
+  violet, because this marks focus and not the current material, and lifted
+  toward the ink (`color-mix(primary 62%, ink)`, the keyword shade) after the
+  first look: the token itself is also the keyboard ring and the `frame`
+  border, and corners in that exact colour read as one of them. Driven
   through the SVG `transform` attribute from `requestAnimationFrame`, not
   CSS: a CSS transform on a `<g>` holding a `foreignObject` misplaces the
   label in Safari. Reduced motion skips the glide; the corners still stand
