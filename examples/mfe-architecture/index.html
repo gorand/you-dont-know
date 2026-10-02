@@ -1,0 +1,3816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0712" />
+  <title>You Don't Know</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    /*
+      Design lock — on-1.ru / <AG/> UI KIT. Dark only; there is no light theme.
+      Roles, and they do not trade places:
+        --color-primary (violet) structural + focus rings ONLY
+        --color-accent  (coral)  the one "you can act here" colour
+        --color-accent-2(peach)  status: a boundary node, the lesson's catch
+      Elevation is surface stepping (bg → surface → surface-2) plus hairlines,
+      never a drop shadow: the two that exist are --shadow-tip / --shadow-sheet.
+      Never hand-pick a hex — derive with color-mix() from the tokens below.
+      Radius ceiling is 6px. No backdrop-filter. Motion is transform/opacity.
+    */
+    :root {
+      --color-bg: #0b0712;
+      --color-surface: #171021;
+      --color-surface-2: #1d1629;
+      --color-ink: #f6f2fa;
+      --color-ink-soft: #a79ac0;
+      --color-line: #2a2138;
+      --color-primary: #8b5cf6;
+      --color-accent: #ff6f5e;
+      --color-accent-2: #ffc24b;
+      --gradient-wave: linear-gradient(135deg, #8b5cf6 0%, #ff6f5e 55%, #ffc24b 100%);
+
+      --space-1: 0.5rem;
+      --space-2: 1rem;
+      --space-3: 1.5rem;
+      --space-4: 2.5rem;
+
+      --radius-1: 3px;
+      --radius-2: 4px;
+      --radius-3: 6px;
+
+      --stroke-hairline: 1px;
+      --stroke-tick: 1.4px;
+      --stroke-mark: 1.5px;
+      --stroke-icon: 1.6;
+
+      --dur-fast: 0.15s;
+      --dur-tip: 0.18s;
+      --dur-hover: 0.2s;
+      --dur-panel: 0.28s;
+      --dur-fade: 0.3s;
+      --dur-travel: 0.4s;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+      --text-3xs: 0.62rem;
+      --text-2xs: 0.68rem;
+      --text-xs: 0.72rem;
+      --text-sm: 0.78rem;
+      --text-md: 0.85rem;
+      --text-base: 0.92rem;
+      --text-lg: 1rem;
+
+      --track-1: 0.06em;
+      --track-2: 0.08em;
+      --track-3: 0.14em;
+      --track-4: 0.18em;
+      --track-5: 0.22em;
+
+      --shadow-tip: 0 8px 24px rgba(0, 0, 0, 0.35);
+      --shadow-sheet: 0 18px 52px rgba(0, 0, 0, 0.55);
+      --scrim-dialog: color-mix(in srgb, var(--color-bg) 84%, transparent);
+      /* The graticule is drawn on the layout's own 16px cell, at the sheet's
+         weight rather than the old two-density grid — one quiet ground, so
+         the 1.4px edge strokes stay the loudest line on the canvas. */
+      --graticule-line: color-mix(in srgb, var(--color-ink-soft) 5%, transparent);
+      --graticule-pitch: 16px;
+
+      --z-below: -1;
+      --z-raised: 5;
+      --z-hover: 20;
+      --z-grain: 50;
+
+      --font-display: "Unbounded", "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-ui: "Onest", "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Consolas, monospace;
+
+      /* "What is behind me" — any mark that knocks a hole in its ground reads
+         this slot instead of assuming --color-bg. A Surface re-declares it. */
+      --ui-ground: var(--color-bg);
+      /* The kind names itself in one of three tones. It never repaints the
+         shell: coral would stop meaning "act here", peach "status". */
+      --kind-ink: var(--color-primary);
+      --rail-w: 3.5rem;
+      --rail-open: 14.5rem;
+    }
+    html[data-kind-tone="soft"] { --kind-ink: var(--color-ink-soft); }
+    html[data-kind-tone="status"] { --kind-ink: var(--color-accent-2); }
+
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; height: 100%; }
+    body {
+      margin: 0;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: var(--color-bg);
+      color: var(--color-ink);
+      font-family: var(--font-ui);
+      font-size: var(--text-base);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: color-mix(in srgb, var(--color-primary) 40%, transparent); color: var(--color-ink); }
+    :focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    /* The page grain, above everything and inert — the sheet's tooth. */
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-grain);
+      pointer-events: none;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .ico {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: var(--stroke-icon);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .ico.fill, .ico .fill { fill: currentColor; stroke: none; }
+
+    /* ---- top bar -------------------------------------------------------
+       Slim: an eyebrow, the title, one line of thesis. Everything that
+       merely DESCRIBES the lesson at length now lives in the brief. */
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-3);
+      align-items: center;
+      padding: 0.6rem var(--space-3);
+      border-bottom: var(--stroke-hairline) solid var(--color-line);
+      min-width: 0;
+    }
+    .ident { min-width: 0; }
+    .eyebrow {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      margin: 0 0 0.2rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      letter-spacing: var(--track-3);
+      text-transform: uppercase;
+      color: var(--color-ink-soft);
+      min-width: 0;
+    }
+    .eyebrow > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kind {
+      display: inline-flex;
+      align-items: baseline;
+      flex: 0 0 auto;
+      color: var(--kind-ink);
+    }
+    .kind:empty { display: none; }
+    .kind::before {
+      content: "";
+      align-self: center;
+      width: 6px;
+      height: 6px;
+      margin-right: 0.45rem;
+      border-radius: 50%;
+      background: var(--kind-ink);
+    }
+    .kind::after {
+      content: "·";
+      margin: 0 0.15rem 0 0.45rem;
+      color: var(--color-line);
+    }
+    h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.02rem, 1.7vw, 1.32rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+      color: var(--color-ink);
+      overflow-wrap: anywhere;
+      text-wrap: balance;
+    }
+    .thesis {
+      margin: 0.24rem 0 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      max-width: 78ch;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .transport {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      flex-wrap: nowrap;
+    }
+    .vrule {
+      width: var(--stroke-hairline);
+      height: 1.5rem;
+      background: var(--color-line);
+      margin: 0 0.2rem;
+      flex: 0 0 auto;
+    }
+    .counter {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: var(--track-1);
+      color: var(--color-ink-soft);
+      min-width: 3.6rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* ---- buttons -------------------------------------------------------
+       No solid variant: emphasis is an accent border, elevation is a step
+       of surface. Outline · quiet · bare, tone neutral · accent. */
+    button.ctrl {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: var(--track-1);
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: var(--color-ink-soft);
+      background: transparent;
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-1);
+      padding: 0.44rem 0.7rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: color var(--dur-hover) var(--ease-out),
+                  border-color var(--dur-hover) var(--ease-out),
+                  transform var(--dur-fast) var(--ease-out),
+                  opacity var(--dur-hover) var(--ease-out);
+    }
+    button.ctrl:hover:not(:disabled) { color: var(--color-ink); border-color: var(--color-accent); }
+    button.ctrl:active:not(:disabled) { transform: scale(0.97); }
+    button.ctrl:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.ctrl.accent { color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line)); }
+    button.ctrl.accent:hover:not(:disabled) { color: var(--color-accent); border-color: var(--color-accent); }
+    button.ctrl.quiet { border-color: transparent; }
+    button.ctrl.quiet:hover:not(:disabled) { border-color: var(--color-line); color: var(--color-ink); }
+    button.ctrl.icon { padding: 0.44rem 0.5rem; }
+    /* A held toggle carries its state on a line, not on colour alone. */
+    button.ctrl[aria-pressed="true"] {
+      color: var(--color-ink);
+      border-color: var(--color-line);
+      border-bottom: var(--stroke-mark) solid var(--color-accent);
+    }
+
+    /* ---- stage: the canvas is the page --------------------------------- */
+    .stage {
+      position: relative;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .canvas {
+      position: absolute;
+      inset: 0 0 0 var(--rail-w);
+      overflow: hidden;
+      background-color: var(--color-bg);
+      background-image:
+        linear-gradient(var(--graticule-line) var(--stroke-hairline), transparent var(--stroke-hairline)),
+        linear-gradient(90deg, var(--graticule-line) var(--stroke-hairline), transparent var(--stroke-hairline));
+      touch-action: none;
+      cursor: grab;
+    }
+    /* Zoomed far out the graticule is only mud — drop it, keep the bloom. */
+    .canvas.coarse { --graticule-line: transparent; }
+    .canvas.panning { cursor: grabbing; }
+    /* One static bloom under the diagram, so the void is lit rather than flat. */
+    .canvas::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: var(--z-below);
+      pointer-events: none;
+      background: radial-gradient(60% 55% at 50% 42%, var(--color-primary) 0%, transparent 70%);
+      opacity: 0.085;
+    }
+    svg.flow {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      color: var(--color-ink);
+    }
+    /* Viewfinder corners: the canvas is a framed sheet, not a bottomless pane. */
+    .corner {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      pointer-events: none;
+      border: var(--stroke-mark) solid color-mix(in srgb, var(--color-ink-soft) 34%, transparent);
+      opacity: 0.9;
+    }
+    .corner.tl { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+    .corner.tr { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
+    .corner.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
+    .corner.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
+
+    /* Marginalia — the sheet's own notes, turned up in the margin. */
+    .marginalia {
+      position: absolute;
+      top: 14px;
+      left: 44px;
+      margin: 0;
+      z-index: var(--z-raised);
+      pointer-events: none;
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      letter-spacing: var(--track-5);
+      text-transform: uppercase;
+      color: var(--color-ink-soft);
+      opacity: 0.82;
+    }
+    .hint {
+      position: absolute;
+      top: 14px;
+      right: 44px;
+      z-index: var(--z-raised);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      pointer-events: none;
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      letter-spacing: var(--track-1);
+      color: var(--color-ink-soft);
+      opacity: 0.82;
+    }
+    .hint kbd {
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      color: var(--color-ink-soft);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-1);
+      padding: 0 0.28em;
+      line-height: 1.6;
+    }
+
+    /* ---- the rail: a dimension line down the sheet ----------------------
+       Collapsed it is the scale — a hairline, a tick per step, the current
+       one circled as a callout. Hovering or tabbing into it opens the
+       titles OVER the canvas, so the diagram never reflows. */
+    .rail {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: var(--z-hover);
+      width: var(--rail-w);
+      max-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: var(--space-2) 0;
+      background: transparent;
+      border: var(--stroke-hairline) solid transparent;
+      border-left: 0;
+      border-radius: 0 var(--radius-2) var(--radius-2) 0;
+      transition: width var(--dur-panel) var(--ease-out),
+                  background-color var(--dur-panel) var(--ease-out),
+                  border-color var(--dur-panel) var(--ease-out);
+      scrollbar-width: thin;
+    }
+    .rail:hover, .rail:focus-within {
+      width: var(--rail-open);
+      background: var(--color-surface);
+      --ui-ground: var(--color-surface);
+      border-color: var(--color-line);
+      box-shadow: var(--shadow-sheet);
+    }
+    /* A dimension line measures a span, so the rule runs tick to tick and
+       stops — each step draws the segment down to the next one, and the
+       first and last carry the coral end caps. */
+    .step::before {
+      content: "";
+      position: absolute;
+      left: calc(var(--rail-w) / 2);
+      top: 50%;
+      height: 100%;
+      width: var(--stroke-hairline);
+      background: color-mix(in srgb, var(--color-ink-soft) 22%, transparent);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .step:last-child::before { display: none; }
+    .step:first-child::after, .step:last-child::after {
+      content: "";
+      position: absolute;
+      left: calc(var(--rail-w) / 2);
+      width: 9px;
+      height: var(--stroke-tick);
+      background: var(--color-accent);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .step:first-child::after { top: calc(50% - 1.15rem); }
+    .step:last-child::after { bottom: calc(50% - 1.15rem); }
+    .step {
+      position: relative;
+      display: grid;
+      grid-template-columns: var(--rail-w) minmax(0, 1fr);
+      align-items: center;
+      gap: var(--space-1);
+      width: var(--rail-open);
+      padding: 0.3rem 0.7rem 0.3rem 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+    .step:active { transform: scale(0.99); }
+    .step .n {
+      justify-self: center;
+      display: grid;
+      place-items: center;
+      width: 1.65rem;
+      height: 1.65rem;
+      border: var(--stroke-tick) solid transparent;
+      border-radius: 50%;
+      /* knocks a hole in the rule it sits on */
+      background: var(--ui-ground);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-ink-soft);
+      transition: color var(--dur-hover) var(--ease-out),
+                  border-color var(--dur-hover) var(--ease-out);
+    }
+    .step:hover .n { color: var(--color-ink); border-color: var(--color-line); }
+    .step[aria-current="true"] .n {
+      color: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+    .step .t {
+      font-size: var(--text-md);
+      line-height: 1.35;
+      color: var(--color-ink-soft);
+      overflow-wrap: anywhere;
+      opacity: 0;
+      transition: opacity var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
+    }
+    .rail:hover .step .t, .rail:focus-within .step .t { opacity: 1; }
+    .step:hover .t { color: var(--color-ink); }
+    .step[aria-current="true"] .t { color: var(--color-ink); }
+
+    /* ---- the dock: narration and code, floating on the sheet ----------- */
+    .dock {
+      position: absolute;
+      left: calc(var(--rail-w) + var(--space-2));
+      bottom: var(--space-2);
+      z-index: var(--z-raised);
+      width: min(31rem, calc(100% - var(--rail-w) - var(--space-2) * 2));
+      max-height: min(46%, 27rem);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      background: var(--color-surface);
+      --ui-ground: var(--color-surface);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-2);
+      box-shadow: var(--shadow-sheet);
+    }
+    .dock-head {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3) 0.6rem;
+    }
+    /* The step's number as a drafting callout — the same disc the rail circles. */
+    .dock-n {
+      display: grid;
+      place-items: center;
+      width: 1.65rem;
+      height: 1.65rem;
+      border: var(--stroke-tick) solid var(--color-accent);
+      border-radius: 50%;
+      background: var(--ui-ground);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-accent);
+    }
+    .dock-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.08rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.18;
+      color: var(--color-ink);
+      overflow-wrap: anywhere;
+    }
+    .dock-body {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 0;
+      overflow: hidden;
+    }
+    .narration {
+      padding: 0 var(--space-3) var(--space-2);
+      font-size: var(--text-lg);
+      line-height: 1.65;
+      color: var(--color-ink);
+      overflow-wrap: anywhere;
+      overflow: auto;
+      max-height: 11rem;
+    }
+
+    /* ---- code ---------------------------------------------------------- */
+    .code {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 0;
+      overflow: hidden;
+      background: var(--color-surface-2);
+      --ui-ground: var(--color-surface-2);
+      border-top: var(--stroke-hairline) solid var(--color-line);
+    }
+    .code:not(.on) { display: none; }
+    .code-head {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 0.5rem var(--space-3);
+      color: var(--color-ink-soft);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      letter-spacing: var(--track-1);
+      min-width: 0;
+    }
+    .code-head .file { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .code-body {
+      margin: 0;
+      padding: 0 0 var(--space-2);
+      overflow: auto;
+      min-height: 0;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      line-height: 1.65;
+      scrollbar-width: thin;
+    }
+    .line {
+      display: grid;
+      grid-template-columns: 2.6rem minmax(0, 1fr);
+      min-width: 0;
+    }
+    .ln {
+      color: var(--color-ink-soft);
+      text-align: right;
+      padding: 0 0.7rem 0 var(--space-1);
+      user-select: none;
+      font-variant-numeric: tabular-nums;
+      border-right: var(--stroke-hairline) solid var(--color-line);
+      margin-right: 0.7rem;
+    }
+    .lt {
+      color: var(--color-ink);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      padding-right: var(--space-3);
+    }
+    /* Three hues, all from the tokens. Coral stays out of the code: inside
+       the dock it would read as something the reader can click. */
+    /* --color-primary is a focus/structure colour, not a text one: straight
+       from the token it lands at 4.14:1 on the code surface. Lifted toward
+       the ink so a keyword clears AA without leaving the violet role. */
+    .tok-kw { color: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink)); }
+    .tok-str { color: var(--color-accent-2); }
+    .tok-num { color: color-mix(in srgb, var(--color-primary) 55%, var(--color-ink)); }
+    .tok-cmt { color: var(--color-ink-soft); opacity: 0.85; font-style: italic; }
+    .tok-type { color: var(--color-ink-soft); }
+
+    /* ---- zoombar -------------------------------------------------------- */
+    .zoombar {
+      position: absolute;
+      right: var(--space-2);
+      bottom: var(--space-2);
+      z-index: var(--z-raised);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-2);
+      background: var(--color-surface);
+      --ui-ground: var(--color-surface);
+      box-shadow: var(--shadow-tip);
+    }
+    .zoombar button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      min-width: 26px;
+      height: 24px;
+      padding: 0 0.4rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--color-ink-soft);
+      background: transparent;
+      border: 0;
+      border-radius: var(--radius-1);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: color var(--dur-hover) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    }
+    .zoombar button:hover { color: var(--color-accent); }
+    .zoombar button:active { transform: scale(0.92); }
+    .zoombar .ico { width: 13px; height: 13px; }
+    .zoombar .zsep { width: var(--stroke-hairline); height: 16px; margin: 0 3px; background: var(--color-line); }
+    .zoombar .pct { min-width: 3.1rem; font-variant-numeric: tabular-nums; }
+    .zoombar .detail { letter-spacing: var(--track-1); }
+    .zoombar [hidden] { display: none; }
+
+    /* ---- diagram -------------------------------------------------------- */
+    .node { cursor: pointer; touch-action: manipulation; }
+    /* The reset has to be on :focus, not :focus-visible. A <g tabindex="0">
+       is not a button, so the UA draws its own ring on a plain mouse focus —
+       5px of system blue, a colour this palette does not contain. */
+    .node:focus { outline: none; }
+    /* A fence's shell rect lives in the other render pass, so the ring has
+       to be able to land on the hit rect too. */
+    .node:focus-visible .node-shell,
+    .node:focus-visible .hit {
+      stroke: var(--color-primary);
+      stroke-width: 3;
+    }
+    .node .node-shell {
+      fill: var(--color-surface);
+      stroke: var(--color-line);
+      stroke-width: var(--stroke-hairline);
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: fill var(--dur-hover) var(--ease-out), stroke var(--dur-hover) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    }
+    .node:active .node-shell { transform: scale(0.97); }
+    .node:hover .node-shell { stroke: color-mix(in srgb, var(--color-accent) 60%, var(--color-line)); }
+    /* Highlighted is the card recipe: the border takes the accent and the
+       fill steps one surface up. No colour wash over the label. */
+    .node.on .node-shell {
+      fill: var(--color-surface-2);
+      stroke: var(--color-accent);
+      stroke-width: var(--stroke-mark);
+    }
+    .node.kind-boundary .node-shell { stroke: var(--color-accent-2); stroke-dasharray: 5 3; }
+    .node.on.kind-boundary .node-shell {
+      fill: var(--color-surface-2);
+      stroke: var(--color-accent-2);
+      stroke-dasharray: none;
+    }
+    .node.kind-frame .node-shell { stroke-dasharray: 4 3; stroke: color-mix(in srgb, var(--color-primary) 40%, var(--color-line)); }
+    .node.kind-group .node-shell {
+      fill: color-mix(in srgb, var(--color-surface) 45%, transparent);
+      stroke: var(--color-line);
+      stroke-dasharray: 5 4;
+    }
+    .node.on.kind-group .node-shell {
+      fill: color-mix(in srgb, var(--color-surface) 70%, transparent);
+      stroke: color-mix(in srgb, var(--color-ink-soft) 34%, transparent);
+      stroke-dasharray: 5 4;
+    }
+    /* Folded, a group is one object standing in for its children — so it
+       steps a surface up rather than staying a fence. */
+    .node.kind-group.collapsed .node-shell {
+      fill: var(--color-surface-2);
+      stroke: var(--color-line);
+      stroke-dasharray: none;
+    }
+    .node.on.kind-group.collapsed .node-shell {
+      fill: var(--color-surface-2);
+      stroke: var(--color-accent);
+    }
+    .node-stack {
+      fill: var(--color-surface);
+      stroke: var(--color-line);
+      stroke-width: var(--stroke-hairline);
+      pointer-events: none;
+    }
+    .node.on .node-stack { stroke: color-mix(in srgb, var(--color-accent) 50%, var(--color-line)); }
+    .disclose { cursor: pointer; touch-action: manipulation; }
+    /* Filled with the canvas ground, not a surface: that is what knocks the
+       hole in the border the disc straddles. --stroke-tick is the drafting
+       weight the design system gives a callout ring. */
+    .disclose-bg {
+      fill: var(--color-bg);
+      stroke: var(--color-line);
+      stroke-width: var(--stroke-tick);
+      transition: stroke var(--dur-hover) var(--ease-out), stroke-width var(--dur-hover) var(--ease-out);
+    }
+    .disclose:hover .disclose-bg { stroke: var(--color-accent); }
+    /* At rest the disc carries a count, which is information and should not
+       shout; the chevron — the invitation — arrives on hover and on focus. */
+    .disclose-n {
+      fill: var(--color-ink-soft);
+      font: 500 11px var(--font-mono);
+      pointer-events: none;
+      dominant-baseline: middle;
+      transition: opacity var(--dur-hover) var(--ease-out), fill var(--dur-hover) var(--ease-out);
+    }
+    .disclose-mark {
+      fill: none;
+      stroke-width: var(--stroke-mark);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      transition: opacity var(--dur-hover) var(--ease-out), stroke var(--dur-hover) var(--ease-out);
+    }
+    /* Open: the glyph is the point of the control and is always there — it
+       is the only way to close a fence. Folded: the count leads and the
+       glyph is the invitation, so it waits for hover or focus. */
+    .disclose-mark.lead { stroke: var(--color-ink-soft); opacity: 1; }
+    .disclose-mark.hint { stroke: var(--color-accent); opacity: 0; }
+    .disclose:hover .disclose-mark.lead,
+    .disclose:focus-visible .disclose-mark.lead { stroke: var(--color-accent); }
+    .disclose:hover .disclose-n,
+    .disclose:focus-visible .disclose-n { opacity: 0; }
+    .disclose:hover .disclose-mark.hint,
+    .disclose:focus-visible .disclose-mark.hint { opacity: 1; }
+    /* Focus wins over hover, and it is violet — the role the system reserves
+       for a focus ring. An outline on an SVG <g> is not dependable. */
+    .disclose:focus { outline: none; }
+    .disclose:focus-visible .disclose-bg {
+      stroke: var(--color-primary);
+      stroke-width: 3;
+    }
+    .node-ico {
+      overflow: visible;
+      pointer-events: none;
+      stroke: var(--color-ink-soft);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.85;
+    }
+    .node.on .node-ico { stroke: var(--color-accent); opacity: 1; }
+    .node.kind-boundary .node-ico { stroke: var(--color-accent-2); opacity: 1; }
+    .node.on.kind-boundary .node-ico { stroke: var(--color-accent-2); }
+    .node-label {
+      font: 500 13px/1.3 var(--font-ui);
+      color: var(--color-ink);
+      -webkit-text-fill-color: var(--color-ink);
+      padding: 8px 8px 8px 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      height: 100%;
+      pointer-events: none;
+    }
+    .node-label .txt {
+      min-width: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .edge {
+      fill: none;
+      stroke: color-mix(in srgb, var(--color-ink-soft) 42%, transparent);
+      stroke-width: var(--stroke-tick);
+      stroke-linejoin: round;
+      stroke-linecap: butt;
+      pointer-events: none;
+    }
+    .edge-halo {
+      fill: none;
+      stroke: var(--color-bg);
+      stroke-width: 7;
+      stroke-linejoin: round;
+      stroke-linecap: butt;
+      pointer-events: none;
+    }
+    .edge.live { stroke: var(--color-accent); stroke-width: var(--stroke-mark); }
+    .edge.dashed { stroke-dasharray: 5 4; }
+    .edge-label {
+      fill: var(--color-ink-soft);
+      font: 400 11px/1 var(--font-mono);
+      letter-spacing: var(--track-1);
+      pointer-events: none;
+      paint-order: stroke fill;
+      stroke: var(--color-bg);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+    .edge-label.live { fill: var(--color-accent); }
+    .token { fill: var(--color-accent); }
+
+    /* ---- asides --------------------------------------------------------- */
+    .fn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.15rem;
+      height: 1.15rem;
+      margin: 0 0.08em 0 0.22em;
+      padding: 0;
+      border: var(--stroke-hairline) solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--color-accent);
+      cursor: pointer;
+      vertical-align: -0.18em;
+      touch-action: manipulation;
+      transition: border-color var(--dur-hover) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    }
+    .fn:hover, .fn[aria-expanded="true"] { border-color: var(--color-accent); }
+    .fn:active { transform: scale(0.88); }
+    .fn .ico { width: 13px; height: 13px; display: block; }
+    .aside-title {
+      display: block;
+      margin: 0 0 var(--space-1);
+      color: var(--color-accent);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      font-weight: 500;
+      letter-spacing: var(--track-3);
+      text-transform: uppercase;
+    }
+    .pop {
+      position: fixed;
+      z-index: var(--z-grain);
+      width: min(26rem, calc(100vw - var(--space-3)));
+      max-height: min(42vh, 22rem);
+      overflow: auto;
+      padding: var(--space-2);
+      background: var(--color-surface-2);
+      --ui-ground: var(--color-surface-2);
+      color: var(--color-ink);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-3);
+      box-shadow: var(--shadow-tip);
+      font-size: var(--text-sm);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+      user-select: text;
+    }
+    .pop[hidden] { display: none; }
+
+    /* ---- the brief ------------------------------------------------------
+       Everything that is read once and then stopped being looked at: the
+       catch, the naive alternative, the cost, the repeats. It used to hold
+       ~110px of the canvas hostage on every step. */
+    dialog.brief {
+      width: min(40rem, calc(100vw - var(--space-3) * 2));
+      max-height: min(80vh, 44rem);
+      padding: 0;
+      overflow: auto;
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-2);
+      background: var(--color-surface);
+      --ui-ground: var(--color-surface);
+      color: var(--color-ink);
+      box-shadow: var(--shadow-sheet);
+    }
+    dialog.brief::backdrop { background: var(--scrim-dialog); }
+    /* The one recurring "alive" element, and the only gradient in the shell. */
+    .brief-bar { height: 2px; background: var(--gradient-wave); }
+    .brief-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-3) var(--space-2);
+    }
+    .brief-head h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.22rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .brief-thesis {
+      margin: var(--space-1) 0 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-base);
+      line-height: 1.6;
+    }
+    .brief-body {
+      display: grid;
+      gap: var(--space-3);
+      padding: 0 var(--space-3) var(--space-3);
+    }
+    .brief-body section { display: grid; gap: 0.35rem; }
+    .brief-body h3 {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      font-weight: 500;
+      letter-spacing: var(--track-3);
+      text-transform: uppercase;
+      color: var(--color-ink-soft);
+    }
+    .brief-body .note-problem h3 { color: var(--color-accent-2); }
+    .brief-body h3 .ico { width: 15px; height: 15px; }
+    .brief-body p {
+      margin: 0;
+      font-size: var(--text-base);
+      line-height: 1.65;
+      color: var(--color-ink);
+      overflow-wrap: anywhere;
+    }
+    .brief-body section[hidden] { display: none; }
+
+    /* Section rule — outward chevrons closing over a dashed cut line. */
+    .cut {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      color: var(--color-ink-soft);
+      opacity: 0.5;
+    }
+    .cut::before, .cut::after {
+      content: "";
+      flex: 1;
+      height: var(--stroke-hairline);
+      background: repeating-linear-gradient(90deg, currentColor 0 14px, transparent 14px 23px);
+    }
+    .cut .ico { width: 12px; height: 12px; }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      background: var(--color-surface-2);
+      color: var(--color-ink);
+      border: var(--stroke-hairline) solid var(--color-line);
+      padding: 0.04em 0.3em;
+      border-radius: var(--radius-1);
+    }
+    .lt code { background: none; border: 0; color: inherit; padding: 0; }
+
+    /* ---- chrome modes ---------------------------------------------------
+       Session-only, both of them: a reload comes back to the full layout.
+       `no-dock` gives the whole sheet to the diagram. `dzen` additionally
+       drops what DESCRIBES the lesson — the eyebrow with its kind, the
+       thesis, the brief button — and keeps what DRIVES it. */
+    body.no-dock .dock { display: none; }
+    body.dzen .eyebrow,
+    body.dzen .thesis,
+    body.dzen #brief { display: none; }
+    body.dzen .top { padding: 0.45rem var(--space-3); }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    /* Under 1100px the rail cannot hover open — it becomes a scrolling
+       strip under the bar, and the dock a sheet across the bottom. The
+       stage stops being one absolutely-positioned layer and becomes a
+       two-row grid, so the strip and the canvas each get real height. */
+    @media (max-width: 1100px) {
+      .top { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+      .transport { flex-wrap: wrap; justify-content: flex-start; }
+      .stage { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+      .rail {
+        position: static;
+        width: auto;
+        max-height: none;
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-1);
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: var(--space-1) var(--space-2);
+        border: 0;
+        border-bottom: var(--stroke-hairline) solid var(--color-line);
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+      }
+      .rail:hover, .rail:focus-within {
+        width: auto;
+        background: transparent;
+        --ui-ground: var(--color-bg);
+        border-color: transparent;
+        border-bottom-color: var(--color-line);
+        box-shadow: none;
+      }
+      .step {
+        position: relative;
+        width: auto;
+        flex: 0 0 13rem;
+        grid-template-columns: auto minmax(0, 1fr);
+        padding: 0.3rem 0.5rem;
+      }
+      .step .t { opacity: 1; }
+      /* The rule runs across the strip now, not down a gutter. */
+      .step::before {
+        top: 50%;
+        left: auto;
+        right: 0;
+        width: 100%;
+        height: var(--stroke-hairline);
+        transform: translateY(-50%);
+      }
+      .step:first-child::after, .step:last-child::after {
+        top: 50%;
+        bottom: auto;
+        left: auto;
+        width: var(--stroke-tick);
+        height: 9px;
+        transform: translateY(-50%);
+      }
+      .step:first-child::after { left: 0.2rem; }
+      .step:last-child::after { right: 0.2rem; }
+      .canvas { position: relative; inset: auto; min-height: 0; }
+      .marginalia, .hint, .corner { display: none; }
+      .dock {
+        left: var(--space-2);
+        width: calc(100% - var(--space-2) * 2);
+        max-height: 48%;
+      }
+      .zoombar { top: var(--space-2); bottom: auto; }
+    }
+    @media (max-width: 720px) {
+      h1 { font-size: 1.02rem; }
+      .thesis { -webkit-line-clamp: 1; }
+      .step { flex: 0 0 11rem; }
+      .dock { max-height: 54%; }
+      .narration { max-height: 8rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="ident">
+      <p class="eyebrow"><span class="kind" id="kind"></span><span id="pattern"></span></p>
+      <h1 id="title"></h1>
+      <p class="thesis" id="thesis"></p>
+    </div>
+    <div class="transport">
+      <button class="ctrl quiet" id="brief" type="button">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 2.5 H12.5 V13.5 H3.5 Z"/><path d="M5.8 5.6 H10.2"/><path d="M5.8 8 H10.2"/><path d="M5.8 10.4 H8.6"/></svg>
+        <span id="lbl-brief">Brief</span>
+      </button>
+      <span class="vrule" aria-hidden="true"></span>
+      <button class="ctrl quiet icon" id="dzen" type="button" aria-pressed="false">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 2.5 H2.5 V6.5"/><path d="M9.5 13.5 H13.5 V9.5"/><path d="M2.5 2.5 L6.2 6.2"/><path d="M13.5 13.5 L9.8 9.8"/></svg>
+      </button>
+      <button class="ctrl quiet icon" id="panel" type="button" aria-pressed="true">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M2 9.5 H14"/></svg>
+      </button>
+      <span class="vrule" aria-hidden="true"></span>
+      <span class="counter" id="counter"></span>
+      <button class="ctrl" id="prev" type="button">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 L5 8 L10 13"/></svg>
+        <span id="lbl-back">Back</span>
+      </button>
+      <button class="ctrl" id="next" type="button">
+        <span id="lbl-next">Next</span>
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3 L11 8 L6 13"/></svg>
+      </button>
+      <button class="ctrl accent" id="play" type="button"></button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <nav class="rail" id="steps" aria-label="Steps"></nav>
+    <div class="canvas" id="canvas">
+      <svg class="flow" id="flow" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+      <span class="corner tl" aria-hidden="true"></span>
+      <span class="corner tr" aria-hidden="true"></span>
+      <span class="corner bl" aria-hidden="true"></span>
+      <span class="corner br" aria-hidden="true"></span>
+      <p class="marginalia" id="stage-copy"></p>
+      <p class="hint" id="hint"></p>
+      <div class="zoombar" id="zoombar">
+        <button type="button" id="zoom-out" title="Zoom out">
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8 H12.5"/></svg>
+        </button>
+        <button type="button" id="zoom-pct" class="pct" title="Reset zoom">100%</button>
+        <button type="button" id="zoom-in" title="Zoom in">
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5 V12.5"/><path d="M3.5 8 H12.5"/></svg>
+        </button>
+        <span class="zsep" aria-hidden="true"></span>
+        <button type="button" id="zoom-fit" title="Fit">
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6 V2.5 H6"/><path d="M10 2.5 H13.5 V6"/><path d="M13.5 10 V13.5 H10"/><path d="M6 13.5 H2.5 V10"/></svg>
+        </button>
+        <button type="button" id="zoom-step" title="Focus step">
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.5"/><circle class="fill" cx="8" cy="8" r="1.5"/><path d="M8 1.5 V3"/><path d="M8 13 V14.5"/><path d="M1.5 8 H3"/><path d="M13 8 H14.5"/></svg>
+        </button>
+        <span class="zsep" id="detail-sep" aria-hidden="true"></span>
+        <button type="button" id="detail" class="detail" title="Detail level">
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 L14.5 5 L8 8.2 L1.5 5 Z"/><path d="M1.5 8 L8 11.2 L14.5 8"/><path d="M1.5 11 L8 14.2 L14.5 11"/></svg>
+          <span id="detail-label">auto</span>
+        </button>
+      </div>
+    </div>
+    <aside class="dock" id="dock">
+      <div class="dock-head">
+        <span class="dock-n" id="dock-n" aria-hidden="true"></span>
+        <h2 class="dock-title" id="dock-title"></h2>
+      </div>
+      <div class="dock-body">
+        <div class="narration" id="narration"></div>
+        <div class="code" id="code">
+          <div class="code-head">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5 H10 L13 5.5 V13.5 H4 Z"/><path d="M10 2.5 V5.5 H13"/></svg>
+            <span class="file" id="code-file"></span>
+          </div>
+          <div class="code-body" id="code-body"></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <dialog class="brief" id="brief-dlg" aria-labelledby="brief-title">
+    <div class="brief-bar" aria-hidden="true"></div>
+    <div class="brief-head">
+      <div>
+        <h2 id="brief-title"></h2>
+        <p class="brief-thesis" id="thesis-full"></p>
+      </div>
+      <button class="ctrl quiet icon" id="brief-close" type="button">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4 L12 12"/><path d="M12 4 L4 12"/></svg>
+      </button>
+    </div>
+    <div class="brief-body">
+      <section class="note-problem">
+        <h3>
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2 L14.4 13.7 H1.6 Z"/><path d="M8 6.2 V10"/><circle class="fill" cx="8" cy="11.75" r="1.1"/></svg>
+          <span id="lbl-problem">The catch</span>
+        </h3>
+        <p id="problem"></p>
+      </section>
+      <section>
+        <h3>
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="9" width="11" height="4" rx="1"/><rect x="4" y="5.5" width="8" height="3.5" rx="1"/><rect x="5.5" y="2.5" width="5" height="3" rx="1"/></svg>
+          <span id="lbl-why">Why not the basic way</span>
+        </h3>
+        <p id="whyNotBasic"></p>
+      </section>
+      <section>
+        <h3>
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5 V6.5"/><path d="M2 6.5 H14"/><path d="M8 6.5 V12.5"/><path d="M6 12.5 H10"/><path d="M3.4 6.5 V8"/><path d="M2.2 8 V10.6 H4.6 V8"/><path d="M12.6 6.5 V8"/><path d="M11.4 8 V10.6 H13.8 V8"/></svg>
+          <span id="lbl-cost">Cost</span>
+        </h3>
+        <p id="cost"></p>
+      </section>
+      <section class="repeats-wrap" id="repeats-wrap" hidden>
+        <p class="cut" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 16 16"><path d="M9.5 3 L14 8 L9.5 13"/></svg>
+        </p>
+        <p id="repeats"></p>
+      </section>
+    </div>
+  </dialog>
+
+  <div id="pop" class="pop" hidden role="dialog" aria-labelledby="pop-title">
+    <strong class="aside-title" id="pop-title"></strong>
+    <div id="pop-body"></div>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+  <script type="application/json" id="lesson-data">{
+  "lang": "ru",
+  "kind": "architecture",
+  "detail": "progressive",
+  "title": "Как устроен leave-planner: экспозы, роли и общее ядро",
+  "pattern": "Module Federation · 11 экспозов",
+  "repo": "leave-planner · обезличенный пример",
+  "thesis": "Одиннадцать независимых корней делят между собой не друг друга, а общее ядро: состояние, UI и утилиты.",
+  "problem": "Из списка экспозов не видно, кто что делает и где общее. Страниц много, названия похожи, а связи идут через импорты общих модулей, а не через вызовы между экспозами.",
+  "whyNotBasic": "«Одно приложение с роутами» не объясняет, почему у каждого экспоза свои провайдеры и почему нет межстраничных импортов. «Просто набор экспозов» не объясняет, откуда берётся повторяющаяся схема заявка + задача.",
+  "cost": "Провайдеры и часть структуры дублируются в корнях, а перенос держит собственное параллельное состояние. Взамен экспозы грузятся независимо и не ломают друг друга.",
+  "asides": [
+    {
+      "id": "why-selfcontained",
+      "title": "Зачем самодостаточный корень",
+      "body": "Хост грузит экспоуз как отдельный бандл и не знает, что внутри. Поэтому каждый корень сам ставит `DesignSystemProvider`, `WidthProvider` и `QueryProvider`: без них экспоуз упадёт при монтировании в чужом дереве. Цена: провайдеры дублируются в 11 корнях, зато экспозы можно грузить и обновлять независимо."
+    },
+    {
+      "id": "why-401",
+      "title": "Известный пробел: handle401",
+      "body": "`useUnauthorizedHandler(handle401)` вызывается в корнях планирования, подписания и переноса. В отгулах проп `handle401` доходит только до контекста `RequestTimeOffProvider`, а `RequestUnpaid`, `TaskManagerTimeOff` и `TaskManagerUnpaid` его не принимают. Там 401 не обработается. Это вопрос #1 в `docs/spec/open-questions.md`; чинить точечно и по запросу."
+    },
+    {
+      "id": "why-local-ctx",
+      "title": "Почему провайдеры собираются на странице",
+      "body": "Редьюсеры и расчёты лежат в `src/state/*` и общие, но данные для них приходят из хуков конкретного экрана. Поэтому провайдеры монтируются во view каждой страницы с её `apiData`, а страничный `PlanIntervalsProvider` оборачивает общий редьюсер и добавляет правила и пересечения с коллегами."
+    },
+    {
+      "id": "why-parallel",
+      "title": "Перенос живёт отдельно от планирования",
+      "body": "Заявка на перенос не использует `plan-info` и `plan-limits`: у неё свои `reschedule-info`, `reschedule-limits`, `reschedule-intervals` и `reschedule-rules`. Общего с планированием только чистые функции из `plan-intervals`, например `intervalsOverlap`. Параллельное состояние дублирует структуру, но не тащит правила планирования в сценарий переноса."
+    },
+    {
+      "id": "why-nocross",
+      "title": "Почему HR_API_URLS вынесен в config",
+      "body": "В заголовке файла сказано, что константы перенесены из `RequestUnpaid/config/hrApi`, чтобы убрать кросс-страничные импорты. Правило: страницы не импортируют друг друга, общее живёт в `src/config`, `src/components`, `src/utils`, `src/state`."
+    }
+  ],
+  "files": [
+    "vite.config.ts",
+    "src/main.tsx",
+    "src/pages",
+    "src/state",
+    "src/components",
+    "src/config",
+    "src/mocks/handlers.ts"
+  ],
+  "repeats": [],
+  "nodes": [
+    {
+      "id": "g-host",
+      "label": "Хост и корень",
+      "kind": "group"
+    },
+    {
+      "id": "host",
+      "label": "Хост-портал",
+      "kind": "host",
+      "parent": "g-host"
+    },
+    {
+      "id": "contract",
+      "label": "basePath · handle401",
+      "kind": "process",
+      "parent": "g-host"
+    },
+    {
+      "id": "root",
+      "label": "Корень экспоуза",
+      "kind": "provider",
+      "parent": "g-host"
+    },
+    {
+      "id": "g-plan",
+      "label": "Планирование графика",
+      "kind": "group"
+    },
+    {
+      "id": "emp",
+      "label": "TaskPlanEmployee",
+      "kind": "process",
+      "parent": "g-plan"
+    },
+    {
+      "id": "mgr",
+      "label": "TaskPlanManager",
+      "kind": "process",
+      "parent": "g-plan"
+    },
+    {
+      "id": "mfe",
+      "label": "PlanForEmployee",
+      "kind": "process",
+      "parent": "g-plan"
+    },
+    {
+      "id": "g-sign",
+      "label": "Подписание графика",
+      "kind": "group"
+    },
+    {
+      "id": "signer",
+      "label": "TaskScheduleSign",
+      "kind": "process",
+      "parent": "g-sign"
+    },
+    {
+      "id": "alias",
+      "label": "…ScheduleApproval (алиас)",
+      "kind": "subroutine",
+      "parent": "g-sign"
+    },
+    {
+      "id": "g-req",
+      "label": "Заявка + задача",
+      "kind": "group"
+    },
+    {
+      "id": "transfer",
+      "label": "Перенос: Request + Task",
+      "kind": "process",
+      "parent": "g-req"
+    },
+    {
+      "id": "dayoff",
+      "label": "Отгул: Request + Manager",
+      "kind": "process",
+      "parent": "g-req"
+    },
+    {
+      "id": "unpaid",
+      "label": "БС: Request + Manager",
+      "kind": "process",
+      "parent": "g-req"
+    },
+    {
+      "id": "g-state",
+      "label": "Общее: состояние",
+      "kind": "group"
+    },
+    {
+      "id": "pinfo",
+      "label": "plan-info",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "plimits",
+      "label": "plan-limits",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "pints",
+      "label": "plan-intervals",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "rules",
+      "label": "plan-rules · 13 правил",
+      "kind": "decision",
+      "parent": "g-state"
+    },
+    {
+      "id": "tvac",
+      "label": "team-calendar",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "uleave",
+      "label": "unpaid-leave",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "g-ui",
+      "label": "Общее: UI и утилиты",
+      "kind": "group"
+    },
+    {
+      "id": "shell",
+      "label": "Layout · Header · Mobile…",
+      "kind": "process",
+      "parent": "g-ui"
+    },
+    {
+      "id": "bits",
+      "label": "Loader · PanelAction · Tooltip",
+      "kind": "process",
+      "parent": "g-ui"
+    },
+    {
+      "id": "utils",
+      "label": "taskUtils · pluralize · даты",
+      "kind": "process",
+      "parent": "g-ui"
+    },
+    {
+      "id": "g-data",
+      "label": "Данные и dev",
+      "kind": "group"
+    },
+    {
+      "id": "rq",
+      "label": "хуки @acme/query-hooks",
+      "kind": "cloud",
+      "parent": "g-data"
+    },
+    {
+      "id": "apicfg",
+      "label": "config/hrApi · gantt",
+      "kind": "file",
+      "parent": "g-data"
+    },
+    {
+      "id": "msw",
+      "label": "MSW: фикстура по task_id",
+      "kind": "queue",
+      "parent": "g-data"
+    }
+  ],
+  "edges": [
+    {
+      "from": "host",
+      "to": "contract",
+      "label": "передаёт"
+    },
+    {
+      "from": "contract",
+      "to": "root",
+      "label": "props"
+    },
+    {
+      "from": "root",
+      "to": "emp",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "mgr",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "mfe",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "signer",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "transfer",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "dayoff",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "unpaid",
+      "label": "Routes"
+    },
+    {
+      "from": "alias",
+      "to": "signer",
+      "label": "реэкспорт",
+      "kind": "dashed"
+    },
+    {
+      "from": "emp",
+      "to": "pints",
+      "label": "провайдер"
+    },
+    {
+      "from": "mgr",
+      "to": "tvac",
+      "label": "команда"
+    },
+    {
+      "from": "mfe",
+      "to": "plimits",
+      "label": "лимиты"
+    },
+    {
+      "from": "transfer",
+      "to": "pints",
+      "label": "хелперы",
+      "kind": "dashed"
+    },
+    {
+      "from": "dayoff",
+      "to": "pinfo",
+      "label": "календарь"
+    },
+    {
+      "from": "unpaid",
+      "to": "uleave",
+      "label": "БС"
+    },
+    {
+      "from": "pints",
+      "to": "rules",
+      "label": "правила"
+    },
+    {
+      "from": "signer",
+      "to": "shell",
+      "label": "каркас"
+    },
+    {
+      "from": "dayoff",
+      "to": "utils",
+      "label": "даты"
+    },
+    {
+      "from": "pinfo",
+      "to": "rq",
+      "label": "запрос"
+    },
+    {
+      "from": "msw",
+      "to": "rq",
+      "label": "подмена",
+      "kind": "dashed"
+    },
+    {
+      "from": "unpaid",
+      "to": "apicfg",
+      "label": "URL"
+    }
+  ],
+  "steps": [
+    {
+      "id": "host",
+      "title": "Хост и список экспозов",
+      "narration": "Хост грузит экспоузы по имени из `vite.config.ts`. Их 11, и у каждого своя папка в `src/pages`; алиас `TaskScheduleApproval` нужен, пока хост просит старое имя.",
+      "highlight": [
+        "host",
+        "contract",
+        "g-host"
+      ],
+      "code": {
+        "file": "vite.config.ts",
+        "startLine": 40,
+        "text": "      exposes: {\n        './TaskPlanEmployee': './src/pages/TaskPlanEmployee',\n        './TaskPlanManager': './src/pages/TaskPlanManager',\n        './TaskPlanForEmployee': './src/pages/TaskPlanForEmployee',\n        './TaskScheduleSign': './src/pages/TaskScheduleSign',\n        './RequestReschedule': './src/pages/RequestReschedule',\n        './TaskReschedule': './src/pages/TaskReschedule',\n        './RequestUnpaid': './src/pages/RequestUnpaid',\n        './TaskManagerUnpaid': './src/pages/TaskManagerUnpaid',\n        './RequestTimeOff': './src/pages/RequestTimeOff',\n        './TaskManagerTimeOff': './src/pages/TaskManagerTimeOff',\n        // алиас старого имени подписания: хост загружает его до сих пор\n        './TaskScheduleApproval':\n          './src/pages/TaskScheduleApproval',\n      },"
+      }
+    },
+    {
+      "id": "root",
+      "title": "Самодостаточный корень",
+      "narration": "Каждый экспоуз ставит свои провайдеры и роуты, а хост передаёт только `basePath` и `handle401` [[why-selfcontained]]. Экспозы друг друга не вызывают.",
+      "highlight": [
+        "root",
+        "contract",
+        "g-host"
+      ],
+      "code": {
+        "file": "src/pages/TaskScheduleSign/TaskScheduleSign.tsx",
+        "startLine": 37,
+        "text": "const TaskScheduleSign: React.FC<TProps> = ({ handle401 }) => {\n  useUnauthorizedHandler(handle401);\n\n  return (\n    <DesignSystemProvider value={appDS}>\n      <WidthProvider {...dsUtils.WIDTH_OPTIONS}>\n        <QueryProvider>\n          <Notifications />\n          <Routes>\n            <Route path=\":taskId/*\" element={<TaskScheduleSignContent />} />\n          </Routes>\n        </QueryProvider>\n      </WidthProvider>\n    </DesignSystemProvider>\n  );\n};\n\nexport default withMonitoring(React.memo(TaskScheduleSign));\n"
+      }
+    },
+    {
+      "id": "plan",
+      "title": "Планирование: три роли",
+      "narration": "Сотрудник собирает график, руководитель согласует команду, руководитель планирует за сотрудника. Три страницы (`TaskPlanForEmployee` на схеме сокращён) сидят на одних и тех же `plan-*` и `team-calendar` [[why-401]].",
+      "highlight": [
+        "g-plan",
+        "emp",
+        "mgr",
+        "mfe",
+        "pints",
+        "tvac",
+        "plimits"
+      ],
+      "expand": [
+        "g-state"
+      ],
+      "code": {
+        "file": "src/pages/TaskPlanEmployee/views/ViewDesktop/ViewDesktop.tsx",
+        "startLine": 93,
+        "text": "  }\n\n  return (\n    <PlanInfoProvider apiData={queryPlan.data}>\n      <PlanLimitsProvider apiData={queryLimits.data}>\n        <PlanIntervalsProvider apiData={queryPlan.data}>\n          <div className={styles['view-desktop']}>\n            <Content />\n          </div>"
+      }
+    },
+    {
+      "id": "sign",
+      "title": "Подписание графика",
+      "narration": "`TaskScheduleSign` — отдельный экран на подпись, без доменного состояния планирования. Старое имя экспоуза просто реэкспортирует его.",
+      "highlight": [
+        "g-sign",
+        "signer",
+        "alias",
+        "shell"
+      ],
+      "code": {
+        "file": "src/pages/TaskScheduleApproval/index.tsx",
+        "startLine": 1,
+        "text": "/** @deprecated Старое имя expose для хоста — используйте TaskScheduleSign */\nexport { default } from '../TaskScheduleSign';"
+      }
+    },
+    {
+      "id": "req",
+      "title": "Перенос, отгул, БС",
+      "narration": "Везде одна схема: заявка сотрудника и задача руководителя. Перенос живёт на своём состоянии [[why-parallel]], отгул опирается на `plan-info`, БС добавляет `unpaid-leave`.",
+      "highlight": [
+        "g-req",
+        "transfer",
+        "dayoff",
+        "unpaid",
+        "pinfo",
+        "uleave",
+        "pints"
+      ],
+      "code": {
+        "file": "src/pages/RequestTimeOff/RequestTimeOff.tsx",
+        "startLine": 18,
+        "text": "type TProps = { basePath?: string; handle401?: () => Promise<void> };\n\nconst RequestView: FC<TProps> = ({ basePath = '', handle401 }) => {\n  const { isMobile } = useWidth();\n\n  return (\n    <RequestTimeOffProvider basePath={basePath} handle401={handle401}>\n      {isMobile ? <ViewMobile /> : <ViewDesktop />}\n    </RequestTimeOffProvider>\n  );\n};"
+      }
+    },
+    {
+      "id": "state",
+      "title": "Общее ядро: состояние",
+      "narration": "Домен разложен по `src/state/*` в одном формате: context, reducer, `calculations.ts`, `normalize.ts`. Правила валидации лежат отдельным движком [[why-local-ctx]].",
+      "highlight": [
+        "g-state",
+        "pinfo",
+        "plimits",
+        "pints",
+        "rules",
+        "tvac",
+        "uleave"
+      ],
+      "code": {
+        "file": "src/pages/TaskPlanEmployee/state/plan-intervals/plan-intervals.context.tsx",
+        "startLine": 9,
+        "text": "\nimport usePlanIntervalsReducer from '@/state/plan-intervals/plan-intervals.reducer';\nimport {\n  RuleOutcome,\n  TIntervalWithOverlaps,\n  TPlanIntervalWithRules,\n  useColleagueOverlaps,\n  useLimitsSync,\n} from '@/state/plan-intervals';\nimport {\n  useIntervalsWithRules,\n  usePlanRules,\n} from '@/state/plan-intervals/plan-rules/rules';\nimport { usePlanInfo } from '@/state/plan-info';\nimport type { TPlanRule } from '@/state/plan-intervals/plan-rules';\nimport { RULES } from '@/state/plan-intervals/plan-rules/config';\n\ntype TPlanIntervalsContextValue = {\n  state: {"
+      }
+    },
+    {
+      "id": "ui",
+      "title": "Общее ядро: UI и утилиты",
+      "narration": "Загрузка, панель действий и подсказки об ошибке используются почти везде, каркас и даты тоже. Это то, что экспозы делят между собой вместо импортов друг друга [[why-nocross]].",
+      "highlight": [
+        "g-ui",
+        "shell",
+        "bits",
+        "utils",
+        "apicfg"
+      ],
+      "code": {
+        "file": "src/config/hrApi.ts",
+        "startLine": 1,
+        "text": "/**\n * Общие URL-ы HR API, используемые на нескольких страницах.\n * Определение перенесено сюда из @/pages/RequestUnpaid/config/hrApi\n * для устранения кросс-страничных импортов.\n */\nexport const HR_API_URLS = {\n  EMPLOYEE_CALENDAR: '/api/hr/absence/employee-calendar',\n  CHECK_UNPAID: '/api/hr/absence/check-unpaid',\n  CHECK_TIME_OFF: '/api/hr/absence/check-time-off',\n  DOCS: '/api/hr/absence/time-off-docs',\n  UNPAID_DOCS: '/api/hr/absence/unpaid-docs',\n  REQUEST_INFO: '/api/hr/absence/request-info',"
+      }
+    },
+    {
+      "id": "data",
+      "title": "Данные и dev на моках",
+      "narration": "Данные берутся только из хуков `@acme/query-hooks`. В dev MSW подменяет эндпоинты, а сценарий выбирается по `task_id` из URL.",
+      "highlight": [
+        "g-data",
+        "rq",
+        "msw",
+        "apicfg",
+        "pinfo",
+        "plimits"
+      ],
+      "code": {
+        "file": "src/mocks/handlers.ts",
+        "startLine": 148,
+        "text": "  http.get(ApiPath.PLAN_LIMITS, async ({ request }) => {\n    const url = new URL(request.url);\n\n    const taskId = url.searchParams.get('task_id');\n\n    await new Promise((res) => {\n      setTimeout(res, 3000);\n    });\n\n    if (taskId === '1001') {\n      return HttpResponse.json(planLimitsFixture1001);\n    }\n\n    if (taskId === '1002') {\n      return HttpResponse.json(planLimitsFixture1001);\n    }"
+      }
+    }
+  ]
+}</script>
+  <script>
+    let LESSON = null;
+    try { LESSON = JSON.parse(document.getElementById("lesson-data").textContent); } catch (e) { LESSON = null; }
+
+    const $ = (id) => document.getElementById(id);
+    let i = 0;
+    let timer = null;
+    // What the canvas is showing right now: a disclosure toggle or a detail
+    // switch re-renders the same step without walking the rail.
+    let CURRENT = { highlight: [], step: null, live: [] };
+    let justDragged = false;
+    /* Chrome state. Session only, by design: nothing here is persisted, so a
+       reload always comes back to the full layout.
+
+       The two switches are independent. Dzen closes the dock as part of
+       clearing the chrome, but the dock keeps its own control while Dzen is
+       on — opening it there reveals the panel and does NOT leave the mode.
+       Leaving Dzen restores what the chrome looked like on the way in, with
+       one exception: a reader who worked the dock switch BY HAND while in
+       Dzen has made a newer, explicit choice, and that one stands.
+       An explicit action is never undone by a later mode switch. */
+    let dzen = false;
+    let panelOpen = true;
+    let preDzen = null;
+    const REDUCE_MOTION = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+    function tokenMark(d, liveEdge) {
+      if (!liveEdge) return "";
+      if (!REDUCE_MOTION) {
+        return `<circle r="4" class="token"><animateMotion dur="1.6s" repeatCount="indefinite" path="${d}" /></circle>`;
+      }
+      const start = /M\s*([\d.-]+)\s+([\d.-]+)/.exec(d);
+      return start ? `<circle r="4" class="token" cx="${start[1]}" cy="${start[2]}"></circle>` : "";
+    }
+
+    // The kind names itself in one of the three tones the palette already
+    // has roles for. It does NOT repaint the shell: coral is the only
+    // "you can act here" colour and peach the only status one, and a lesson
+    // that washed either across its chrome would spend both.
+    const TONES = ["structural", "soft", "status"];
+    const KIND_TONE = {
+      how: "structural", concept: "structural", api: "structural",
+      architecture: "soft", repo: "soft",
+      security: "status", vuln: "status"
+    };
+    const UI = {
+      en: {
+        back: "Back", next: "Next", play: "Play", pause: "Pause",
+        dzen: "Focus mode — diagram only", dzenOff: "Leave focus mode",
+        panel: "Narration and code", brief: "Brief", briefClose: "Close the brief",
+        kinds: {
+          how: "How it works", concept: "Concept", api: "API",
+          architecture: "Architecture", repo: "Repository",
+          security: "Security", vuln: "Vulnerability"
+        },
+        stage: "Diagram · node opens a step", problem: "The catch", why: "Why not the basic way",
+        cost: "Cost", steps: "Steps", more: "More",
+        zoomIn: "Zoom in (+)", zoomOut: "Zoom out (−)", zoomReset: "Zoom 100% (1)",
+        fit: "Fit the whole diagram (0)", focus: "Zoom to this step (2)",
+        expand: "Expand", collapse: "Collapse", opensStep: "opens step",
+        detailTitle: "Detail: auto · all open · current step only",
+        detail: { auto: "auto", full: "all", step: "step" },
+        hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
+      },
+      ru: {
+        back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза",
+        dzen: "Дзен-режим — только схема", dzenOff: "Выйти из дзен-режима",
+        panel: "Нарратив и код", brief: "Бриф", briefClose: "Закрыть бриф",
+        kinds: {
+          how: "Как работает", concept: "Концепция", api: "API",
+          architecture: "Архитектура", repo: "Репозиторий",
+          security: "Безопасность", vuln: "Уязвимость"
+        },
+        stage: "Схема · узел открывает шаг", problem: "Проблема", why: "Почему не базовый подход",
+        cost: "Цена", steps: "Шаги", more: "Подробнее",
+        zoomIn: "Приблизить (+)", zoomOut: "Отдалить (−)", zoomReset: "Масштаб 100% (1)",
+        fit: "Вписать схему целиком (0)", focus: "Приблизить к текущему шагу (2)",
+        expand: "Раскрыть", collapse: "Свернуть", opensStep: "открывает шаг",
+        detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
+        detail: { auto: "авто", full: "всё", step: "шаг" },
+        hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
+      }
+    };
+    function ui() {
+      const lang = String((LESSON && LESSON.lang) || document.documentElement.lang || "en").slice(0, 2);
+      return UI[lang] || UI.en;
+    }
+    const KW = new Set("const let var function return if else for while of in new class extends import from export default type interface as async await void throw try catch finally switch case break continue true false null undefined this super typeof instanceof delete enum satisfies implements private public protected readonly static get set".split(" "));
+    const KIND_ALIAS = { child: "process", other: "process", hoc: "frame", consumer: "inbox" };
+    const KIND_ICON = {
+      provider: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+      host: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/>',
+      frame: '<line x1="22" x2="2" y1="6" y2="6"/><line x1="22" x2="2" y1="18" y2="18"/><line x1="6" x2="6" y1="2" y2="22"/><line x1="18" x2="18" y1="2" y2="22"/>',
+      inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+      process: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+      boundary: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+      action: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+      start: '<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/><circle cx="12" cy="12" r="10"/>',
+      decision: '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+      cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+      queue: '<line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/>',
+      folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+      file: '<path d="M10 12.5 8 15l2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/>',
+      group: '<path d="M3 7V5c0-1.1.9-2 2-2h2"/><path d="M17 3h2c1.1 0 2 .9 2 2v2"/><path d="M21 17v2c0 1.1-.9 2-2 2h-2"/><path d="M7 21H5c-1.1 0-2-.9-2-2v-2"/><rect width="7" height="5" x="7" y="7" rx="1"/><rect width="7" height="5" x="10" y="12" rx="1"/>',
+      junction: '<circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/>',
+      subroutine: '<rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/>'
+    };
+    function kindOf(n) {
+      const k = (n && n.kind) || "process";
+      return KIND_ALIAS[k] || k;
+    }
+
+    function glyph(kind) {
+      return KIND_ICON[kind] || KIND_ICON.process;
+    }
+
+    function ico(inner) {
+      return `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${inner}</svg>`;
+    }
+
+    /* ---------- progressive disclosure ----------
+       A `kind: "group"` node can stand in FOR its children instead of
+       fencing them. Collapsed it is one solid block, and every edge that
+       touched a hidden child re-anchors onto it (self-loops inside the
+       group drop, parallel edges merge with a ×N label); expanded it is the
+       dashed fence it has always been. Which state a group is in comes from
+       three layers, most specific first: an explicit toggle on that group,
+       the canvas-wide detail mode, then the lesson's own default — where a
+       step pulls exactly its own material open and lets the rest stay
+       folded. That last layer is the staged reveal: top level is a handful
+       of large shapes, detail arrives one step (or one click) at a time.
+    */
+    const collapseOverride = new Map();
+    let detailMode = null; // null = auto · "full" = everything open · "step" = only the current step opens
+
+    function nodeIndex() {
+      const by = {};
+      (LESSON.nodes || []).forEach((n) => { by[n.id] = n; });
+      return by;
+    }
+
+    function groupList() {
+      return (LESSON.nodes || []).filter((n) => kindOf(n) === "group");
+    }
+
+    function childrenDeep(id) {
+      const by = nodeIndex();
+      const out = [];
+      (LESSON.nodes || []).forEach((n) => {
+        let p = n.parent;
+        let guard = 0;
+        while (p && guard++ < 12) {
+          if (p === id) { out.push(n); return; }
+          p = by[p] && by[p].parent;
+        }
+      });
+      return out;
+    }
+
+    function collapsibleGroups() {
+      return groupList().filter((g) => childrenDeep(g.id).length > 0);
+    }
+
+    function isComplex() {
+      const n = (LESSON.nodes || []).length;
+      const e = (LESSON.edges || []).length;
+      return collapsibleGroups().length > 1 && (n > 12 || e > 14);
+    }
+
+    function stepNeeds(gid, highlight, step) {
+      if (step && (step.expand || []).indexOf(gid) >= 0) return true;
+      const live = new Set(highlight || []);
+      // The group's OWN id being highlighted means "look at this container",
+      // not "unpack it" — only a lit child opens the fence.
+      return childrenDeep(gid).some((k) => live.has(k.id));
+    }
+
+    function stagedByDefault(g) {
+      if (LESSON.detail === "full") return false;
+      if (typeof g.collapsed === "boolean") return g.collapsed;
+      if (LESSON.detail === "progressive") return true;
+      return isComplex();
+    }
+
+    function collapsedSet(highlight, step) {
+      const out = new Set();
+      collapsibleGroups().forEach((g) => {
+        let collapsed;
+        if (collapseOverride.has(g.id)) collapsed = collapseOverride.get(g.id);
+        else if (detailMode === "full") collapsed = false;
+        else if (detailMode === "step") collapsed = !stepNeeds(g.id, highlight, step);
+        else collapsed = stagedByDefault(g) && !stepNeeds(g.id, highlight, step);
+        if (collapsed) out.add(g.id);
+      });
+      return out;
+    }
+
+    function isFence(n) { return kindOf(n) === "group" && !n._collapsed; }
+
+    // One entry point for every manual fold/unfold, so all of them share the
+    // same rule: the step does not change and the frame does not move.
+    function setCollapsed(id, collapsed) {
+      collapseOverride.set(id, collapsed);
+      renderFlow(CURRENT.highlight, CURRENT.step, id);
+    }
+
+    function visibleGraph(collapsed) {
+      const by = nodeIndex();
+      const hidden = new Set();
+      const anchorOf = {};
+      (LESSON.nodes || []).forEach((n) => {
+        let top = null;
+        let p = n.parent;
+        let guard = 0;
+        while (p && guard++ < 12) {
+          if (collapsed.has(p)) top = p; // the OUTERMOST collapsed ancestor wins
+          p = by[p] && by[p].parent;
+        }
+        anchorOf[n.id] = top || n.id;
+        if (top) hidden.add(n.id);
+      });
+      const nodes = (LESSON.nodes || []).filter((n) => !hidden.has(n.id)).map((n) => {
+        const kids = kindOf(n) === "group" ? childrenDeep(n.id).length : 0;
+        const copy = { ...n };
+        if (kids) copy._kids = kids;
+        if (collapsed.has(n.id)) copy._collapsed = true;
+        return copy;
+      });
+      const visible = new Set(nodes.map((n) => n.id));
+      const merged = new Map();
+      const edges = [];
+      (LESSON.edges || []).forEach((e) => {
+        const from = anchorOf[e.from] || e.from;
+        const to = anchorOf[e.to] || e.to;
+        if (from === to) return; // both ends folded into the same block
+        if (!visible.has(from) || !visible.has(to)) return;
+        const key = from + "\t" + to;
+        const prev = merged.get(key);
+        if (prev) {
+          prev._n += 1;
+          if ((e.label || "") !== prev._label) prev._mixed = true;
+          if ((e.kind || "flow") !== (prev.kind || "flow")) prev.kind = "flow";
+          return;
+        }
+        const ne = { ...e, from, to, _n: 1, _label: e.label || "" };
+        if (ne.via && (hidden.has(ne.via) || !visible.has(ne.via))) delete ne.via;
+        merged.set(key, ne);
+        edges.push(ne);
+      });
+      edges.forEach((e) => {
+        if (e._n < 2) return;
+        e.label = e._mixed || !e._label ? `×${e._n}` : `${e._label} ×${e._n}`;
+      });
+      return { nodes, edges, anchorOf };
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    // The tone belongs to the lesson, not to the reader, and there is no
+    // switcher in the chrome — so there is nothing to remember between
+    // loads either. A lesson written against the old three-accent shell
+    // still builds: its `accent` maps onto the tone its kind would have
+    // picked anyway, it just no longer repaints anything but the dot.
+    function applyKindTone(kind, accent) {
+      const legacy = { iris: "structural", glacier: "soft", dusk: "status", cinnabar: "status", kinpaku: "status", patina: "structural" };
+      const tone = (accent && legacy[accent]) || KIND_TONE[kind] || "structural";
+      document.documentElement.setAttribute("data-kind-tone", TONES.includes(tone) ? tone : "structural");
+    }
+
+    const INFO_ICO = '<circle cx="8" cy="8" r="5.5"/><circle class="fill" cx="8" cy="5.1" r="1.15"/><rect class="fill" x="7.25" y="7.1" width="1.5" height="4.15" rx="0.7"/>';
+    let popBtn = null;
+
+    function findAside(id) {
+      return (LESSON.asides || []).find((a) => a.id === id) || null;
+    }
+
+    function closePop() {
+      const pop = $("pop");
+      if (!pop || pop.hidden) return;
+      pop.hidden = true;
+      if (popBtn) popBtn.setAttribute("aria-expanded", "false");
+      popBtn = null;
+    }
+
+    function placePop(btn) {
+      const pop = $("pop");
+      const r = btn.getBoundingClientRect();
+      const pad = 12;
+      const pw = Math.min(pop.offsetWidth, window.innerWidth - pad * 2);
+      const ph = pop.offsetHeight;
+      let left = r.left;
+      let top = r.bottom + 8;
+      if (left + pw > window.innerWidth - pad) left = window.innerWidth - pad - pw;
+      if (left < pad) left = pad;
+      if (top + ph > window.innerHeight - pad) top = r.top - 8 - ph;
+      if (top < pad) top = pad;
+      pop.style.left = left + "px";
+      pop.style.top = top + "px";
+    }
+
+    function openPop(btn, id) {
+      const meta = findAside(id);
+      if (!meta) return;
+      if (popBtn === btn && !$("pop").hidden) {
+        closePop();
+        return;
+      }
+      closePop();
+      popBtn = btn;
+      $("pop-title").textContent = meta.title || ui().more;
+      renderRich($("pop-body"), meta.body || "", false);
+      btn.setAttribute("aria-expanded", "true");
+      const pop = $("pop");
+      pop.hidden = false;
+      placePop(btn);
+    }
+
+    function renderRich(el, text, withAsides) {
+      el.textContent = "";
+      const allow = withAsides !== false;
+      const s = String(text || "");
+      const re = /`([^`]+)`|\[\[([A-Za-z0-9_-]+)\]\]/g;
+      let last = 0;
+      let m;
+      while ((m = re.exec(s))) {
+        if (m.index > last) el.append(s.slice(last, m.index));
+        if (m[1] != null) {
+          const code = document.createElement("code");
+          code.textContent = m[1];
+          el.append(code);
+        } else if (allow) {
+          const meta = findAside(m[2]);
+          if (meta) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "fn";
+            btn.innerHTML = ico(INFO_ICO);
+            btn.title = meta.title || ui().more;
+            btn.setAttribute("aria-label", meta.title || ui().more);
+            btn.setAttribute("aria-expanded", "false");
+            btn.setAttribute("aria-haspopup", "dialog");
+            btn.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              openPop(btn, meta.id);
+            });
+            el.append(btn);
+          }
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < s.length) el.append(s.slice(last));
+    }
+
+    function pad(n) { return String(n + 1).padStart(2, "0"); }
+
+    function highlightLine(line, state) {
+      const out = [];
+      let i = 0;
+      if (state.block) {
+        const end = line.indexOf("*/");
+        if (end < 0) {
+          out.push(["cmt", line]);
+          return out;
+        }
+        out.push(["cmt", line.slice(0, end + 2)]);
+        state.block = false;
+        i = end + 2;
+      }
+      while (i < line.length) {
+        if (line.startsWith("/*", i)) {
+          const end = line.indexOf("*/", i + 2);
+          if (end < 0) {
+            out.push(["cmt", line.slice(i)]);
+            state.block = true;
+            break;
+          }
+          out.push(["cmt", line.slice(i, end + 2)]);
+          i = end + 2;
+          continue;
+        }
+        if (line.startsWith("//", i)) {
+          out.push(["cmt", line.slice(i)]);
+          break;
+        }
+        const q = line[i];
+        if (q === '"' || q === "'" || q === "`") {
+          let j = i + 1;
+          while (j < line.length) {
+            if (line[j] === "\\") { j += 2; continue; }
+            if (line[j] === q) { j += 1; break; }
+            j += 1;
+          }
+          out.push(["str", line.slice(i, j)]);
+          i = j;
+          continue;
+        }
+        if (q === "<" && /[A-Za-z]/.test(line[i + 1] || "")) {
+          let j = i + 1;
+          if (line[j] === "/") j += 1;
+          const start = j;
+          while (/[\w.]/.test(line[j] || "")) j += 1;
+          out.push(["p", line.slice(i, start)]);
+          out.push(["type", line.slice(start, j)]);
+          i = j;
+          continue;
+        }
+        if (/\d/.test(q) && (i === 0 || !/[\w$]/.test(line[i - 1]))) {
+          let j = i;
+          while (/[\d._]/.test(line[j] || "")) j += 1;
+          out.push(["num", line.slice(i, j)]);
+          i = j;
+          continue;
+        }
+        if (/[A-Za-z_$]/.test(q)) {
+          let j = i;
+          while (/[\w$]/.test(line[j] || "")) j += 1;
+          const w = line.slice(i, j);
+          const kind = KW.has(w) ? "kw" : (/^[A-Z]/.test(w) ? "type" : "id");
+          out.push([kind, w]);
+          i = j;
+          continue;
+        }
+        out.push(["p", q]);
+        i += 1;
+      }
+      return out;
+    }
+
+    function renderCode(text, startLine) {
+      const body = $("code-body");
+      body.textContent = "";
+      const lines = String(text || "").replace(/\n$/, "").split("\n");
+      const base = Number(startLine) || 1;
+      const state = { block: false };
+      lines.forEach((line, idx) => {
+        const row = document.createElement("div");
+        row.className = "line";
+        const ln = document.createElement("span");
+        ln.className = "ln";
+        ln.textContent = String(base + idx);
+        const lt = document.createElement("span");
+        lt.className = "lt";
+        highlightLine(line, state).forEach(([kind, chunk]) => {
+          if (kind === "p" || kind === "id") {
+            lt.append(chunk);
+            return;
+          }
+          const span = document.createElement("span");
+          span.className = "tok-" + kind;
+          span.textContent = chunk;
+          lt.append(span);
+        });
+        if (!line) lt.append(" ");
+        row.append(ln, lt);
+        body.append(row);
+      });
+    }
+
+    function syncChrome() {
+      const t = ui();
+      document.body.classList.toggle("dzen", dzen);
+      document.body.classList.toggle("no-dock", !panelOpen);
+      const d = $("dzen");
+      d.setAttribute("aria-pressed", dzen ? "true" : "false");
+      d.setAttribute("aria-label", dzen ? t.dzenOff : t.dzen);
+      d.title = dzen ? t.dzenOff : t.dzen;
+      const p = $("panel");
+      p.setAttribute("aria-pressed", panelOpen ? "true" : "false");
+      p.setAttribute("aria-label", t.panel);
+      p.title = t.panel;
+    }
+
+    function setPanel(open, byReader) {
+      panelOpen = open;
+      // Touching the panel by hand inside Dzen replaces the snapshot: the
+      // reader has said what they want, so leaving Dzen must not undo it.
+      if (byReader && dzen) preDzen = null;
+      syncChrome();
+    }
+
+    function setDzen(on) {
+      if (on === dzen) return;
+      if (on) {
+        preDzen = { panel: panelOpen };
+        dzen = true;
+        panelOpen = false;
+      } else {
+        dzen = false;
+        if (preDzen) panelOpen = preDzen.panel;
+        preDzen = null;
+      }
+      syncChrome();
+    }
+
+    function setPlay(playing) {
+      const t = ui();
+      $("play").innerHTML = playing
+        ? `${ico('<rect x="4" y="3.5" width="2.6" height="9" rx="0.4"/><rect x="9.4" y="3.5" width="2.6" height="9" rx="0.4"/>')}<span>${t.pause}</span>`
+        : `${ico('<path class="fill" d="M5 3.2 L12.5 8 L5 12.8 Z"/>')}<span>${t.play}</span>`;
+    }
+
+    function isChain(nodes, edges) {
+      if (nodes.length < 2 || edges.length !== nodes.length - 1) return false;
+      const ids = new Set(nodes.map((n) => n.id));
+      const out = Object.fromEntries(nodes.map((n) => [n.id, 0]));
+      const inn = Object.fromEntries(nodes.map((n) => [n.id, 0]));
+      for (let i = 0; i < edges.length; i++) {
+        const e = edges[i];
+        if (!ids.has(e.from) || !ids.has(e.to) || e.from === e.to) return false;
+        out[e.from] += 1;
+        inn[e.to] += 1;
+      }
+      const sources = nodes.filter((n) => inn[n.id] === 0);
+      const sinks = nodes.filter((n) => out[n.id] === 0);
+      if (sources.length !== 1 || sinks.length !== 1) return false;
+      return nodes.every((n) => out[n.id] <= 1 && inn[n.id] <= 1);
+    }
+
+    /* ---------- one spacing grid ----------
+       Every box, gap and pad below is a whole number of CELL, and the canvas
+       paints one graticule line every CELL. Before this
+       the drawn grid was 24px while the layout ran on 40 / 52 / 104 / 16 —
+       the lines described nothing, and a same-row arrow got 40px of run,
+       less than the label it had to carry. The unit IS the layout now: a
+       horizontal edge always has six cells to be read in, and every node
+       edge lands on a drawn line.
+    */
+    const CELL = 16;
+    const M = {
+      pad: CELL * 2,          // 32  canvas margin
+      nodeW: CELL * 12,       // 192
+      nodeH: CELL * 4,        // 64
+      colGap: CELL * 6,       // 96  room for a horizontal edge label
+      rowGap: CELL * 7,       // 112 the corridor every horizontal run lives in
+      childGapX: CELL * 3,    // 48
+      childGapY: CELL * 3,    // 48  a group's rows leave a corridor too
+      groupPadX: CELL * 2,    // 32
+      groupHead: CELL * 3,    // 48  fence caption band
+      groupFoot: CELL * 2,    // 32
+      unitGap: CELL * 2,      // 32
+      rankGap: CELL * 6,      // 96  two stacked edge labels fit
+      maxRowW: CELL * 60,     // 960
+      timelineW: CELL * 18,   // 288
+      timelineGap: CELL * 3,  // 48
+      treeW: CELL * 15,       // 240
+      treeH: CELL * 3,        // 48
+      treeGap: CELL,          // 16
+      indent: CELL * 2        // 32
+    };
+    const snap = (v) => Math.round(v / CELL) * CELL;
+
+    // A collapsed group stands for everything inside it, so it outweighs a
+    // leaf node on purpose: the top level of a staged diagram should read as
+    // a few large shapes, not as more of the same boxes.
+    const COLLAPSED_GROW_W = CELL * 3;
+    const COLLAPSED_GROW_H = CELL * 2;
+    function unitW(n, boxW) { return n._collapsed ? boxW + COLLAPSED_GROW_W : boxW; }
+    function unitH(n, boxH) { return n._collapsed ? boxH + COLLAPSED_GROW_H : boxH; }
+
+    function placeRow(row, li, boxW, boxH, gapX, gapY, padY, canvasW) {
+      const ws = row.map((n) => unitW(n, boxW));
+      const hs = row.map((n) => unitH(n, boxH));
+      const rowH = Math.max(...hs);
+      const rowW = ws.reduce((a, b) => a + b, 0) + Math.max(0, row.length - 1) * gapX;
+      const y0 = padY + li * (boxH + gapY);
+      let x = Math.max(M.pad, snap((canvasW - rowW) / 2));
+      return row.map((n, idx) => {
+        const box = { ...n, x, y: y0 + snap((rowH - hs[idx]) / 2), w: ws[idx], h: hs[idx] };
+        x += ws[idx] + gapX;
+        return box;
+      });
+    }
+
+    function layoutTimeline(nodes) {
+      const boxW = M.timelineW, boxH = M.nodeH, gapY = M.timelineGap, pad = M.pad, x = CELL * 3;
+      return nodes.map((n, idx) => ({ ...n, x, y: pad + idx * (boxH + gapY), w: boxW, h: boxH }));
+    }
+
+    function layoutGrouped(nodes, keyFn) {
+      const groups = new Map();
+      nodes.forEach((n) => {
+        const L = keyFn(n);
+        if (!groups.has(L)) groups.set(L, []);
+        groups.get(L).push(n);
+      });
+      const boxW = M.nodeW, boxH = M.nodeH, gapX = M.colGap, gapY = M.rowGap, padY = M.pad;
+      const layers = [...groups.keys()].sort((a, b) => a - b);
+      const widest = Math.max(1, ...layers.map((L) =>
+        groups.get(L).reduce((sum, n) => sum + unitW(n, boxW) + gapX, -gapX)));
+      const width = M.pad * 2 + widest;
+      return layers.flatMap((L, li) => placeRow(groups.get(L), li, boxW, boxH, gapX, gapY, padY, width));
+    }
+
+    function layoutLayers(nodes) {
+      const LAYER = {
+        provider: 0, host: 0, cloud: 0,
+        frame: 1, hoc: 1,
+        process: 1, other: 1, start: 1, queue: 1, subroutine: 1,
+        inbox: 2, consumer: 2, action: 2, decision: 2,
+        child: 3, file: 3, folder: 3, boundary: 3, group: 0, junction: 2
+      };
+      return layoutGrouped(nodes, (n) => LAYER[n.kind] ?? 1);
+    }
+
+    function layoutRanked(nodes) {
+      return layoutGrouped(nodes, (n) => Number(n.rank));
+    }
+
+    function computeRank(nodes, edges) {
+      const ids = new Set(nodes.map((n) => n.id));
+      const incoming = Object.fromEntries(nodes.map((n) => [n.id, 0]));
+      const outs = Object.fromEntries(nodes.map((n) => [n.id, []]));
+      const backIn = Object.fromEntries(nodes.map((n) => [n.id, []]));
+      edges.forEach((e) => {
+        if (!ids.has(e.from) || !ids.has(e.to)) return;
+        if (e.kind === "back") { // a loop-back, not a rank dependency — counting it drags its target to the bottom of the layout
+          backIn[e.to].push(e.from);
+          return;
+        }
+        incoming[e.to] += 1;
+        outs[e.from].push(e.to);
+      });
+      const indeg = { ...incoming };
+      const rank = Object.fromEntries(nodes.map((n) => [n.id, 0]));
+      const queue = nodes.filter((n) => incoming[n.id] === 0).map((n) => n.id);
+      const seen = new Set();
+      const drain = () => {
+        while (queue.length) {
+          const id = queue.shift();
+          if (seen.has(id)) continue;
+          seen.add(id);
+          (outs[id] || []).forEach((to) => {
+            rank[to] = Math.max(rank[to], rank[id] + 1);
+            incoming[to] -= 1;
+            if (incoming[to] === 0) queue.push(to);
+          });
+        }
+      };
+      drain();
+      // Kahn's pass stalls on a cycle and leaves every node behind it at
+      // rank 0 — which reads as "this belongs in the first row". Folding a
+      // group makes that easy to hit: two nodes that merely exchange edges
+      // (a service writing to storage, storage's row coming back) collapse
+      // into one A⇄B pair that no topological order can resolve. Break the
+      // cycle at whatever node has the fewest unmet dependencies left and
+      // keep ranking, so the rest of the diagram still lands in flow order.
+      while (seen.size < nodes.length) {
+        const stuck = nodes.filter((n) => !seen.has(n.id));
+        if (!stuck.length) break;
+        // Fewest unmet dependencies first, then the node that already sits
+        // FURTHEST along the flow. Releasing the shallowest one instead
+        // (rank ascending) hands rank 0 to a node the whole graph feeds
+        // into: in the dense example the storage group got released before
+        // the service that writes to it, so storage — and everything
+        // downstream of it — was hoisted above the request that starts the
+        // lesson.
+        stuck.sort((a, b) => (incoming[a.id] - incoming[b.id]) || (rank[b.id] - rank[a.id]));
+        queue.push(stuck[0].id);
+        drain();
+      }
+      // A node reached ONLY by back-edges got no rank from the pass above and
+      // kept the default 0 — the top row, as if the flow started there. A
+      // dead-letter queue hanging off a consumer did exactly that, and since
+      // a group unit takes the LOWEST rank among its children, it hoisted the
+      // whole async tail above the request that produces it. Park such a node
+      // level with whatever loops back into it instead.
+      let lifted = true;
+      let passes = 0;
+      while (lifted && passes++ < nodes.length) {
+        lifted = false;
+        nodes.forEach((n) => {
+          if (indeg[n.id] > 0 || !backIn[n.id].length) return;
+          const r = Math.max(...backIn[n.id].map((id) => rank[id] || 0));
+          if (r > rank[n.id]) { rank[n.id] = r; lifted = true; }
+        });
+      }
+      return { rank, indeg };
+    }
+
+    function layoutDag(nodes, edges) {
+      const { rank, indeg } = computeRank(nodes, edges);
+      const ordered = [...nodes].sort((a, b) => {
+        const d = (rank[a.id] || 0) - (rank[b.id] || 0);
+        if (d) return d;
+        return (indeg[b.id] || 0) - (indeg[a.id] || 0);
+      });
+      return layoutGrouped(ordered, (n) => rank[n.id] || 0);
+    }
+
+    function layoutTree(nodes) {
+      const kids = Object.fromEntries(nodes.map((n) => [n.id, []]));
+      const roots = [];
+      nodes.forEach((n) => {
+        if (n.parent && kids[n.parent]) kids[n.parent].push(n);
+        else roots.push(n);
+      });
+      const boxW = M.treeW, boxH = M.treeH, gapY = M.treeGap, indent = M.indent, pad = M.pad;
+      const out = [];
+      let y = pad;
+      function walk(n, depth) {
+        out.push({ ...n, x: pad + depth * indent, y, w: boxW, h: boxH });
+        y += boxH + gapY;
+        (kids[n.id] || []).forEach((c) => walk(c, depth + 1));
+      }
+      roots.forEach((r) => walk(r, 0));
+      return out;
+    }
+
+    function layoutContainers(nodes, edges) {
+      // A grouped child can sit mid-chain in the runtime flow (e.g. a file
+      // that's also a pipeline step). Rank the WHOLE graph first, then place
+      // each group as one unit (at its lowest-ranked child) alongside plain
+      // nodes in the same rank row — otherwise groups always land above every
+      // ungrouped node regardless of where they actually belong in the flow,
+      // and edges routed through a grouped child silently drop out of the
+      // ungrouped nodes' own rank computation (two DAGs that don't know about
+      // each other → nodes stranded far from their logical position).
+      // A COLLAPSED group has no visible children — it is a plain block in
+      // the flow, so only expanded fences claim container slots here.
+      const groupIds = new Set(nodes.filter((n) => isFence(n)).map((n) => n.id));
+      const kids = {};
+      groupIds.forEach((id) => { kids[id] = []; });
+      const outer = [];
+      nodes.forEach((n) => {
+        if (isFence(n)) return;
+        if (n.parent && groupIds.has(n.parent)) kids[n.parent].push(n);
+        else outer.push(n);
+      });
+
+      const { rank: fullRank } = computeRank(nodes, edges);
+      const boxW = M.nodeW, boxH = M.nodeH, gapX = M.childGapX, gapY = M.childGapY;
+      const padX = M.groupPadX, padY = M.groupHead;
+      const outerW = M.nodeW, outerH = M.nodeH;
+      const maxRowW = M.maxRowW, unitGap = M.unitGap;
+
+      function groupBox(list) {
+        const folderish = list.length && list.every((k) => k.kind === "folder" || k.kind === "file");
+        const cols = folderish ? 1 : Math.min(3, Math.max(1, list.length));
+        const rows = Math.max(1, Math.ceil(list.length / cols) || 1);
+        return {
+          cols,
+          w: padX * 2 + cols * boxW + Math.max(0, cols - 1) * gapX,
+          h: padY + rows * boxH + Math.max(0, rows - 1) * gapY + M.groupFoot
+        };
+      }
+
+      const units = [];
+      nodes.filter((n) => isFence(n)).forEach((g) => {
+        const list = kids[g.id] || [];
+        const box = groupBox(list);
+        const childRanks = list.map((k) => fullRank[k.id] || 0);
+        units.push({ kind: "group", node: g, w: box.w, h: box.h, rank: childRanks.length ? Math.min(...childRanks) : (fullRank[g.id] || 0) });
+      });
+      outer.forEach((n) => {
+        units.push({ kind: "outer", node: n, w: unitW(n, outerW), h: unitH(n, outerH), rank: fullRank[n.id] || 0 });
+      });
+
+      const byRank = new Map();
+      units.forEach((u) => {
+        if (!byRank.has(u.rank)) byRank.set(u.rank, []);
+        byRank.get(u.rank).push(u);
+      });
+      const ranksSorted = [...byRank.keys()].sort((a, b) => a - b);
+
+      const placed = [];
+      let y = M.pad;
+      ranksSorted.forEach((r) => {
+        let x = M.pad, subRowH = 0;
+        byRank.get(r).forEach((u) => {
+          if (x > M.pad && x + u.w > maxRowW) {
+            x = M.pad;
+            y += subRowH + unitGap;
+            subRowH = 0;
+          }
+          if (u.kind === "outer") {
+            placed.push({ ...u.node, x, y, w: u.w, h: u.h });
+          } else {
+            const g = u.node;
+            placed.push({ ...g, x, y, w: u.w, h: u.h });
+            const list = kids[g.id] || [];
+            const { cols } = groupBox(list);
+            list.forEach((k, i) => {
+              const col = i % cols, row = Math.floor(i / cols);
+              placed.push({
+                ...k,
+                x: x + padX + col * (boxW + gapX),
+                y: y + padY + row * (boxH + gapY),
+                w: boxW,
+                h: boxH
+              });
+            });
+          }
+          x += u.w + unitGap;
+          subRowH = Math.max(subRowH, u.h);
+        });
+        // The gap between ranks is the corridor every horizontal edge run
+        // is routed into (see channelY), so it has to hold two stacked
+        // labels — a node branching valid/invalid needs both.
+        y += subRowH + M.rankGap;
+      });
+      return placed;
+    }
+
+    function layoutNodes(nodes, edges) {
+      const mode = LESSON.layout || "auto";
+      const treeish = nodes.length && nodes.every((n) => n.kind === "folder" || n.kind === "file");
+      if (mode === "tree" || (mode === "auto" && treeish)) return layoutTree(nodes);
+      if (nodes.some((n) => isFence(n))) return layoutContainers(nodes, edges);
+      if (mode === "timeline" || (mode === "auto" && isChain(nodes, edges))) return layoutTimeline(nodes);
+      if (nodes.some((n) => Number.isFinite(n.rank))) return layoutRanked(nodes);
+      if (mode === "layers") return layoutLayers(nodes);
+      return layoutDag(nodes, edges);
+    }
+
+    function center(n) { return { x: n.x + n.w / 2, y: n.y + n.h / 2 }; }
+
+    function edgeCardinal(from, to) {
+      const a = center(from);
+      const b = center(to);
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const splitRow = Math.abs(from.y - to.y) > Math.min(from.h, to.h) * 0.5;
+      if (splitRow) return dy > 0 ? "bottom" : "top";
+      if (Math.abs(dx) > Math.abs(dy) * 1.15) return dx > 0 ? "right" : "left";
+      return dy > 0 ? "bottom" : "top";
+    }
+
+    // Ports sit on cell CENTRES, never on a cell line. Every box edge is on a
+    // line, so this guarantees each run keeps half a cell of clearance from
+    // every border instead of grazing one — the arrows that used to look
+    // like they were drawn along the boxes rather than between them.
+    function portOn(lo, hi, t) {
+      const mid = Math.floor((lo + (hi - lo) * t) / CELL) * CELL + CELL / 2;
+      return Math.min(hi - CELL / 2, Math.max(lo + CELL / 2, mid));
+    }
+
+    function pointOnSide(n, side, k, count) {
+      const t = count <= 1 ? 0.5 : (k + 1) / (count + 1);
+      if (side === "bottom") return { x: portOn(n.x, n.x + n.w, t), y: n.y + n.h };
+      if (side === "top") return { x: portOn(n.x, n.x + n.w, t), y: n.y };
+      if (side === "right") return { x: n.x + n.w, y: portOn(n.y, n.y + n.h, t) };
+      return { x: n.x, y: portOn(n.y, n.y + n.h, t) };
+    }
+
+    function fanPorts(nodes, edges, plan) {
+      const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
+      const buckets = {};
+      const add = (id, side, item) => {
+        const key = id + "\t" + side;
+        if (!buckets[key]) buckets[key] = [];
+        buckets[key].push(item);
+      };
+      edges.forEach((e, i) => {
+        if (e.via) return;
+        // An edge bound for the rail is fanned on the side it actually
+        // leaves through, not the one it would have used. Keeping its old
+        // slot pushed the edges that DID stay off their centre — which is
+        // how two boxes in one column ended up joined by a stair — and two
+        // rail edges touching one box used to leave through the very same
+        // point.
+        const rt = (plan && plan[i]) || null;
+        const a = pos[e.from];
+        const b = pos[e.to];
+        if (!a || !b) return;
+        add(e.from, (rt && rt.sideFrom) || edgeCardinal(a, b), { i, other: b, end: "from" });
+        add(e.to, (rt && rt.sideTo) || edgeCardinal(b, a), { i, other: a, end: "to" });
+      });
+      const fromP = [];
+      const toP = [];
+      Object.keys(buckets).forEach((key) => {
+        const tab = key.indexOf("\t");
+        const n = pos[key.slice(0, tab)];
+        const side = key.slice(tab + 1);
+        const list = buckets[key];
+        const horiz = side === "top" || side === "bottom";
+        list.sort((A, B) => (horiz ? A.other.x - B.other.x : A.other.y - B.other.y));
+        // Snapping to cell centres can land two ports of a crowded side on
+        // the same centre; push the later one along by a whole cell so they
+        // stay one cell apart rather than exactly on top of each other.
+        const used = new Set();
+        const span = horiz ? n.w : n.h;
+        list.forEach((item, k) => {
+          const pt = pointOnSide(n, side, k, list.length);
+          let v = horiz ? pt.x : pt.y;
+          const lo = (horiz ? n.x : n.y) + CELL / 2;
+          const hi = lo + Math.max(0, span - CELL);
+          while (used.has(v) && v + CELL <= hi) v += CELL;
+          while (used.has(v) && v - CELL >= lo) v -= CELL;
+          used.add(v);
+          if (horiz) pt.x = v; else pt.y = v;
+          if (item.end === "from") fromP[item.i] = pt;
+          else toP[item.i] = pt;
+        });
+      });
+      return { fromP, toP };
+    }
+
+    /* ---------- corridors ----------
+       Rows of nodes leave horizontal corridors between them, and that is
+       where every horizontal edge run belongs. The old router put the run
+       at a fraction of the WHOLE vertical distance, so an edge crossing
+       three ranks laid its horizontal segment straight across the middle
+       row's nodes — the "arrows run along the boxes" problem. Bands are
+       computed from the finished layout, not assumed, so this holds for
+       every layout mode.
+    */
+    function rowBands(nodes) {
+      const solid = nodes.filter((n) => !isFence(n));
+      if (!solid.length) return [];
+      const sorted = [...solid].sort((a, b) => a.y - b.y);
+      const bands = [];
+      sorted.forEach((n) => {
+        const last = bands[bands.length - 1];
+        // Overlapping vertically means the same row, however ragged.
+        if (last && n.y < last.y1 - 1) last.y1 = Math.max(last.y1, n.y + n.h);
+        else bands.push({ y0: n.y, y1: n.y + n.h });
+      });
+      return bands;
+    }
+
+    function bandIndex(bands, y) {
+      for (let i = 0; i < bands.length; i++) {
+        if (y >= bands[i].y0 - 1 && y <= bands[i].y1 + 1) return i;
+      }
+      return -1;
+    }
+
+    // The empty strip between the source's row and the next one along the
+    // way. Every horizontal run is placed inside it, so it can never cross
+    // a node body.
+    function corridor(bands, fromY, toY) {
+      const down = toY >= fromY;
+      const i = bandIndex(bands, fromY);
+      if (i < 0) return { y0: Math.min(fromY, toY), y1: Math.max(fromY, toY) };
+      const here = bands[i];
+      const next = down ? bands[i + 1] : bands[i - 1];
+      const edge = down ? here.y1 : here.y0;
+      const far = next ? (down ? next.y0 : next.y1) : toY;
+      return { y0: Math.min(edge, far), y1: Math.max(edge, far), key: down ? i : i - 1 };
+    }
+
+    // Which side of its box a finished port sits on. Routing reads this
+    // instead of guessing from the two centres: the old router picked the
+    // shape of the route from the dx/dy ratio, so a pair of top/bottom ports
+    // could end up with a horizontal run laid at the port's own y — which IS
+    // the box's border line, and reads as an arrow glued to the row.
+    function sideOf(n, p) {
+      if (Math.abs(p.y - n.y) < 0.5) return "top";
+      if (Math.abs(p.y - (n.y + n.h)) < 0.5) return "bottom";
+      if (Math.abs(p.x - n.x) < 0.5) return "left";
+      return "right";
+    }
+
+    // Cell centres inside a strip, kept a whole cell clear of the rows on
+    // either side. A run PARALLEL to a row needs more room than a port stub
+    // does: at half a cell it still reads as attached to the boxes it passes.
+    // Narrow strips fall back to the half-cell the ports use.
+    function cellSlots(lo, hi) {
+      const at = (pad) => {
+        const out = [];
+        let v = Math.ceil((lo + pad - CELL / 2) / CELL) * CELL + CELL / 2;
+        while (v <= hi - pad + 0.01) { out.push(v); v += CELL; }
+        return out;
+      };
+      const wide = at(CELL);
+      return wide.length ? wide : at(CELL / 2);
+    }
+
+    // A hop leaves and lands on the SAME side of the same row, so its strip
+    // is the one that side faces, not the one between the two ports.
+    function runCorridor(bands, p, q, sa) {
+      const toY = Math.abs(p.y - q.y) < 0.5 ? (sa === "top" ? p.y - 1 : p.y + 1) : q.y;
+      return corridor(bands, p.y, toY);
+    }
+
+    // The strip an edge uses to get over its own row on the way to the rail.
+    function crossKey(bands, port, side) {
+      return runCorridor(bands, port, { x: port.x, y: port.y }, side).key;
+    }
+
+    // A horizontal run belongs on a cell centre inside its corridor, never at
+    // a fraction of it: with three edges in a 48px strip the old fractions
+    // put the outer two 12px off the boxes they pass, which reads as glued.
+    function laneY(bands, p, q, sa, lane, laneCount) {
+      const strip = runCorridor(bands, p, q, sa);
+      const slots = cellSlots(strip.y0, strip.y1);
+      if (laneCount > slots.length) {
+        // More edges than clean lines: share the strip evenly instead, still
+        // keeping the half cell off both rows that a port keeps.
+        const lo = strip.y0 + CELL / 2;
+        const hi = strip.y1 - CELL / 2;
+        if (hi <= lo) return Math.round((strip.y0 + strip.y1) / 2);
+        return Math.round(lo + (hi - lo) * (lane + 1) / (laneCount + 1));
+      }
+      const step = Math.floor(slots.length / laneCount) || 1;
+      const first = Math.floor((slots.length - 1 - step * (laneCount - 1)) / 2);
+      return slots[Math.max(0, Math.min(slots.length - 1, first + lane * step))];
+    }
+
+    // An edge that only touches one side of a corridor takes its lane from
+    // that side: 0 when it drops in from the row above, 2 when it comes up
+    // from the row below, 1 for the ones that cross the whole strip.
+    function rankOf(side, single) {
+      if (!single) return 1;
+      return side === "bottom" ? 0 : 2;
+    }
+
+    // Lanes are per corridor, not global: two edges sharing a strip must
+    // sit at different heights, but an edge three rows down has its own
+    // strip and should not be pushed off-centre by them.
+    function lanePlan(edges, fromP, toP, pos, bands, plan) {
+      const byKey = new Map();
+      const items = [];
+      edges.forEach((e, i) => {
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b || !fromP[i] || !toP[i]) return;
+        const rt = (plan && plan[i]) || null;
+        if (rt && rt.rail !== undefined) {
+          // A rail edge that has to get over its own row crosses it in a
+          // corridor, and there it competes for lanes with every ordinary
+          // run in that strip — count it, or the two land on one line.
+          const sa = sideOf(a, fromP[i]);
+          const sb = sideOf(b, toP[i]);
+          if (sa !== "right") items.push({ id: i + ":from", key: crossKey(bands, fromP[i], sa), x: fromP[i].x, rank: rankOf(sa, true) });
+          if (sb !== "right") items.push({ id: i + ":to", key: crossKey(bands, toP[i], sb), x: toP[i].x, rank: rankOf(sb, true) });
+          return;
+        }
+        const sa = sideOf(a, fromP[i]);
+        // An edge that stays inside its row never enters a corridor — unless
+        // it is hopping over a sibling, and then it needs a lane like the
+        // rest of them.
+        if (sa !== "top" && sa !== "bottom") return;
+        items.push({
+          id: i,
+          key: runCorridor(bands, fromP[i], toP[i], sa).key,
+          x: fromP[i].x,
+          rank: rankOf(sa, !!(rt && rt.hop))
+        });
+      });
+      // Lane order decides where the two stubs of an edge end up, and two
+      // stubs at the same x overlap unless the one dropping in from the row
+      // above gets the higher line. So: everything that only reaches DOWN
+      // into the strip first, edges that cross it whole next, everything that
+      // only reaches UP into it last.
+      items.sort((A, B) => (A.rank - B.rank) || (A.x - B.x));
+      const laneOf = {};
+      const countOf = {};
+      items.forEach((it) => {
+        const list = byKey.get(it.key) || [];
+        laneOf[it.id] = list.length;
+        list.push(it.id);
+        byKey.set(it.key, list);
+      });
+      items.forEach((it) => { countOf[it.id] = (byKey.get(it.key) || []).length; });
+      return { laneOf, countOf };
+    }
+
+    function pathSegments(d) {
+      const nums = (d.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+      const pts = [];
+      for (let i = 0; i < nums.length; i += 2) pts.push({ x: nums[i], y: nums[i + 1] });
+      const segs = [];
+      for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i + 1]]);
+      return segs;
+    }
+
+    function pathBlocked(nodes, excludeIds, d) {
+      // Does this (axis-aligned) edge path cut through the BODY of some
+      // node it isn't connected to? A back-edge's default orthoPath route
+      // often does — same x as several intervening nodes in a column draws
+      // one line straight through all of them. A short local back-edge
+      // between two adjacent nodes (e.g. two siblings in one group) usually
+      // doesn't and should keep its normal, compact route rather than
+      // detour to the rail unconditionally.
+      return pathSegments(d).some(([p, q]) => nodes.some((o) => {
+        // A group's own fence is a translucent container, not an obstacle —
+        // edges legitimately cross it to reach a nested child (that's what
+        // the group-label z-order fix above is for). Only concrete content
+        // nodes count as something a route needs to avoid.
+        if (excludeIds.has(o.id) || isFence(o)) return false;
+        if (Math.abs(p.y - q.y) < 0.5) {
+          const lo = Math.min(p.x, q.x), hi = Math.max(p.x, q.x);
+          return p.y > o.y + 1 && p.y < o.y + o.h - 1 && hi > o.x && lo < o.x + o.w;
+        }
+        if (Math.abs(p.x - q.x) < 0.5) {
+          const lo = Math.min(p.y, q.y), hi = Math.max(p.y, q.y);
+          return p.x > o.x + 1 && p.x < o.x + o.w - 1 && hi > o.y && lo < o.y + o.h;
+        }
+        return false;
+      }));
+    }
+
+    function railClear(nodes, self, x0, x1, y) {
+      // Is the horizontal strip [x0,x1] at height y free of every OTHER
+      // node? A same-rank sibling sitting between a back-edge's port and
+      // its rail (e.g. two nodes side by side in one row) would otherwise
+      // get cut through the middle by that straight approach line.
+      const lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+      return !nodes.some((o) => o.id !== self.id && y > o.y && y < o.y + o.h && hi > o.x && lo < o.x + o.w);
+    }
+
+    // Does the segment come within `pad` of a box? Liang-Barsky against the
+    // inflated rect — used to decide whether a diagonal is clean or is
+    // scraping something on its way.
+    function segHitsBox(p, q, o, pad) {
+      const dx = q.x - p.x, dy = q.y - p.y;
+      const tests = [
+        [-dx, p.x - (o.x - pad)], [dx, (o.x + o.w + pad) - p.x],
+        [-dy, p.y - (o.y - pad)], [dy, (o.y + o.h + pad) - p.y]
+      ];
+      let t0 = 0, t1 = 1;
+      for (const [pp, qq] of tests) {
+        if (Math.abs(pp) < 1e-9) { if (qq < 0) return false; continue; }
+        const r = qq / pp;
+        if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+        else { if (r < t0) return false; if (r < t1) t1 = r; }
+      }
+      return true;
+    }
+
+    // One slanted line beats a stair when the two ports are nearly in one
+    // column: the eye reads a single run instead of three. Offered only for a
+    // small residual offset — the route still reads as vertical — and only
+    // when the line keeps half a cell clear of every other box. A diagonal
+    // that scrapes a corner, or one flat enough to be mistaken for a run
+    // along a row, falls back to the orthogonal route.
+    function diagonalOk(a, b, p, q, nodes) {
+      const dx = Math.abs(p.x - q.x);
+      const dy = Math.abs(p.y - q.y);
+      if (dx < 1.5 || dx > CELL * 2 || dy < CELL * 2 || dx > dy) return false;
+      return !(nodes || []).some((o) =>
+        o.id !== a.id && o.id !== b.id && !isFence(o) && segHitsBox(p, q, o, CELL / 2));
+    }
+
+    // Two boxes stacked in one column deserve one straight line, not a stair
+    // with a 16px jog in it. Every port already sits on a cell centre of its
+    // own side, so an edge whose ends face each other across a corridor is
+    // usually one cell away from straight: pull both ends onto a shared
+    // centre when the boxes overlap there, the slot is free on both sides,
+    // and the straight run is clear of everything else.
+    function alignPorts(nodes, edges, pos, fromP, toP, plan) {
+      const taken = new Map();
+      const key = (id, side) => id + "\t" + side;
+      const hold = (id, side, v) => {
+        const k = key(id, side);
+        if (!taken.has(k)) taken.set(k, new Set());
+        taken.get(k).add(v);
+      };
+      const vert = (side) => side === "top" || side === "bottom";
+      const list = [];
+      edges.forEach((e, i) => {
+        if (e.via) return;
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b || !fromP[i] || !toP[i]) return;
+        const sa = sideOf(a, fromP[i]);
+        const sb = sideOf(b, toP[i]);
+        hold(a.id, sa, vert(sa) ? fromP[i].x : fromP[i].y);
+        hold(b.id, sb, vert(sb) ? toP[i].x : toP[i].y);
+        // A rail edge keeps its ports but is never straightened: it goes the
+        // long way round on purpose.
+        if (plan && plan[i] && plan[i].rail !== undefined) return;
+        if (vert(sa) !== vert(sb)) return; // an elbow: nothing to line up
+        list.push({ i, a, b, sa, sb, v: vert(sa) });
+      });
+      const off = (it) => it.v
+        ? Math.abs(fromP[it.i].x - toP[it.i].x)
+        : Math.abs(fromP[it.i].y - toP[it.i].y);
+      // Nearest to straight first, so the easy wins take the shared centre
+      // before an edge that would have to drag it far off its own port.
+      list.sort((A, B) => off(A) - off(B));
+      list.forEach((it) => {
+        const p = fromP[it.i], q = toP[it.i];
+        const V = it.v;
+        const pv = V ? p.x : p.y;
+        const qv = V ? q.x : q.y;
+        if (Math.abs(pv - qv) < 1.5) return;
+        const lo = Math.max(V ? it.a.x : it.a.y, V ? it.b.x : it.b.y) + CELL / 2;
+        const hi = Math.min(V ? it.a.x + it.a.w : it.a.y + it.a.h,
+                            V ? it.b.x + it.b.w : it.b.y + it.b.h) - CELL / 2;
+        if (lo > hi) return; // the boxes do not overlap: no straight run exists
+        const want = (pv + qv) / 2;
+        const base = Math.min(hi, Math.max(lo, Math.floor(want / CELL) * CELL + CELL / 2));
+        for (let step = 0; step <= 4; step++) {
+          for (const dir of (step ? [-1, 1] : [0])) {
+            const v = base + dir * step * CELL;
+            if (v < lo - 0.01 || v > hi + 0.01) continue;
+            if (v !== pv && taken.get(key(it.a.id, it.sa)).has(v)) continue;
+            if (v !== qv && taken.get(key(it.b.id, it.sb)).has(v)) continue;
+            const s0 = V ? `${v} ${p.y}` : `${p.x} ${v}`;
+            const s1 = V ? `${v} ${q.y}` : `${q.x} ${v}`;
+            if (pathBlocked(nodes, new Set([it.a.id, it.b.id]), `M ${s0} L ${s1}`)) continue;
+            taken.get(key(it.a.id, it.sa)).delete(pv);
+            taken.get(key(it.b.id, it.sb)).delete(qv);
+            taken.get(key(it.a.id, it.sa)).add(v);
+            taken.get(key(it.b.id, it.sb)).add(v);
+            if (V) { p.x = v; q.x = v; } else { p.y = v; q.y = v; }
+            return;
+          }
+        }
+      });
+    }
+
+    // The shape of a route follows the SIDES its two ports sit on, not the
+    // ratio between the two centres. Reading it off dx/dy is what used to lay
+    // a horizontal run at a top/bottom port's own y — i.e. exactly along the
+    // border of every box in that row.
+    function orthoPath(a, b, p, q, lane, laneCount, bands, nodes) {
+      const sa = sideOf(a, p);
+      const sb = sideOf(b, q);
+      const va = sa === "top" || sa === "bottom";
+      const vb = sb === "top" || sb === "bottom";
+      if (va !== vb) {
+        // One end leaves through a face, the other arrives through a side:
+        // one elbow, and neither leg can run along the box it starts on.
+        const c = va ? { x: p.x, y: q.y } : { x: q.x, y: p.y };
+        return {
+          d: `M ${p.x} ${p.y} L ${c.x} ${c.y} L ${q.x} ${q.y}`,
+          lx: va ? p.x + 10 : (p.x + q.x) / 2,
+          ly: va ? (p.y + c.y) / 2 + 3 : p.y - 10,
+          vertical: va
+        };
+      }
+      if (va) {
+        if (Math.abs(p.x - q.x) < 1.5) {
+          return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: p.x + 10, ly: (p.y + q.y) / 2 + 3, vertical: true };
+        }
+        if (diagonalOk(a, b, p, q, nodes)) {
+          return {
+            d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`,
+            lx: (p.x + q.x) / 2 + 10,
+            ly: (p.y + q.y) / 2 + 3,
+            vertical: true
+          };
+        }
+        const midY = laneY(bands || [], p, q, sa, lane, laneCount);
+        return {
+          d: `M ${p.x} ${p.y} L ${p.x} ${midY} L ${q.x} ${midY} L ${q.x} ${q.y}`,
+          lx: p.x + 10,
+          ly: (p.y + midY) / 2 + 3,
+          vertical: true
+        };
+      }
+      if (Math.abs(p.y - q.y) < 1.5) {
+        return { d: `M ${p.x} ${p.y} L ${q.x} ${q.y}`, lx: (p.x + q.x) / 2, ly: p.y - 10, vertical: false };
+      }
+      const midX = Math.floor((p.x + q.x) / 2 / CELL) * CELL + CELL / 2;
+      return {
+        d: `M ${p.x} ${p.y} L ${midX} ${p.y} L ${midX} ${q.y} L ${q.x} ${q.y}`,
+        lx: midX + 10,
+        ly: (p.y + q.y) / 2 + 3,
+        vertical: true
+      };
+    }
+
+    /* ---------- route plan ----------
+       Two passes, because what an edge does changes where its ports belong.
+       The first lays every edge out naively and finds the ones that cannot go
+       the direct way: a same-row edge with a sibling in between (it hops over
+       the row instead) and a run that would cut through a box (it leaves for
+       the right-hand rail). The second fan then places the ports knowing all
+       of that, so an edge on the rail no longer holds a slot on a side it
+       never uses, and the edges that stayed keep their centres.
+    */
+    // Which side an edge leaves through on its way to the rail. Straight out
+    // the right when nothing is in the way; otherwise over the row through a
+    // corridor — and then through the roomier of the two, since the strip
+    // above a row is often one lane wide while the one below is empty. It
+    // used to slide up the box's own right border instead, which drew the
+    // arrow along the shape it was leaving.
+    function railSide(nodes, bands, n, railX) {
+      const port = pointOnSide(n, "right", 0, 1);
+      if (railClear(nodes, n, port.x, railX, port.y)) return "right";
+      const up = corridor(bands, n.y, n.y - 1);
+      const down = corridor(bands, n.y + n.h, n.y + n.h + 1);
+      return cellSlots(down.y0, down.y1).length > cellSlots(up.y0, up.y1).length ? "bottom" : "top";
+    }
+
+    function routePlan(nodes, edges, pos, bands) {
+      const plan = edges.map(() => ({}));
+      const { fromP, toP } = fanPorts(nodes, edges, null);
+      const { laneOf, countOf } = lanePlan(edges, fromP, toP, pos, bands, null);
+      let railX = Math.max(0, ...nodes.map((n) => n.x + n.w)) + CELL * 3;
+      edges.forEach((e, ei) => {
+        if (e.via) return;
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b || !fromP[ei] || !toP[ei]) return;
+        const p = fromP[ei], q = toP[ei];
+        const own = new Set([a.id, b.id]);
+        const natural = orthoPath(a, b, p, q, laneOf[ei] || 0, countOf[ei] || 1, bands, nodes);
+        if (!pathBlocked(nodes, own, natural.d)) return;
+        const sa = sideOf(a, p);
+        if (sa === "left" || sa === "right") {
+          // Same row with something in between: go over the row through the
+          // corridor rather than all the way out to the rail — the hop stays
+          // local and keeps the two boxes visibly connected.
+          const side = bandIndex(bands, p.y) > 0 ? "top" : "bottom";
+          const hop = orthoPath(a, b, pointOnSide(a, side, 0, 1), pointOnSide(b, side, 0, 1), 0, 1, bands, nodes);
+          if (!pathBlocked(nodes, own, hop.d)) {
+            plan[ei] = { sideFrom: side, sideTo: side, hop: true };
+            return;
+          }
+        }
+        plan[ei] = { rail: railX, sideFrom: railSide(nodes, bands, a, railX), sideTo: railSide(nodes, bands, b, railX) };
+        railX += CELL * 2;
+      });
+      return { plan, railX };
+    }
+
+    function nudgeLabel(x, y, text, placed, anchorStart, nodes) {
+      const w = Math.min(150, 6.2 * String(text).length + 8);
+      const h = 16;
+      // `x` is the SVG anchor point, not a box center — "start"-anchored
+      // labels (vertical edges) draw rightward from it, "middle"-anchored
+      // ones (horizontal edges) straddle it. The old check treated every
+      // label as centered on `x`, so two "start"-anchored labels close in x
+      // (e.g. two edges fanned out of the same node, like "невалидно" /
+      // "валидно" off `validate`) under-counted their true overlap and
+      // could clear the y-test by a couple px while still overlapping.
+      const x0 = anchorStart ? x : x - w / 2;
+      // A label was only ever moved out of another LABEL's way, so one could
+      // still land on top of a node — most visibly inside a group, where the
+      // corridors are short. Boxes now push it too. Fences are skipped: they
+      // are transparent containers, and dodging one would shove every label
+      // out of the group it belongs to.
+      const overBox = (ly) => (nodes || []).some((o) => !isFence(o)
+        && x0 < o.x + o.w + 2 && o.x < x0 + w + 2
+        && ly + h / 2 > o.y && ly - h / 2 < o.y + o.h);
+      let ly = y;
+      let guard = 0;
+      while (guard++ < 8) {
+        const hit = placed.some((p) => x0 < p.x0 + p.w + 4 && p.x0 < x0 + w + 4 && Math.abs(p.y - ly) < (p.h + h) / 2)
+          || overBox(ly);
+        if (!hit) break;
+        ly += h;
+      }
+      placed.push({ x0, y: ly, w, h });
+      return ly;
+    }
+
+    function nodeShell(n) {
+      const { x, y, w, h } = n;
+      const k = kindOf(n);
+      if (k === "group" && n._collapsed) {
+        // Ghost card behind the block: the one static cue that this shape is
+        // a stack of things, not a leaf.
+        return `<rect class="node-stack" x="${x + CELL / 2}" y="${y - CELL / 2}" width="${w - CELL / 2}" height="${h}" rx="2"/>`
+          + `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
+      }
+      if (k === "group") {
+        return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>`;
+      }
+      if (k === "start" || k === "queue" || k === "cloud") {
+        return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(h / 2, 22)}"/>`;
+      }
+      if (k === "junction") {
+        const rr = Math.min(w, h) / 2 - 2;
+        return `<circle class="node-shell" cx="${x + w / 2}" cy="${y + h / 2}" r="${rr}"/>`;
+      }
+      return `<rect class="node-shell" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`;
+    }
+
+    // A drafting callout straddling the box's top-right corner, in both
+    // states and at one position. It used to move — top-right when open,
+    // centred on the right edge when folded — so the one control whose whole
+    // job is to toggle jumped 40px on every toggle. Centred on the right
+    // edge it also sat in the label's own row, and landed where horizontal
+    // edges arrive: an arrowhead measured 6px from it on `dense-request`.
+    //
+    // Straddling the border is what makes it read as chrome applied on top
+    // rather than as content: the disc knocks a hole in the line it crosses.
+    // It is held 4px below the corner so its upper half stays out of the
+    // corridor the row gap reserves for edge runs.
+    const DISC_R = 13;
+    // Chevrons that converge mean collapse; chevrons that diverge mean
+    // expand. Lucide's chevrons-down-up / chevrons-up-down, drawn small.
+    // One chevron, not two. A converging pair says "collapse" more literally,
+    // but at the size this disc allows its tips sit close enough to merge
+    // into an X — and an X beside a numeral reads as "times N". A single
+    // chevron has the room to stay a chevron: up closes, down opens.
+    const chevron = (x, y, up) => up
+      ? `M ${x - 4.6} ${y + 2.3} L ${x} ${y - 2.4} L ${x + 4.6} ${y + 2.3}`
+      : `M ${x - 4.6} ${y - 2.3} L ${x} ${y + 2.4} L ${x + 4.6} ${y - 2.3}`;
+
+    function discloseMark(n) {
+      if (!n._kids) return "";
+      const t = ui();
+      const open = !n._collapsed;
+      const cx = n.x + n.w - DISC_R - 5;
+      const cy = n.y + 4;
+      // The two states know different things, so they say different things.
+      // Open, the children are on screen and counting them again is noise —
+      // what the reader needs is the one way to close the fence. Folded, the
+      // count is all that is known about what is hidden, and `+N` says it
+      // counts things inside, where a bare numeral could be an index, or the
+      // step number the rail draws in an identical disc.
+      const inner = open
+        ? `<path class="disclose-mark lead" d="${chevron(cx, cy, true)}"/>`
+        : `<text class="disclose-n" x="${cx}" y="${cy + 0.5}" text-anchor="middle">+${n._kids}</text>
+           <path class="disclose-mark hint" d="${chevron(cx, cy, false)}"/>`;
+      const name = `${open ? t.collapse : t.expand} — ${n.label || n.id} (${n._kids})`;
+      return `<g class="disclose" data-group="${escapeHtml(n.id)}" role="button" tabindex="0"
+          aria-expanded="${open}" aria-label="${escapeHtml(name)}">
+        <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
+        ${inner}
+      </g>`;
+    }
+
+    function nodeName(n) {
+      const t = ui();
+      const label = n.label || n.id;
+      if (n._collapsed) return `${t.expand} — ${label} (${n._kids})`;
+      const si = stepForNode(n.id);
+      const step = si >= 0 && (LESSON.steps || [])[si];
+      const title = step ? String(step.title || "").replace(/`/g, "") : "";
+      return title ? `${label} — ${t.opensStep}: ${title}` : label;
+    }
+
+    function renderNode(n, live, part) {
+      const on = live.has(n.id) ? "on" : "";
+      const k = kindOf(n);
+      const group = k === "group" && !n._collapsed;
+      const icoY = group ? n.y + 8 : n.y + (n.h - 16) / 2;
+      const foY = group ? n.y + 2 : n.y;
+      const foH = group ? 50 : n.h;
+      const badge = discloseMark(n);
+      const labelW = Math.max(24, n.w - 30 - (badge && group ? 40 : 0));
+      const label = n.label
+        ? `<foreignObject x="${n.x + 26}" y="${foY}" width="${labelW}" height="${foH}" color="#f4f2ee">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="node-label" style="color:#f4f2ee;-webkit-text-fill-color:#f4f2ee"><span class="txt">${escapeHtml(n.label)}</span></div>
+          </foreignObject>`
+        : "";
+      // A group's fence rect draws BEFORE edges (its translucent fill would
+      // otherwise wash out any child node placed on top of it), but its
+      // icon+label must draw AFTER edges like every other node's — otherwise
+      // an edge merely passing through the group on its way to a nested
+      // child paints directly over the group's own caption text. `part`
+      // splits the two: "shell" for the early pass, "content" for the late
+      // one; omitted (ordinary nodes) renders both together as before.
+      const shellHtml = part === "content" ? "" : nodeShell(n);
+      const contentHtml = part === "shell" ? "" : `
+        <svg class="node-ico" x="${n.x + 8}" y="${icoY}" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">${glyph(k)}</svg>
+        ${label}
+        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>
+        ${badge}`;
+      // An expanded fence renders as TWO <g class="node">, so only the late
+      // pass — the one carrying the full-size hit rect — may be a control.
+      // Naming both would put one fence in the tab order twice under the
+      // same name.
+      const a11y = part === "shell"
+        ? 'aria-hidden="true"'
+        : `role="button" tabindex="0" aria-label="${escapeHtml(nodeName(n))}"`;
+      return `<g class="node ${on}${n._collapsed ? " collapsed" : ""} kind-${escapeHtml(k)}" data-id="${n.id}" ${a11y}>
+        ${shellHtml}
+        ${contentHtml}
+      </g>`;
+    }
+
+    function edgeMarks(e, liveEdge) {
+      const ek = e.kind || "flow";
+      const live = liveEdge ? " live" : "";
+      const dash = ek === "dashed" ? " dashed" : "";
+      const tip = liveEdge ? "arrow-live" : "arrow";
+      const start = (ek === "back" || ek === "both") ? ` marker-start="url(#${tip}-rev)"` : "";
+      const end = ek === "back" ? "" : ` marker-end="url(#${tip})"`;
+      return { cls: `edge${live}${dash}`, start, end };
+    }
+
+    /* ---------- viewport: pan + zoom ----------
+       Figma keys: Ctrl/⌘ + wheel zooms at the cursor, Shift + wheel pans
+       sideways, a plain wheel pans, dragging empty canvas moves it. The
+       graph keeps its own world coordinates and only the viewBox moves, so
+       nothing re-lays-out and labels stay vector-crisp at any scale.
+
+       `viewPinned` is the whole contract with the reader: until they touch
+       the canvas the diagram keeps auto-fitting exactly as it always did.
+       Once they zoom or pan, their frame is theirs — the shell then only
+       nudges it when the current step's nodes would otherwise sit off
+       screen, and never zooms further in than where they left it.
+    */
+    const ZOOM_MIN = 0.15;
+    const ZOOM_MAX = 4;
+    const VIEW = { cx: 320, cy: 180, s: 1 };
+    let WORLD = { w: 640, h: 360 };
+    let NODE_BOX = {};
+    let viewReady = false;
+    let viewPinned = false;
+    let viewAnim = 0;
+
+    const r2 = (v) => Math.round(v * 100) / 100;
+
+    function canvasBox() {
+      const r = $("canvas").getBoundingClientRect();
+      return { w: Math.max(1, r.width), h: Math.max(1, r.height), left: r.left, top: r.top };
+    }
+
+    function clampScale(v) { return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v)); }
+
+    function viewRect() {
+      const b = canvasBox();
+      const w = b.w / VIEW.s;
+      const h = b.h / VIEW.s;
+      return { x: VIEW.cx - w / 2, y: VIEW.cy - h / 2, w, h };
+    }
+
+    function applyView() {
+      const v = viewRect();
+      $("flow").setAttribute("viewBox", `${r2(v.x)} ${r2(v.y)} ${r2(v.w)} ${r2(v.h)}`);
+      // Keep the grid locked to world coordinates — a grid that stayed put
+      // while the diagram moved would read as a printed backdrop, not a
+      // canvas. It is the layout's own unit, so node edges land on lines.
+      const cell = r2(CELL * VIEW.s);
+      const ox = r2(-v.x * VIEW.s);
+      const oy = r2(-v.y * VIEW.s);
+      const canvas = $("canvas");
+      canvas.style.backgroundSize = `${cell}px ${cell}px, ${cell}px ${cell}px`;
+      canvas.style.backgroundPosition = `${ox}px ${oy}px, ${ox}px ${oy}px`;
+      canvas.classList.toggle("coarse", CELL * VIEW.s < 9);
+      $("zoom-pct").textContent = Math.round(VIEW.s * 100) + "%";
+    }
+
+    function clientToWorld(cx, cy) {
+      const b = canvasBox();
+      const v = viewRect();
+      return { x: v.x + (cx - b.left) / VIEW.s, y: v.y + (cy - b.top) / VIEW.s };
+    }
+
+    function setView(v, animate) {
+      if (viewAnim) cancelAnimationFrame(viewAnim);
+      viewAnim = 0;
+      const target = { cx: v.cx, cy: v.cy, s: clampScale(v.s) };
+      if (!animate || REDUCE_MOTION) {
+        VIEW.cx = target.cx; VIEW.cy = target.cy; VIEW.s = target.s;
+        applyView();
+        return;
+      }
+      const from = { cx: VIEW.cx, cy: VIEW.cy, s: VIEW.s };
+      const t0 = performance.now();
+      const dur = 280;
+      const tick = (now) => {
+        const k = Math.min(1, (now - t0) / dur);
+        const e = 1 - Math.pow(1 - k, 3);
+        VIEW.cx = from.cx + (target.cx - from.cx) * e;
+        VIEW.cy = from.cy + (target.cy - from.cy) * e;
+        // Scale interpolates in log space: linear zoom reads as a lurch.
+        VIEW.s = Math.exp(Math.log(from.s) + (Math.log(target.s) - Math.log(from.s)) * e);
+        applyView();
+        viewAnim = k < 1 ? requestAnimationFrame(tick) : 0;
+      };
+      viewAnim = requestAnimationFrame(tick);
+    }
+
+    // The dock floats ON the canvas, so the canvas rectangle is not the
+    // area a diagram can actually use: framing against it centres the
+    // diagram underneath the panel the reader is reading.
+    //
+    // Scale and position are two separate questions. The scale comes from
+    // the larger of the two rectangles that clear the dock — everything
+    // above it, or everything beside it. The position then starts at the
+    // centre of the WHOLE canvas and is displaced only as far as it takes
+    // to clear the dock, so a diagram that already fits beside the panel is
+    // not also shoved into the corner.
+    const DOCK_GAP = 16;
+
+    function dockRect() {
+      const dock = $("dock");
+      if (!dock || !dock.offsetParent) return null;
+      const b = canvasBox();
+      const d = dock.getBoundingClientRect();
+      if (!d.width || !d.height) return null;
+      return { left: d.left - b.left, top: d.top - b.top, right: d.right - b.left, bottom: d.bottom - b.top };
+    }
+
+    function freeRects() {
+      const b = canvasBox();
+      const full = { x: 0, y: 0, w: b.w, h: b.h };
+      const d = dockRect();
+      if (!d) return [full];
+      const above = { x: 0, y: 0, w: b.w, h: Math.max(1, d.top - DOCK_GAP) };
+      const beside = { x: d.right + DOCK_GAP, y: 0, w: Math.max(1, b.w - d.right - DOCK_GAP), h: b.h };
+      return [above, beside, full];
+    }
+
+    // Where the box lands on screen, in canvas pixels, once it is drawn at `s`.
+    function placeBox(box, s) {
+      const b = canvasBox();
+      const bw = box.w * s;
+      const bh = box.h * s;
+      let left = (b.w - bw) / 2;
+      let top = (b.h - bh) / 2;
+      const d = dockRect();
+      const hits = d && left < d.right + DOCK_GAP && left + bw > d.left - DOCK_GAP
+                     && top < d.bottom + DOCK_GAP && top + bh > d.top - DOCK_GAP;
+      if (hits) {
+        // Two ways out, each only valid if it actually clears: slide right
+        // of the dock, or sit above it. Take the shorter move.
+        const right = d.right + DOCK_GAP;
+        const up = d.top - DOCK_GAP - bh;
+        const okRight = right + bw <= b.w + 0.5;
+        const okUp = up >= -0.5;
+        const costRight = okRight ? Math.abs(right - left) : Infinity;
+        const costUp = okUp ? Math.abs(up - top) : Infinity;
+        if (costRight <= costUp && okRight) left = right;
+        else if (okUp) top = Math.max(0, up);
+        // Neither escape fits — the window is too small for this diagram
+        // beside or above the panel. Park it at the top of the canvas
+        // anyway: as much of it as can be seen at once, rather than the
+        // middle of it centred behind the panel.
+        else top = 0;
+      }
+      return { cx: box.x + (b.w / 2 - left) / s, cy: box.y + (b.h / 2 - top) / s };
+    }
+
+    function viewFor(box, maxScale, pad) {
+      const m = pad == null ? 28 : pad;
+      const cap = maxScale || 2;
+      const fit = (r) => clampScale(Math.min(
+        (r.w - m * 2) / Math.max(1, box.w),
+        (r.h - m * 2) / Math.max(1, box.h),
+        cap
+      ));
+      const rects = freeRects();
+      const full = rects[rects.length - 1];
+      let bestS = 0;
+      for (const r of rects.slice(0, -1)) bestS = Math.max(bestS, fit(r));
+      // Clearing the dock is not worth halving the diagram: in a window
+      // that small, partly covered beats illegible.
+      const fullS = fit(full);
+      const s = bestS < fullS * 0.62 ? fullS : bestS;
+      const at = placeBox(box, s);
+      return { cx: at.cx, cy: at.cy, s };
+    }
+
+    function fitAll(animate) {
+      setView(viewFor({ x: 0, y: 0, w: WORLD.w, h: WORLD.h }, 2), animate);
+      viewPinned = false;
+    }
+
+    function zoomAt(cx, cy, factor) {
+      const before = clientToWorld(cx, cy);
+      VIEW.s = clampScale(VIEW.s * factor);
+      const after = clientToWorld(cx, cy);
+      VIEW.cx += before.x - after.x;
+      VIEW.cy += before.y - after.y;
+      viewPinned = true;
+      applyView();
+    }
+
+    function zoomBy(factor) {
+      const b = canvasBox();
+      zoomAt(b.left + b.w / 2, b.top + b.h / 2, factor);
+    }
+
+    function panBy(dx, dy) {
+      VIEW.cx += dx / VIEW.s;
+      VIEW.cy += dy / VIEW.s;
+      viewPinned = true;
+      applyView();
+    }
+
+    function boxOf(ids) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      (ids || []).forEach((id) => {
+        const n = NODE_BOX[id];
+        if (!n) return;
+        x0 = Math.min(x0, n.x); y0 = Math.min(y0, n.y);
+        x1 = Math.max(x1, n.x + n.w); y1 = Math.max(y1, n.y + n.h);
+      });
+      if (!Number.isFinite(x0)) return null;
+      return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+
+    function boxVisible(box) {
+      const v = viewRect();
+      const m = 8;
+      return box.x >= v.x + m && box.y >= v.y + m
+        && box.x + box.w <= v.x + v.w - m && box.y + box.h <= v.y + v.h - m;
+    }
+
+    function inflate(box, k) {
+      return { x: box.x - k, y: box.y - k, w: box.w + k * 2, h: box.h + k * 2 };
+    }
+
+    function liveIds() { return CURRENT.live || []; }
+
+    function syncDetailUi() {
+      const t = ui();
+      const any = collapsibleGroups().length > 0;
+      $("detail").hidden = !any;
+      $("detail-sep").hidden = !any;
+      $("detail-label").textContent = t.detail[detailMode || "auto"];
+      $("detail").title = t.detailTitle;
+    }
+
+    function focusLive(animate) {
+      const box = boxOf(liveIds());
+      if (!box) { fitAll(animate); return; }
+      setView(viewFor(inflate(box, 24), 1.6), animate);
+      viewPinned = true;
+    }
+
+    // Below this, a 13px node label is roughly 8px on screen — the exact
+    // "everything blurs together" state staged detail exists to avoid.
+    const LEGIBLE = 0.62;
+
+    function autoFrame(animate) {
+      const whole = viewFor({ x: 0, y: 0, w: WORLD.w, h: WORLD.h }, 2);
+      const box = boxOf(liveIds());
+      // Fitting the whole graph is right until it stops being readable.
+      // Past that point the step's own material wins the frame — the
+      // overview is one click (or `0`) away, an illegible diagram is not.
+      if (whole.s >= LEGIBLE || !box) setView(whole, animate);
+      else setView(viewFor(inflate(box, 40), 1.4), animate);
+      viewPinned = false;
+    }
+
+    // Opening a group is the reader looking at THAT group. Re-framing on the
+    // current step there would drag them back to material they deliberately
+    // navigated away from, so a disclosure toggle never re-frames: the view
+    // stays put, and the only correction is keeping the node they just
+    // toggled on screen — at the scale they chose, zooming out only if what
+    // they opened no longer fits.
+    function keepInView(id) {
+      applyView();
+      const box = NODE_BOX[id];
+      if (!box || boxVisible(box)) return;
+      setView(viewFor(inflate(box, 32), VIEW.s), true);
+    }
+
+    function syncViewport(live, keep) {
+      if (keep) { keepInView(keep); return; }
+      if (!viewReady) { viewReady = true; autoFrame(false); return; }
+      if (!viewPinned) { autoFrame(true); return; }
+      applyView();
+      const box = boxOf(live);
+      // Zoomed in and this step happens somewhere else on the canvas: pan
+      // (and only if needed, zoom out) to it rather than narrate off-screen.
+      if (box && !boxVisible(box)) setView(viewFor(inflate(box, 32), VIEW.s), true);
+    }
+
+    function renderFlow(highlight, step, keep) {
+      const graph = visibleGraph(collapsedSet(highlight, step));
+      const nodes = layoutNodes(graph.nodes, graph.edges);
+      const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
+      const edgesAll = graph.edges;
+      const bands = rowBands(nodes);
+      // A route is fine when it's short and local — e.g. two siblings in
+      // one group — and keeping it there is what keeps it compact. It needs
+      // the dedicated rail (see below) only when it would cut through some
+      // OTHER node's body. Corridor routing keeps adjacent-rank edges clear
+      // on its own, so what reaches the rail is what actually spans rows: a
+      // long back-edge up a column, or a forward edge that skips ranks.
+      const { plan, railX: railEnd } = routePlan(nodes, edgesAll, pos, bands);
+      const { fromP, toP } = fanPorts(nodes, edgesAll, plan);
+      alignPorts(nodes, edgesAll, pos, fromP, toP, plan);
+      const { laneOf, countOf } = lanePlan(edgesAll, fromP, toP, pos, bands, plan);
+      const hasBackRail = plan.some((r) => r && r.rail !== undefined);
+      const maxX = Math.max(CELL * 26, ...nodes.map((n) => n.x + n.w + M.pad), hasBackRail ? railEnd + M.pad : 0);
+      const maxY = Math.max(CELL * 15, ...nodes.map((n) => n.y + n.h + M.pad));
+      const svg = $("flow");
+      WORLD = { w: maxX, h: maxY };
+      NODE_BOX = Object.fromEntries(nodes.map((n) => [n.id, { x: n.x, y: n.y, w: n.w, h: n.h }]));
+      // A highlighted node that is currently folded away lights up the block
+      // standing in for it, so no step ever points at nothing.
+      const live = new Set((highlight || []).map((id) => graph.anchorOf[id] || id));
+      CURRENT.live = [...live];
+      const marks = `<defs>
+        <style>
+          .node-label, .node-label .txt {
+            color: var(--color-ink) !important;
+            -webkit-text-fill-color: var(--color-ink) !important;
+            font-family: "Onest", "Avenir Next", "Segoe UI", sans-serif;
+          }
+        </style>
+        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="color-mix(in srgb, var(--color-ink-soft) 62%, transparent)"></path>
+        </marker>
+        <marker id="arrow-live" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-accent)"></path>
+        </marker>
+        <marker id="arrow-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 10 0 L 0 5 L 10 10 z" fill="color-mix(in srgb, var(--color-ink-soft) 62%, transparent)"></path>
+        </marker>
+        <marker id="arrow-live-rev" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 10 0 L 0 5 L 10 10 z" fill="var(--color-accent)"></path>
+        </marker>
+      </defs>`;
+      const placed = [];
+      const edgeEls = [];
+      const labelEls = [];
+      edgesAll.forEach((e, ei) => {
+        const a = pos[e.from];
+        const b = pos[e.to];
+        if (!a || !b) return;
+        const mid = e.via && pos[e.via];
+        let d, lx, ly, vertical;
+        if (mid) {
+          const p = { x: a.x + a.w / 2, y: a.y + a.h };
+          const q = { x: b.x + b.w / 2, y: b.y };
+          const m = { x: mid.x + mid.w / 2, y: mid.y + mid.h / 2 };
+          d = `M ${p.x} ${p.y} L ${m.x} ${m.y} L ${q.x} ${q.y}`;
+          lx = m.x + 10; ly = m.y - 6; vertical = false;
+        } else if (plan[ei] && plan[ei].rail !== undefined) {
+          // Ports fanned like every other side: two edges out to the rail
+          // from one box must not leave through the same point. A same-rank
+          // sibling between the port and the rail sends the edge over its
+          // own row instead — out of a top or bottom port, into a corridor
+          // lane of its own.
+          const p = fromP[ei] || pointOnSide(a, "right", 0, 1);
+          const q = toP[ei] || pointOnSide(b, "right", 0, 1);
+          const railX = plan[ei].rail;
+          const sa = sideOf(a, p);
+          const sb = sideOf(b, q);
+          const cross = (port, side, id) => laneY(bands, port, { x: railX, y: port.y }, side,
+            laneOf[id] || 0, countOf[id] || 1);
+          const py = sa === "right" ? p.y : cross(p, sa, ei + ":from");
+          const qy = sb === "right" ? q.y : cross(q, sb, ei + ":to");
+          d = `M ${p.x} ${p.y}`;
+          if (sa !== "right") d += ` L ${p.x} ${py}`;
+          d += ` L ${railX} ${py} L ${railX} ${qy}`;
+          if (sb !== "right") d += ` L ${q.x} ${qy}`;
+          d += ` L ${q.x} ${q.y}`;
+          lx = railX + 8; ly = (py + qy) / 2; vertical = true;
+        } else {
+          if (!fromP[ei] || !toP[ei]) return;
+          ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands, nodes));
+        }
+        const liveEdge = live.has(e.from) && live.has(e.to);
+        const mk = edgeMarks(e, liveEdge);
+        const token = tokenMark(d, liveEdge);
+        edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
+        if (e.label) {
+          const y = nudgeLabel(lx, ly, e.label, placed, vertical, nodes);
+          labelEls.push(`<text class="edge-label${liveEdge ? " live" : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
+        }
+      });
+      // Only an EXPANDED fence splits into two passes (translucent shell
+      // before the edges, caption after). A collapsed group is an ordinary
+      // solid block and draws with the rest of them.
+      const fences = nodes.filter((n) => isFence(n));
+      const fenceShellEls = fences.map((n) => renderNode(n, live, "shell")).join("");
+      const fenceLabelEls = fences.map((n) => renderNode(n, live, "content")).join("");
+      const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live)).join("");
+      svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
+      svg.querySelectorAll(".node").forEach((el) => {
+        const activate = () => {
+          const id = el.getAttribute("data-id");
+          // A folded block is a closed container first and a step link
+          // second: activating it means "open this", not "jump somewhere
+          // else". Its step stays reachable from the rail, and from the
+          // fence itself once it is open.
+          if (el.classList.contains("collapsed")) { setCollapsed(id, false); return; }
+          const stepIdx = stepForNode(id);
+          if (stepIdx >= 0) show(stepIdx);
+        };
+        el.addEventListener("click", (ev) => {
+          if (ev.target.closest(".disclose")) return;
+          if (justDragged) return;
+          activate();
+        });
+        el.addEventListener("keydown", (ev) => {
+          if (ev.key !== "Enter" && ev.key !== " ") return;
+          // Space would otherwise pan the page out from under the reader.
+          ev.preventDefault();
+          activate();
+        });
+      });
+      svg.querySelectorAll(".disclose").forEach((el) => {
+        const toggle = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          setCollapsed(el.getAttribute("data-group"), el.getAttribute("aria-expanded") === "true");
+        };
+        el.addEventListener("click", toggle);
+        el.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") toggle(ev);
+        });
+      });
+      syncDetailUi();
+      syncViewport([...live], keep);
+    }
+
+    function stepForNode(id) {
+      const steps = LESSON.steps || [];
+      const direct = steps.findIndex((s) => (s.highlight || []).includes(id));
+      if (direct >= 0) return direct;
+      const neigh = new Set();
+      (LESSON.edges || []).forEach((e) => {
+        if (e.from === id) neigh.add(e.to);
+        if (e.to === id) neigh.add(e.from);
+      });
+      return steps.findIndex((s) => (s.highlight || []).some((h) => neigh.has(h)));
+    }
+
+    function show(index) {
+      const steps = LESSON.steps || [];
+      if (!steps.length) return;
+      closePop();
+      i = (index + steps.length) % steps.length;
+      const step = steps[i];
+      $("counter").textContent = `${i + 1} / ${steps.length}`;
+      $("prev").disabled = i === 0 && !timer;
+      $("next").disabled = i === steps.length - 1 && !timer;
+      $("dock-n").textContent = pad(i);
+      renderRich($("dock-title"), step.title || "");
+      renderRich($("narration"), step.narration || "");
+      const file = (step.code && step.code.file) || "";
+      const start = step.code && step.code.startLine ? `:${step.code.startLine}` : "";
+      // A step with no excerpt drops the code block rather than showing an
+      // empty one — the dock is only as tall as it has something to say.
+      const hasCode = !!(step.code && step.code.text);
+      $("code").classList.toggle("on", hasCode);
+      $("code-file").textContent = file + start;
+      renderCode((step.code && step.code.text) || "", step.code && step.code.startLine);
+      [...document.querySelectorAll(".step")].forEach((btn, idx) => {
+        if (idx === i) btn.setAttribute("aria-current", "true");
+        else btn.removeAttribute("aria-current");
+      });
+      CURRENT = { highlight: step.highlight || [], step, live: CURRENT.live };
+      renderFlow(step.highlight || [], step);
+    }
+
+    function play() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+        setPlay(false);
+        show(i);
+        return;
+      }
+      setPlay(true);
+      $("prev").disabled = false;
+      $("next").disabled = false;
+      timer = setInterval(() => show(i + 1), 2400);
+    }
+
+    function boot() {
+      if (!LESSON || typeof LESSON !== "object") {
+        document.body.innerHTML = "<p>LESSON JSON was not injected (__LESSON_JSON__).</p>";
+        return;
+      }
+      const t = ui();
+      document.documentElement.lang = String(LESSON.lang || "en").slice(0, 2);
+      $("lbl-back").textContent = t.back;
+      $("lbl-next").textContent = t.next;
+      $("stage-copy").textContent = t.stage;
+      // role="img" with no name announces as an unlabelled graphic.
+      $("flow").setAttribute("aria-label", `${String(LESSON.title || "").replace(/`/g, "")} — ${t.stage}`);
+      $("lbl-problem").textContent = t.problem;
+      $("lbl-why").textContent = t.why;
+      $("lbl-cost").textContent = t.cost;
+      $("lbl-brief").textContent = t.brief;
+      $("brief-close").setAttribute("aria-label", t.briefClose);
+      $("brief-close").title = t.briefClose;
+      $("steps").setAttribute("aria-label", t.steps);
+      applyKindTone(LESSON.kind, LESSON.accent);
+      // An unlisted kind still gets named — the shell says what the JSON
+      // said rather than pretending the lesson has no type.
+      $("kind").textContent = LESSON.kind ? (t.kinds[LESSON.kind] || LESSON.kind) : "";
+      $("dzen").onclick = () => setDzen(!dzen);
+      $("panel").onclick = () => setPanel(!panelOpen, true);
+      syncChrome();
+      setPlay(false);
+      renderRich($("pattern"), LESSON.pattern || "Lesson");
+      renderRich($("title"), LESSON.title || "Lesson");
+      document.title = (LESSON.title || "You Don't Know").replace(/`/g, "");
+      renderRich($("thesis"), LESSON.thesis || "");
+      renderRich($("brief-title"), LESSON.title || "Lesson");
+      renderRich($("thesis-full"), LESSON.thesis || "");
+      renderRich($("problem"), LESSON.problem || "");
+      renderRich($("whyNotBasic"), LESSON.whyNotBasic || "");
+      renderRich($("cost"), LESSON.cost || "");
+      const repeats = LESSON.repeats || [];
+      if (repeats.length) {
+        $("repeats-wrap").hidden = false;
+        renderRich($("repeats"), "Также здесь: " + repeats.map((r) => `${r.module} (${r.file}) — ${r.note}`).join(" · "));
+      }
+      $("steps").innerHTML = (LESSON.steps || []).map((s, idx) =>
+        `<button class="step" type="button" data-i="${idx}"><span class="n">${pad(idx)}</span><span class="t"></span></button>`
+      ).join("");
+      [...$("steps").querySelectorAll(".step")].forEach((btn, idx) => {
+        renderRich(btn.querySelector(".t"), (LESSON.steps[idx] && LESSON.steps[idx].title) || "");
+      });
+      $("steps").addEventListener("click", (ev) => {
+        const btn = ev.target.closest("[data-i]");
+        if (btn) show(Number(btn.dataset.i));
+      });
+      const dlg = $("brief-dlg");
+      $("brief").onclick = () => { closePop(); dlg.showModal(); };
+      $("brief-close").onclick = () => dlg.close();
+      // Clicking the backdrop closes it — the dialog element itself fills
+      // only the panel, so a click whose target IS the dialog is outside it.
+      dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+      $("play").onclick = play;
+      $("prev").onclick = () => show(i - 1);
+      $("next").onclick = () => show(i + 1);
+      document.addEventListener("click", (ev) => {
+        const pop = $("pop");
+        if (pop.hidden) return;
+        if (pop.contains(ev.target) || ev.target.closest(".fn")) return;
+        closePop();
+      });
+      document.addEventListener("keydown", (ev) => {
+        // The brief is modal: while it is open the canvas keys are not the
+        // reader's context, and Esc belongs to the dialog.
+        if (document.querySelector("dialog[open]")) return;
+        if (ev.key === "Escape") {
+          if (!$("pop").hidden) { ev.preventDefault(); closePop(); }
+          return;
+        }
+        // Figma-side of the keyboard. `+ / - / 0 / 1 / 2` work bare and with
+        // Ctrl/⌘, so the muscle memory from either app lands somewhere sane.
+        if (ev.key === "+" || ev.key === "=") { ev.preventDefault(); zoomBy(1.25); return; }
+        if (ev.key === "-" || ev.key === "_") { ev.preventDefault(); zoomBy(0.8); return; }
+        if (ev.key === "0") { ev.preventDefault(); fitAll(true); return; }
+        if (ev.key === "1") {
+          ev.preventDefault();
+          setView({ cx: VIEW.cx, cy: VIEW.cy, s: 1 }, true);
+          viewPinned = true;
+          return;
+        }
+        if (ev.key === "2") { ev.preventDefault(); focusLive(true); return; }
+        if (ev.key === " ") { ev.preventDefault(); play(); }
+        if (ev.key === "ArrowRight") show(i + 1);
+        if (ev.key === "ArrowLeft") show(i - 1);
+      });
+      window.addEventListener("resize", () => { closePop(); applyView(); });
+
+      // --- canvas: pan · zoom · detail ---
+      const canvas = $("canvas");
+      $("hint").innerHTML = t.hint;
+      $("zoom-in").title = t.zoomIn;
+      $("zoom-out").title = t.zoomOut;
+      $("zoom-pct").title = t.zoomReset;
+      $("zoom-fit").title = t.fit;
+      $("zoom-step").title = t.focus;
+      $("zoom-in").onclick = () => zoomBy(1.25);
+      $("zoom-out").onclick = () => zoomBy(0.8);
+      $("zoom-pct").onclick = () => { setView({ cx: VIEW.cx, cy: VIEW.cy, s: 1 }, true); viewPinned = true; };
+      $("zoom-fit").onclick = () => fitAll(true);
+      $("zoom-step").onclick = () => focusLive(true);
+      $("detail").onclick = () => {
+        detailMode = detailMode === null ? "full" : (detailMode === "full" ? "step" : null);
+        collapseOverride.clear(); // the switch speaks for the whole canvas again
+        renderFlow(CURRENT.highlight, CURRENT.step);
+      };
+
+      canvas.addEventListener("wheel", (ev) => {
+        ev.preventDefault();
+        const unit = ev.deltaMode === 1 ? 16 : 1;
+        // Trackpad pinch arrives as a ctrlKey wheel — same branch as ⌘/Ctrl.
+        if (ev.ctrlKey || ev.metaKey) {
+          zoomAt(ev.clientX, ev.clientY, Math.exp(-ev.deltaY * unit * 0.0022));
+          return;
+        }
+        if (ev.shiftKey) panBy((ev.deltaY || ev.deltaX) * unit, 0);
+        else panBy(ev.deltaX * unit, ev.deltaY * unit);
+      }, { passive: false });
+
+      const pointers = new Map();
+      let drag = null;
+      let pinch = null;
+      const pinchState = () => {
+        const [a, b] = [...pointers.values()];
+        return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      };
+      canvas.addEventListener("pointerdown", (ev) => {
+        justDragged = false;
+        if (ev.pointerType === "mouse" && ev.button !== 0 && ev.button !== 1) return;
+        pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        if (pointers.size === 2) { drag = null; pinch = pinchState(); return; }
+        if (pointers.size > 2) return;
+        // No pointer capture yet: capturing here would retarget the click and
+        // kill every node tap. It is claimed only once this becomes a drag.
+        drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: false };
+      });
+      canvas.addEventListener("pointermove", (ev) => {
+        if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        if (pinch && pointers.size >= 2) {
+          const now = pinchState();
+          if (pinch.d > 0) zoomAt(now.x, now.y, now.d / pinch.d);
+          panBy(-(now.x - pinch.x), -(now.y - pinch.y));
+          pinch = now;
+          return;
+        }
+        if (!drag || ev.pointerId !== drag.id) return;
+        const dx = ev.clientX - drag.x;
+        const dy = ev.clientY - drag.y;
+        if (!drag.moved) {
+          if (Math.abs(dx) + Math.abs(dy) < 4) return;
+          drag.moved = true;
+          justDragged = true;
+          canvas.classList.add("panning");
+          try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* pointer already gone */ }
+        }
+        drag.x = ev.clientX;
+        drag.y = ev.clientY;
+        panBy(-dx, -dy);
+      });
+      const endPointer = (ev) => {
+        pointers.delete(ev.pointerId);
+        if (pointers.size < 2) pinch = null;
+        if (!drag || drag.id !== ev.pointerId) return;
+        if (drag.moved) {
+          canvas.classList.remove("panning");
+          try { canvas.releasePointerCapture(ev.pointerId); } catch (e) { /* not captured */ }
+        }
+        drag = null;
+      };
+      canvas.addEventListener("pointerup", endPointer);
+      canvas.addEventListener("pointercancel", endPointer);
+      // A drag that ends over a node must not also open that node's step.
+      canvas.addEventListener("click", (ev) => {
+        if (!justDragged) return;
+        ev.stopPropagation();
+        ev.preventDefault();
+        justDragged = false;
+      }, true);
+      canvas.addEventListener("dblclick", (ev) => {
+        if (ev.target.closest(".node")) return;
+        fitAll(true);
+      });
+      if (window.ResizeObserver) {
+        // Re-frame, don't blind-fit: on a narrow canvas fitting the whole
+        // graph is exactly what makes it unreadable.
+        new ResizeObserver(() => { if (viewPinned) applyView(); else autoFrame(false); }).observe(canvas);
+      }
+
+      show(0);
+    }
+
+    boot();
+  </script>
+</body>
+</html>

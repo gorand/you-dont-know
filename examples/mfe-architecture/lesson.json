@@ -1,0 +1,482 @@
+{
+  "lang": "ru",
+  "kind": "architecture",
+  "detail": "progressive",
+  "title": "Как устроен leave-planner: экспозы, роли и общее ядро",
+  "pattern": "Module Federation · 11 экспозов",
+  "repo": "leave-planner · обезличенный пример",
+  "thesis": "Одиннадцать независимых корней делят между собой не друг друга, а общее ядро: состояние, UI и утилиты.",
+  "problem": "Из списка экспозов не видно, кто что делает и где общее. Страниц много, названия похожи, а связи идут через импорты общих модулей, а не через вызовы между экспозами.",
+  "whyNotBasic": "«Одно приложение с роутами» не объясняет, почему у каждого экспоза свои провайдеры и почему нет межстраничных импортов. «Просто набор экспозов» не объясняет, откуда берётся повторяющаяся схема заявка + задача.",
+  "cost": "Провайдеры и часть структуры дублируются в корнях, а перенос держит собственное параллельное состояние. Взамен экспозы грузятся независимо и не ломают друг друга.",
+  "asides": [
+    {
+      "id": "why-selfcontained",
+      "title": "Зачем самодостаточный корень",
+      "body": "Хост грузит экспоуз как отдельный бандл и не знает, что внутри. Поэтому каждый корень сам ставит `DesignSystemProvider`, `WidthProvider` и `QueryProvider`: без них экспоуз упадёт при монтировании в чужом дереве. Цена: провайдеры дублируются в 11 корнях, зато экспозы можно грузить и обновлять независимо."
+    },
+    {
+      "id": "why-401",
+      "title": "Известный пробел: handle401",
+      "body": "`useUnauthorizedHandler(handle401)` вызывается в корнях планирования, подписания и переноса. В отгулах проп `handle401` доходит только до контекста `RequestTimeOffProvider`, а `RequestUnpaid`, `TaskManagerTimeOff` и `TaskManagerUnpaid` его не принимают. Там 401 не обработается. Это вопрос #1 в `docs/spec/open-questions.md`; чинить точечно и по запросу."
+    },
+    {
+      "id": "why-local-ctx",
+      "title": "Почему провайдеры собираются на странице",
+      "body": "Редьюсеры и расчёты лежат в `src/state/*` и общие, но данные для них приходят из хуков конкретного экрана. Поэтому провайдеры монтируются во view каждой страницы с её `apiData`, а страничный `PlanIntervalsProvider` оборачивает общий редьюсер и добавляет правила и пересечения с коллегами."
+    },
+    {
+      "id": "why-parallel",
+      "title": "Перенос живёт отдельно от планирования",
+      "body": "Заявка на перенос не использует `plan-info` и `plan-limits`: у неё свои `reschedule-info`, `reschedule-limits`, `reschedule-intervals` и `reschedule-rules`. Общего с планированием только чистые функции из `plan-intervals`, например `intervalsOverlap`. Параллельное состояние дублирует структуру, но не тащит правила планирования в сценарий переноса."
+    },
+    {
+      "id": "why-nocross",
+      "title": "Почему HR_API_URLS вынесен в config",
+      "body": "В заголовке файла сказано, что константы перенесены из `RequestUnpaid/config/hrApi`, чтобы убрать кросс-страничные импорты. Правило: страницы не импортируют друг друга, общее живёт в `src/config`, `src/components`, `src/utils`, `src/state`."
+    }
+  ],
+  "files": [
+    "vite.config.ts",
+    "src/main.tsx",
+    "src/pages",
+    "src/state",
+    "src/components",
+    "src/config",
+    "src/mocks/handlers.ts"
+  ],
+  "repeats": [],
+  "nodes": [
+    {
+      "id": "g-host",
+      "label": "Хост и корень",
+      "kind": "group"
+    },
+    {
+      "id": "host",
+      "label": "Хост-портал",
+      "kind": "host",
+      "parent": "g-host"
+    },
+    {
+      "id": "contract",
+      "label": "basePath · handle401",
+      "kind": "process",
+      "parent": "g-host"
+    },
+    {
+      "id": "root",
+      "label": "Корень экспоуза",
+      "kind": "provider",
+      "parent": "g-host"
+    },
+    {
+      "id": "g-plan",
+      "label": "Планирование графика",
+      "kind": "group"
+    },
+    {
+      "id": "emp",
+      "label": "TaskPlanEmployee",
+      "kind": "process",
+      "parent": "g-plan"
+    },
+    {
+      "id": "mgr",
+      "label": "TaskPlanManager",
+      "kind": "process",
+      "parent": "g-plan"
+    },
+    {
+      "id": "mfe",
+      "label": "PlanForEmployee",
+      "kind": "process",
+      "parent": "g-plan"
+    },
+    {
+      "id": "g-sign",
+      "label": "Подписание графика",
+      "kind": "group"
+    },
+    {
+      "id": "signer",
+      "label": "TaskScheduleSign",
+      "kind": "process",
+      "parent": "g-sign"
+    },
+    {
+      "id": "alias",
+      "label": "…ScheduleApproval (алиас)",
+      "kind": "subroutine",
+      "parent": "g-sign"
+    },
+    {
+      "id": "g-req",
+      "label": "Заявка + задача",
+      "kind": "group"
+    },
+    {
+      "id": "transfer",
+      "label": "Перенос: Request + Task",
+      "kind": "process",
+      "parent": "g-req"
+    },
+    {
+      "id": "dayoff",
+      "label": "Отгул: Request + Manager",
+      "kind": "process",
+      "parent": "g-req"
+    },
+    {
+      "id": "unpaid",
+      "label": "БС: Request + Manager",
+      "kind": "process",
+      "parent": "g-req"
+    },
+    {
+      "id": "g-state",
+      "label": "Общее: состояние",
+      "kind": "group"
+    },
+    {
+      "id": "pinfo",
+      "label": "plan-info",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "plimits",
+      "label": "plan-limits",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "pints",
+      "label": "plan-intervals",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "rules",
+      "label": "plan-rules · 13 правил",
+      "kind": "decision",
+      "parent": "g-state"
+    },
+    {
+      "id": "tvac",
+      "label": "team-calendar",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "uleave",
+      "label": "unpaid-leave",
+      "kind": "process",
+      "parent": "g-state"
+    },
+    {
+      "id": "g-ui",
+      "label": "Общее: UI и утилиты",
+      "kind": "group"
+    },
+    {
+      "id": "shell",
+      "label": "Layout · Header · Mobile…",
+      "kind": "process",
+      "parent": "g-ui"
+    },
+    {
+      "id": "bits",
+      "label": "Loader · PanelAction · Tooltip",
+      "kind": "process",
+      "parent": "g-ui"
+    },
+    {
+      "id": "utils",
+      "label": "taskUtils · pluralize · даты",
+      "kind": "process",
+      "parent": "g-ui"
+    },
+    {
+      "id": "g-data",
+      "label": "Данные и dev",
+      "kind": "group"
+    },
+    {
+      "id": "rq",
+      "label": "хуки @acme/query-hooks",
+      "kind": "cloud",
+      "parent": "g-data"
+    },
+    {
+      "id": "apicfg",
+      "label": "config/hrApi · gantt",
+      "kind": "file",
+      "parent": "g-data"
+    },
+    {
+      "id": "msw",
+      "label": "MSW: фикстура по task_id",
+      "kind": "queue",
+      "parent": "g-data"
+    }
+  ],
+  "edges": [
+    {
+      "from": "host",
+      "to": "contract",
+      "label": "передаёт"
+    },
+    {
+      "from": "contract",
+      "to": "root",
+      "label": "props"
+    },
+    {
+      "from": "root",
+      "to": "emp",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "mgr",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "mfe",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "signer",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "transfer",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "dayoff",
+      "label": "Routes"
+    },
+    {
+      "from": "root",
+      "to": "unpaid",
+      "label": "Routes"
+    },
+    {
+      "from": "alias",
+      "to": "signer",
+      "label": "реэкспорт",
+      "kind": "dashed"
+    },
+    {
+      "from": "emp",
+      "to": "pints",
+      "label": "провайдер"
+    },
+    {
+      "from": "mgr",
+      "to": "tvac",
+      "label": "команда"
+    },
+    {
+      "from": "mfe",
+      "to": "plimits",
+      "label": "лимиты"
+    },
+    {
+      "from": "transfer",
+      "to": "pints",
+      "label": "хелперы",
+      "kind": "dashed"
+    },
+    {
+      "from": "dayoff",
+      "to": "pinfo",
+      "label": "календарь"
+    },
+    {
+      "from": "unpaid",
+      "to": "uleave",
+      "label": "БС"
+    },
+    {
+      "from": "pints",
+      "to": "rules",
+      "label": "правила"
+    },
+    {
+      "from": "signer",
+      "to": "shell",
+      "label": "каркас"
+    },
+    {
+      "from": "dayoff",
+      "to": "utils",
+      "label": "даты"
+    },
+    {
+      "from": "pinfo",
+      "to": "rq",
+      "label": "запрос"
+    },
+    {
+      "from": "msw",
+      "to": "rq",
+      "label": "подмена",
+      "kind": "dashed"
+    },
+    {
+      "from": "unpaid",
+      "to": "apicfg",
+      "label": "URL"
+    }
+  ],
+  "steps": [
+    {
+      "id": "host",
+      "title": "Хост и список экспозов",
+      "narration": "Хост грузит экспоузы по имени из `vite.config.ts`. Их 11, и у каждого своя папка в `src/pages`; алиас `TaskScheduleApproval` нужен, пока хост просит старое имя.",
+      "highlight": [
+        "host",
+        "contract",
+        "g-host"
+      ],
+      "code": {
+        "file": "vite.config.ts",
+        "startLine": 40,
+        "text": "      exposes: {\n        './TaskPlanEmployee': './src/pages/TaskPlanEmployee',\n        './TaskPlanManager': './src/pages/TaskPlanManager',\n        './TaskPlanForEmployee': './src/pages/TaskPlanForEmployee',\n        './TaskScheduleSign': './src/pages/TaskScheduleSign',\n        './RequestReschedule': './src/pages/RequestReschedule',\n        './TaskReschedule': './src/pages/TaskReschedule',\n        './RequestUnpaid': './src/pages/RequestUnpaid',\n        './TaskManagerUnpaid': './src/pages/TaskManagerUnpaid',\n        './RequestTimeOff': './src/pages/RequestTimeOff',\n        './TaskManagerTimeOff': './src/pages/TaskManagerTimeOff',\n        // алиас старого имени подписания: хост загружает его до сих пор\n        './TaskScheduleApproval':\n          './src/pages/TaskScheduleApproval',\n      },"
+      }
+    },
+    {
+      "id": "root",
+      "title": "Самодостаточный корень",
+      "narration": "Каждый экспоуз ставит свои провайдеры и роуты, а хост передаёт только `basePath` и `handle401` [[why-selfcontained]]. Экспозы друг друга не вызывают.",
+      "highlight": [
+        "root",
+        "contract",
+        "g-host"
+      ],
+      "code": {
+        "file": "src/pages/TaskScheduleSign/TaskScheduleSign.tsx",
+        "startLine": 37,
+        "text": "const TaskScheduleSign: React.FC<TProps> = ({ handle401 }) => {\n  useUnauthorizedHandler(handle401);\n\n  return (\n    <DesignSystemProvider value={appDS}>\n      <WidthProvider {...dsUtils.WIDTH_OPTIONS}>\n        <QueryProvider>\n          <Notifications />\n          <Routes>\n            <Route path=\":taskId/*\" element={<TaskScheduleSignContent />} />\n          </Routes>\n        </QueryProvider>\n      </WidthProvider>\n    </DesignSystemProvider>\n  );\n};\n\nexport default withMonitoring(React.memo(TaskScheduleSign));\n"
+      }
+    },
+    {
+      "id": "plan",
+      "title": "Планирование: три роли",
+      "narration": "Сотрудник собирает график, руководитель согласует команду, руководитель планирует за сотрудника. Три страницы (`TaskPlanForEmployee` на схеме сокращён) сидят на одних и тех же `plan-*` и `team-calendar` [[why-401]].",
+      "highlight": [
+        "g-plan",
+        "emp",
+        "mgr",
+        "mfe",
+        "pints",
+        "tvac",
+        "plimits"
+      ],
+      "expand": [
+        "g-state"
+      ],
+      "code": {
+        "file": "src/pages/TaskPlanEmployee/views/ViewDesktop/ViewDesktop.tsx",
+        "startLine": 93,
+        "text": "  }\n\n  return (\n    <PlanInfoProvider apiData={queryPlan.data}>\n      <PlanLimitsProvider apiData={queryLimits.data}>\n        <PlanIntervalsProvider apiData={queryPlan.data}>\n          <div className={styles['view-desktop']}>\n            <Content />\n          </div>"
+      }
+    },
+    {
+      "id": "sign",
+      "title": "Подписание графика",
+      "narration": "`TaskScheduleSign` — отдельный экран на подпись, без доменного состояния планирования. Старое имя экспоуза просто реэкспортирует его.",
+      "highlight": [
+        "g-sign",
+        "signer",
+        "alias",
+        "shell"
+      ],
+      "code": {
+        "file": "src/pages/TaskScheduleApproval/index.tsx",
+        "startLine": 1,
+        "text": "/** @deprecated Старое имя expose для хоста — используйте TaskScheduleSign */\nexport { default } from '../TaskScheduleSign';"
+      }
+    },
+    {
+      "id": "req",
+      "title": "Перенос, отгул, БС",
+      "narration": "Везде одна схема: заявка сотрудника и задача руководителя. Перенос живёт на своём состоянии [[why-parallel]], отгул опирается на `plan-info`, БС добавляет `unpaid-leave`.",
+      "highlight": [
+        "g-req",
+        "transfer",
+        "dayoff",
+        "unpaid",
+        "pinfo",
+        "uleave",
+        "pints"
+      ],
+      "code": {
+        "file": "src/pages/RequestTimeOff/RequestTimeOff.tsx",
+        "startLine": 18,
+        "text": "type TProps = { basePath?: string; handle401?: () => Promise<void> };\n\nconst RequestView: FC<TProps> = ({ basePath = '', handle401 }) => {\n  const { isMobile } = useWidth();\n\n  return (\n    <RequestTimeOffProvider basePath={basePath} handle401={handle401}>\n      {isMobile ? <ViewMobile /> : <ViewDesktop />}\n    </RequestTimeOffProvider>\n  );\n};"
+      }
+    },
+    {
+      "id": "state",
+      "title": "Общее ядро: состояние",
+      "narration": "Домен разложен по `src/state/*` в одном формате: context, reducer, `calculations.ts`, `normalize.ts`. Правила валидации лежат отдельным движком [[why-local-ctx]].",
+      "highlight": [
+        "g-state",
+        "pinfo",
+        "plimits",
+        "pints",
+        "rules",
+        "tvac",
+        "uleave"
+      ],
+      "code": {
+        "file": "src/pages/TaskPlanEmployee/state/plan-intervals/plan-intervals.context.tsx",
+        "startLine": 9,
+        "text": "\nimport usePlanIntervalsReducer from '@/state/plan-intervals/plan-intervals.reducer';\nimport {\n  RuleOutcome,\n  TIntervalWithOverlaps,\n  TPlanIntervalWithRules,\n  useColleagueOverlaps,\n  useLimitsSync,\n} from '@/state/plan-intervals';\nimport {\n  useIntervalsWithRules,\n  usePlanRules,\n} from '@/state/plan-intervals/plan-rules/rules';\nimport { usePlanInfo } from '@/state/plan-info';\nimport type { TPlanRule } from '@/state/plan-intervals/plan-rules';\nimport { RULES } from '@/state/plan-intervals/plan-rules/config';\n\ntype TPlanIntervalsContextValue = {\n  state: {"
+      }
+    },
+    {
+      "id": "ui",
+      "title": "Общее ядро: UI и утилиты",
+      "narration": "Загрузка, панель действий и подсказки об ошибке используются почти везде, каркас и даты тоже. Это то, что экспозы делят между собой вместо импортов друг друга [[why-nocross]].",
+      "highlight": [
+        "g-ui",
+        "shell",
+        "bits",
+        "utils",
+        "apicfg"
+      ],
+      "code": {
+        "file": "src/config/hrApi.ts",
+        "startLine": 1,
+        "text": "/**\n * Общие URL-ы HR API, используемые на нескольких страницах.\n * Определение перенесено сюда из @/pages/RequestUnpaid/config/hrApi\n * для устранения кросс-страничных импортов.\n */\nexport const HR_API_URLS = {\n  EMPLOYEE_CALENDAR: '/api/hr/absence/employee-calendar',\n  CHECK_UNPAID: '/api/hr/absence/check-unpaid',\n  CHECK_TIME_OFF: '/api/hr/absence/check-time-off',\n  DOCS: '/api/hr/absence/time-off-docs',\n  UNPAID_DOCS: '/api/hr/absence/unpaid-docs',\n  REQUEST_INFO: '/api/hr/absence/request-info',"
+      }
+    },
+    {
+      "id": "data",
+      "title": "Данные и dev на моках",
+      "narration": "Данные берутся только из хуков `@acme/query-hooks`. В dev MSW подменяет эндпоинты, а сценарий выбирается по `task_id` из URL.",
+      "highlight": [
+        "g-data",
+        "rq",
+        "msw",
+        "apicfg",
+        "pinfo",
+        "plimits"
+      ],
+      "code": {
+        "file": "src/mocks/handlers.ts",
+        "startLine": 148,
+        "text": "  http.get(ApiPath.PLAN_LIMITS, async ({ request }) => {\n    const url = new URL(request.url);\n\n    const taskId = url.searchParams.get('task_id');\n\n    await new Promise((res) => {\n      setTimeout(res, 3000);\n    });\n\n    if (taskId === '1001') {\n      return HttpResponse.json(planLimitsFixture1001);\n    }\n\n    if (taskId === '1002') {\n      return HttpResponse.json(planLimitsFixture1001);\n    }"
+      }
+    }
+  ]
+}

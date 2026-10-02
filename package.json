@@ -38,7 +38,8 @@
     "example": "node scripts/inject-lesson.mjs templates/lesson.html examples/how-promise/lesson.json examples/how-promise/index.html",
     "stress": "node scripts/inject-lesson.mjs templates/lesson.html examples/inject-pipeline/lesson.json examples/inject-pipeline/index.html",
     "dense": "node scripts/inject-lesson.mjs templates/lesson.html examples/dense-request/lesson.json examples/dense-request/index.html",
-    "build": "npm run palette && npm run example && npm run stress && npm run dense",
+    "mfe": "node scripts/inject-lesson.mjs templates/lesson.html examples/mfe-architecture/lesson.json examples/mfe-architecture/index.html",
+    "build": "npm run palette && npm run example && npm run stress && npm run dense && npm run mfe",
     "release": "node scripts/release.mjs"
   },
   "keywords": [
