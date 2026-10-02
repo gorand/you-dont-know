@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] — 2026-10-02
+
+The fold/unfold disc says open or close with one mark that turns inside out,
+and no longer carries a count.
+
+### Changed
+
+- **A folded group's disc shows two viewfinder corners pointing out; an open
+  fence's, the same corners pointing in.** It replaces `+N` with a chevron on
+  hover (folded) and a chevron (open). The corners are the design system's,
+  the same marks that close in on a group after it is toggled, so the control
+  and its feedback match. Hover turns the mark coral, focus rings the disc
+  violet, as before.
+- **No count on the disc.** The stack behind a folded block already says
+  there is more, and a numeral in a disc is how the rail draws a step. The
+  number of children stays in the disc's accessible name.
+
 ## [0.7.1] — 2026-10-02
 
 Tooling only: the release gate now works on Windows. The lesson shell and
