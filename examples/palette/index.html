@@ -3050,8 +3050,11 @@
     // marks that close in on a group after it is toggled, so the control
     // and its feedback speak one language — and one mark that turns inside
     // out reads as one control, where a plus and something else read as two.
+    // Not a literal flip in one box: turned outward at the inward geometry
+    // the two corners drift to the rim and read as two marks, so outward
+    // they are pulled in — legs 3.4, tips 0.4 off the centre lines.
     const cornersOut = (x, y) =>
-      `M ${x + 1.2} ${y - 5.6} H ${x + 5.6} V ${y - 1.2} M ${x - 5.6} ${y + 1.2} V ${y + 5.6} H ${x - 1.2}`;
+      `M ${x + 0.4} ${y - 3.8} H ${x + 3.8} V ${y - 0.4} M ${x - 3.8} ${y + 0.4} V ${y + 3.8} H ${x - 0.4}`;
     const cornersIn = (x, y) =>
       `M ${x + 1.2} ${y - 5.6} V ${y - 1.2} H ${x + 5.6} M ${x - 5.6} ${y + 1.2} H ${x - 1.2} V ${y + 5.6}`;
 

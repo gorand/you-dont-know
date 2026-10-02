@@ -471,6 +471,14 @@ one control**; a plus paired with anything else reads as two.
   control and the feedback it triggers look related.
 - At natural size the corners were the faintest of the four (two short L's
   carry less ink than a cross), so the legs went from 3.4px to 4.4px.
+- Then the opposite problem, outward: flipped inside the same ±5.6 box, the
+  two corners sat at the rim with an empty diagonal between them and read as
+  two marks. Shrinking the box only (±4.6, ±4.0) kept the gap, because the
+  gap is set by where the leg tips stop, not by the box — the author pointed
+  that out. Outward corners now keep 3.4px legs and stop 0.4px off the centre
+  lines; four gaps (1.2 · 0.8 · 0.4 · 0) were compared and 0 started to read
+  as a closed frame. The pair is no longer a literal flip, and does not need
+  to be: what reads as "the same mark" is the shape, not the coordinates.
 - No count anywhere on the disc. The stack ghost behind a folded block
   already says "more underneath", and a numeral in a disc is the rail's
   vocabulary for a step. The number stays in the accessible name.
