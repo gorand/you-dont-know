@@ -42,7 +42,9 @@ stand; only the vocabulary moved.
   changes with its state ("Focus mode…" / "Leave focus mode"), the
   inspector's does not — its `aria-pressed` already carries the state.
 - [x] Chrome toggles are real `<button>`s, so `Enter`/`Space` activate them
-  without extra key handling — verified in Playwright, not assumed.
+  without extra key handling. Only `Enter` was ever true until round 13: the
+  page's own key handler took `Space` for play on any focused element. The
+  original "verified in Playwright" covered one key and claimed both.
 - [ ] Decorative `<svg class="ico">` stay `aria-hidden="true"` (already true — keep it true for any new icon).
 - [x] `:focus-visible` ring stays visible on every new interactive element (nodes included) — the global `outline` is not dependable on an SVG `<g>`, so the ring is carried on the shape: `.node-shell` for an ordinary node, `.hit` for a fence whose shell is in the other pass.
 
@@ -484,6 +486,76 @@ one control**; a plus paired with anything else reads as two.
   vocabulary for a step. The number stays in the accessible name.
 - With one glyph at rest in both states, the hover/focus swap between a
   count and a hint glyph is gone; hover and focus only recolour the mark.
+
+## Round 13 — the dock's controls, only where they change something
+
+Raised by the author from use: the grip from round 11 sat on every step,
+including the ones that had nothing more to show, and there was no quick way
+to say "all of it". Measured before touching anything: at 1440×900, 22 of the
+33 steps across the five examples fit the dock at its usual height, and all
+33 carried the grip.
+
+- **The controls follow the content.** The grip and a new full-height button
+  show only when moving the cap would reveal something: the step is cut at the
+  usual height, or at a lower one the reader picked. Concretely, controls iff
+  `need > min(cap, usual)`. Above the usual height that still counts, so a
+  reader who went to full height can always get back.
+- **Both numbers are read off the dock itself**, not summed from its parts:
+  lift the cap (`max-height: none`) to get what the step needs, push the box
+  past it (`height: 9999px`) to get what the stylesheet gives. Nothing paints
+  between the two reads. Summing children would miss a cap so low that the
+  code head itself is clipped. One trap: a scroller that briefly fits its
+  content loses its scroll offset, so both scrollers' offsets are saved and
+  put back.
+- **Never re-evaluated mid-drag or on a key.** Dragging up past what a step
+  needs would hide the grip under the pointer that holds its capture. The
+  check runs on a new step, a resize, the panel coming back and the webfonts
+  landing. A grip that outlives its use until the next step is harmless; one
+  that vanishes under the hand is not.
+- **The button keeps its column when hidden** (`visibility`, not `display`), so
+  a title does not re-wrap from one step to the next, and it is the disc's
+  size, so the head is exactly as tall as before. Checked: frame and dock
+  rectangle identical to 0.7.2 on all 99 step × size combinations (five
+  examples, three window sizes).
+- **The glyph is the chevron the group disc carried before round 12**: up to
+  raise the dock, down to bring it back. The first pass drew an arrow up to a
+  line, and the author overruled it for the plain chevron. The dock's foot is
+  fixed and only its top edge moves, so the chevron points where that edge
+  will go. One mark turned around reads as one control, as in round 12.
+- **The button sits in the dock's corner**, `--space-1` off the top and the
+  right edge, pulled out of the head's padding by negative margins so the row
+  keeps its height and the title its width. It overlaps the grip's strip
+  there, so it sits above it (`z-index`), or its top edge would start a drag.
+- **Full is a state, not a number.** A taller window keeps a full dock full
+  instead of leaving it at the old window's maximum.
+- **With no excerpt the narration takes the dock's cap**, not its own 11rem.
+  Otherwise full height could not show a long narration whole, and the
+  button would have lied.
+- **Under 1100px full height stops below the zoombar**, which moves to the top
+  of the canvas there and lies across the dock's width. Reachable with End
+  since 0.7.0; the button made it one press.
+
+The canvas note in the top-left corner, «Diagram · node opens a step», is
+gone. It was the heading of the diagram pane in the 0.1 split layout, turned
+into marginalia by the round-8 redesign. On a full-bleed canvas "Diagram"
+names the obvious, and a dock at full height covered it. Moving its other
+half ("click a node for its step") into the top-right legend was tried and
+reverted: the longer legend ran onto the API gateway node on
+`dense-request`. The svg's accessible name still carries the full string.
+
+Found on the way: **Space never pressed a focused button**, and on a focused
+node it opened the step *and* started autoplay. The global handler took Space
+for play and called `preventDefault` regardless of focus. Space now belongs to
+a focused button or node. See the corrected checklist line above.
+
+Open, for the next round. **A click on an open group is not designed.** It
+goes to the first step whose highlight includes the group (failing that, a
+neighbour), and that step lights several boxes, so the click reads as "it
+selected a bunch of things". A click on the fence and a click on a box inside
+it are different intents that currently share one rule. Draft the variants
+(what a group click can mean, what an element click must mean) together with
+a hover that says which one is about to happen. That hover is also where
+"click a node for its step" belongs: in context, not as a permanent caption.
 
 ## Workflow
 

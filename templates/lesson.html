@@ -332,21 +332,6 @@
     .corner.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
     .corner.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
 
-    /* Marginalia — the sheet's own notes, turned up in the margin. */
-    .marginalia {
-      position: absolute;
-      top: 14px;
-      left: 44px;
-      margin: 0;
-      z-index: var(--z-raised);
-      pointer-events: none;
-      font-family: var(--font-mono);
-      font-size: var(--text-3xs);
-      letter-spacing: var(--track-5);
-      text-transform: uppercase;
-      color: var(--color-ink-soft);
-      opacity: 0.82;
-    }
     .hint {
       position: absolute;
       top: 14px;
@@ -530,9 +515,14 @@
     .dock-grip:focus-visible::before { width: 3.25rem; border-top-color: var(--color-primary); }
     .dock-grip:focus-visible { box-shadow: inset 0 var(--stroke-mark) 0 var(--color-primary); }
     body.dock-resizing { cursor: ns-resize; user-select: none; }
+    /* On a step that fits, the grip and the button would promise a change
+       they cannot make, so neither is there. The button keeps its column,
+       or the title would re-wrap from one step to the next. */
+    .dock.fits .dock-grip { display: none; }
+    .dock.fits .dock-fit { visibility: hidden; }
     .dock-head {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3) 0.6rem;
@@ -562,6 +552,20 @@
       color: var(--color-ink);
       overflow-wrap: anywhere;
     }
+    /* Full height in one press; the grip fine-tunes it from there. Pulled
+       out of the head's padding into the corner, --space-1 off the top and
+       the right edge; the negative margins keep the row as tall, and the
+       title as wide, as without it. Above the grip strip it overlaps. */
+    button.ctrl.dock-fit {
+      position: relative;
+      z-index: 2;
+      align-self: start;
+      width: 1.65rem;
+      height: 1.65rem;
+      padding: 0;
+      justify-content: center;
+      margin: calc(var(--space-1) - var(--space-2)) calc(var(--space-1) - var(--space-3)) 0 0;
+    }
     .dock-body {
       display: grid;
       grid-template-rows: auto minmax(0, 1fr);
@@ -577,6 +581,11 @@
       overflow: auto;
       max-height: 11rem;
     }
+    /* With no excerpt the narration is the panel's whole body: it takes the
+       flexible row and the panel's cap instead of its own, so full height
+       shows a long one whole. */
+    .dock.no-code .dock-body { grid-template-rows: minmax(0, 1fr); }
+    .dock.no-code .narration { max-height: none; }
 
     /* ---- code ---------------------------------------------------------- */
     .code {
@@ -1099,7 +1108,7 @@
       .step:first-child::after { left: 0.2rem; }
       .step:last-child::after { right: 0.2rem; }
       .canvas { position: relative; inset: auto; min-height: 0; }
-      .marginalia, .hint, .corner { display: none; }
+      .hint, .corner { display: none; }
       .dock {
         left: var(--space-2);
         width: calc(100% - var(--space-2) * 2);
@@ -1157,7 +1166,6 @@
       <span class="corner tr" aria-hidden="true"></span>
       <span class="corner bl" aria-hidden="true"></span>
       <span class="corner br" aria-hidden="true"></span>
-      <p class="marginalia" id="stage-copy"></p>
       <p class="hint" id="hint"></p>
       <div class="zoombar" id="zoombar">
         <button type="button" id="zoom-out" title="Zoom out">
@@ -1186,6 +1194,7 @@
       <div class="dock-head">
         <span class="dock-n" id="dock-n" aria-hidden="true"></span>
         <h2 class="dock-title" id="dock-title"></h2>
+        <button class="ctrl quiet dock-fit" id="dock-fit" type="button"></button>
       </div>
       <div class="dock-body">
         <div class="narration" id="narration"></div>
@@ -1309,6 +1318,7 @@
         fit: "Fit the whole diagram (0)", focus: "Zoom to this step (2)",
         expand: "Expand", collapse: "Collapse", opensStep: "opens step",
         grip: "Panel height", gripHint: "Panel height — drag, or ↑ ↓; Enter or double-click: full height and back",
+        dockFull: "Full height — then the top edge fine-tunes it", dockBack: "Back to the usual height",
         detailTitle: "Detail: auto · all open · current step only",
         detail: { auto: "auto", full: "all", step: "step" },
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
@@ -1328,6 +1338,7 @@
         fit: "Вписать схему целиком (0)", focus: "Приблизить к текущему шагу (2)",
         expand: "Раскрыть", collapse: "Свернуть", opensStep: "открывает шаг",
         grip: "Высота панели", gripHint: "Высота панели — тяните или ↑ ↓; Enter или двойной клик: во всю высоту и обратно",
+        dockFull: "Во всю высоту — дальше подстроить за верхний край", dockBack: "Вернуть обычную высоту",
         detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
         detail: { auto: "авто", full: "всё", step: "шаг" },
         hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
@@ -1724,22 +1735,85 @@
       p.setAttribute("aria-pressed", panelOpen ? "true" : "false");
       p.setAttribute("aria-label", t.panel);
       p.title = t.panel;
+      syncDockFit();
     }
 
     // The dock's cap, in px. null is the stylesheet's own cap.
     let dockCap = null;
+    // The reader asked for full height, so a resize keeps the dock full
+    // rather than leaving it at the old window's maximum.
+    let dockFull = false;
 
     function dockLimits() {
       const dock = $("dock");
       const d = dock.getBoundingClientRect();
       const c = $("canvas").getBoundingClientRect();
       const head = dock.querySelector(".dock-head").offsetHeight;
-      const narr = $("narration").offsetHeight;
+      const narr = $("narration");
       // Never taller than the canvas above the dock's foot, never so short
-      // that the excerpt is a sliver under the narration.
-      const max = Math.max(head, d.bottom - Math.max(c.top, 0) - 16);
-      const min = Math.min(max, head + narr + ($("code").classList.contains("on") ? 88 : 0));
+      // that the excerpt is a sliver under the narration — or, with no
+      // excerpt, the narration a sliver under the title. Under 1100px the
+      // zoombar moves to the top of the canvas, across the dock's width:
+      // full height stops under it, not behind it.
+      const z = $("zoombar").getBoundingClientRect();
+      const under = z.height > 0 && z.left < d.right && z.right > d.left && z.bottom < d.bottom;
+      const ceiling = Math.max(c.top, 0, under ? z.bottom : 0);
+      const max = Math.max(head, d.bottom - ceiling - 16);
+      const body = $("code").classList.contains("on") ? narr.offsetHeight + 88 : Math.min(narr.scrollHeight, 88);
+      const min = Math.min(max, head + body);
       return { min, max, now: d.height };
+    }
+
+    // What the step needs against what the stylesheet gives it, both read
+    // off the dock itself: lift the cap for the first, push the box past it
+    // for the second. Nothing paints in between. The scroll offsets go back
+    // because a box that briefly fits its content loses them.
+    function dockNeed() {
+      const dock = $("dock");
+      const scrollers = [$("narration"), $("code-body")];
+      const tops = scrollers.map((el) => el.scrollTop);
+      const sized = dock.classList.contains("sized");
+      dock.classList.remove("sized");
+      dock.style.height = "9999px";
+      const room = dock.getBoundingClientRect().height;
+      dock.style.height = "";
+      dock.style.maxHeight = "none";
+      const need = dock.getBoundingClientRect().height;
+      dock.style.maxHeight = "";
+      if (sized) dock.classList.add("sized");
+      scrollers.forEach((el, k) => { el.scrollTop = tops[k]; });
+      return { need, room };
+    }
+
+    // The grip and the button are there only when moving the cap would show
+    // the reader something: the step is cut at the usual height, or at the
+    // lower one the reader picked. Run on a new step, a resize or the panel
+    // coming back, never mid-drag: the grip must not vanish under the hand.
+    function syncDockFit() {
+      const dock = $("dock");
+      if (!dock.offsetParent) return;
+      const { need, room } = dockNeed();
+      const { max } = dockLimits();
+      const lo = Math.min(dockCap == null ? room : dockCap, room);
+      dock.classList.toggle("fits", !(need > lo + 1 && max > lo + 1));
+    }
+
+    const DOCK_GLYPH = {
+      // The chevron the group disc carried before its corner marks: up
+      // raises the dock's top edge, down brings it back. Its foot never moves.
+      full: '<path d="M3.4 10.35 L8 5.65 L12.6 10.35"/>',
+      back: '<path d="M3.4 5.65 L8 10.35 L12.6 5.65"/>'
+    };
+
+    function syncDockButton() {
+      const b = $("dock-fit");
+      const state = dockFull ? "back" : "full";
+      if (b.dataset.state === state) return;
+      const t = ui();
+      b.dataset.state = state;
+      b.innerHTML = ico(DOCK_GLYPH[state]);
+      b.setAttribute("aria-label", dockFull ? t.dockBack : t.dockFull);
+      b.title = dockFull ? t.dockBack : t.dockFull;
     }
 
     function applyDockCap(px, reframe) {
@@ -1747,11 +1821,13 @@
       const grip = $("dock-grip");
       if (px == null) {
         dockCap = null;
+        dockFull = false;
         dock.classList.remove("sized");
         dock.style.removeProperty("--dock-cap");
       } else {
         const { min, max } = dockLimits();
         dockCap = Math.round(Math.min(max, Math.max(min, px)));
+        dockFull = dockCap >= max - 2;
         dock.classList.add("sized");
         dock.style.setProperty("--dock-cap", dockCap + "px");
       }
@@ -1760,6 +1836,7 @@
       const { min, max, now } = dockLimits();
       const at = Math.min(max, Math.max(min, dockCap == null ? now : dockCap));
       grip.setAttribute("aria-valuenow", String(Math.round(max > min ? ((at - min) / (max - min)) * 100 : 100)));
+      syncDockButton();
       if (reframe) { if (viewPinned) applyView(); else autoFrame(true); }
     }
 
@@ -1767,8 +1844,7 @@
     // the reader dragged to last: a toggle that remembered a third state
     // would stop being predictable after the second press.
     function toggleDock() {
-      const { max } = dockLimits();
-      applyDockCap(dockCap != null && dockCap >= max - 2 ? null : max, true);
+      applyDockCap(dockFull ? null : Infinity, true);
     }
 
     function wireDockGrip() {
@@ -1777,6 +1853,7 @@
       const grip = $("dock-grip");
       grip.setAttribute("aria-label", t.grip);
       grip.title = t.gripHint;
+      $("dock-fit").addEventListener("click", toggleDock);
       let drag = null;
       grip.addEventListener("pointerdown", (ev) => {
         if (ev.pointerType === "mouse" && ev.button !== 0) return;
@@ -3381,8 +3458,10 @@
       // empty one — the dock is only as tall as it has something to say.
       const hasCode = !!(step.code && step.code.text);
       $("code").classList.toggle("on", hasCode);
+      $("dock").classList.toggle("no-code", !hasCode);
       $("code-file").textContent = file + start;
       renderCode((step.code && step.code.text) || "", step.code && step.code.startLine);
+      syncDockFit();
       [...document.querySelectorAll(".step")].forEach((btn, idx) => {
         if (idx === i) btn.setAttribute("aria-current", "true");
         else btn.removeAttribute("aria-current");
@@ -3414,7 +3493,6 @@
       document.documentElement.lang = String(LESSON.lang || "en").slice(0, 2);
       $("lbl-back").textContent = t.back;
       $("lbl-next").textContent = t.next;
-      $("stage-copy").textContent = t.stage;
       // role="img" with no name announces as an unlabelled graphic.
       $("flow").setAttribute("aria-label", `${String(LESSON.title || "").replace(/`/g, "")} — ${t.stage}`);
       $("lbl-problem").textContent = t.problem;
@@ -3491,6 +3569,9 @@
           return;
         }
         if (ev.key === "2") { ev.preventDefault(); focusLive(true); return; }
+        // A focused control owns Space: a button presses, a node opens its
+        // step. Taking it here for play swallowed both.
+        if (ev.key === " " && ev.target.closest("button, [role='button']")) return;
         if (ev.key === " ") { ev.preventDefault(); play(); }
         if (ev.key === "ArrowRight") show(i + 1);
         if (ev.key === "ArrowLeft") show(i - 1);
@@ -3596,13 +3677,16 @@
         // graph is exactly what makes it unreadable.
         new ResizeObserver(() => {
           // A cap that fit the old window may not fit this one.
-          if (dockCap != null) applyDockCap(dockCap, false);
+          if (dockCap != null) applyDockCap(dockFull ? Infinity : dockCap, false);
+          syncDockFit();
           if (viewPinned) applyView(); else autoFrame(false);
         }).observe(canvas);
       }
       wireDockGrip();
 
       show(0);
+      // The webfonts land after the first step is measured, and change it.
+      if (document.fonts) document.fonts.ready.then(syncDockFit);
     }
 
     boot();
