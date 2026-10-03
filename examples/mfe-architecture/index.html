@@ -332,21 +332,6 @@
     .corner.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
     .corner.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
 
-    /* Marginalia — the sheet's own notes, turned up in the margin. */
-    .marginalia {
-      position: absolute;
-      top: 14px;
-      left: 44px;
-      margin: 0;
-      z-index: var(--z-raised);
-      pointer-events: none;
-      font-family: var(--font-mono);
-      font-size: var(--text-3xs);
-      letter-spacing: var(--track-5);
-      text-transform: uppercase;
-      color: var(--color-ink-soft);
-      opacity: 0.82;
-    }
     .hint {
       position: absolute;
       top: 14px;
@@ -1099,7 +1084,7 @@
       .step:first-child::after { left: 0.2rem; }
       .step:last-child::after { right: 0.2rem; }
       .canvas { position: relative; inset: auto; min-height: 0; }
-      .marginalia, .hint, .corner { display: none; }
+      .hint, .corner { display: none; }
       .dock {
         left: var(--space-2);
         width: calc(100% - var(--space-2) * 2);
@@ -1157,7 +1142,6 @@
       <span class="corner tr" aria-hidden="true"></span>
       <span class="corner bl" aria-hidden="true"></span>
       <span class="corner br" aria-hidden="true"></span>
-      <p class="marginalia" id="stage-copy"></p>
       <p class="hint" id="hint"></p>
       <div class="zoombar" id="zoombar">
         <button type="button" id="zoom-out" title="Zoom out">
@@ -3895,7 +3879,6 @@
       document.documentElement.lang = String(LESSON.lang || "en").slice(0, 2);
       $("lbl-back").textContent = t.back;
       $("lbl-next").textContent = t.next;
-      $("stage-copy").textContent = t.stage;
       // role="img" with no name announces as an unlabelled graphic.
       $("flow").setAttribute("aria-label", `${String(LESSON.title || "").replace(/`/g, "")} — ${t.stage}`);
       $("lbl-problem").textContent = t.problem;
