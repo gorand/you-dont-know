@@ -6,7 +6,7 @@ General `kind: "how"` lesson (microtask queue).
 
 ## `palette`
 
-Abstract debug surface: ISO shapes, Lucide architecture glyphs, group fences, folder list, edge kinds (`flow` / `dashed` / `back` / `both` / `via`), and the `line` types and `tone`s — unlit on the last step, the same edges lit on the one before it. Placeholder-length labels — not representative of real prose density.
+Abstract debug surface: ISO shapes, Lucide architecture glyphs, group fences, folder list, edge kinds (`flow` / `dashed` / `back` / `both` / `via`), the `line` types and `tone`s — unlit on the `lines` step, the same edges lit on the one before it — and every `nodes[].icon`, labelled by name, on the last step. Placeholder-length labels — not representative of real prose density.
 
 ## `inject-pipeline`
 
@@ -18,7 +18,7 @@ The staged-detail reference: 31 nodes (25 of them inside groups), 6 groups, 29 e
 
 ## `mfe-architecture`
 
-A real-world hard case, anonymised: an agent's `kind: "architecture"` lesson about a Module Federation microfrontend with 11 exposes (ru), kept as the agent wrote it, not tidied up. 30 nodes in 6 groups, 22 edges (7 of them `Routes` fanning out of one node), 8 steps, 5 asides, `detail: "progressive"`. Product names, endpoints and ids are replaced, and the code excerpts are rewritten, but each one has the same shape and line count as the original. The wide `vite.config.ts` excerpt (15 lines) is the one to judge the dock against. Its flaws are the point: look here for what the skill still gets wrong on a real repo, and before changing anything, compare with `dense-request` (canonical content) to tell an engine problem apart from an authoring one.
+A real-world hard case, anonymised: an agent's `kind: "architecture"` lesson about a Module Federation microfrontend with 11 exposes (ru), kept as the agent wrote it, not tidied up — except for `nodes[].icon`, added afterwards to show the icon set on a real repo; every `kind` is still the agent's. 30 nodes in 6 groups, 22 edges (7 of them `Routes` fanning out of one node), 8 steps, 5 asides, `detail: "progressive"`. Product names, endpoints and ids are replaced, and the code excerpts are rewritten, but each one has the same shape and line count as the original. The wide `vite.config.ts` excerpt (15 lines) is the one to judge the dock against. Its flaws are the point: look here for what the skill still gets wrong on a real repo, and before changing anything, compare with `dense-request` (canonical content) to tell an engine problem apart from an authoring one.
 
 Build (from the skill root):
 
