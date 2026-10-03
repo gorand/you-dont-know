@@ -38,8 +38,15 @@ Claude Code itself does **not** read that path — see above.
 
 Once installed where your harness looks for skills, invoke explicitly:
 `/you-dont-know` plus a topic, or `/you-dont-know` in a repo to hunt candidates.
+In a repo session the lesson is written to `tmp/you-dont-know/<slug>/`.
 
 ## Build a lesson
+
+```sh
+node scripts/inject-lesson.mjs templates/lesson.html path/to/lesson.json path/to/index.html
+```
+
+The examples in this repo rebuild the same way:
 
 ```sh
 npm run example
@@ -64,11 +71,14 @@ carry its label.
 
 Past ~12 nodes the shell also stages the diagram: groups fold into single
 blocks, and each step opens exactly the group it talks about. The disc on a
-group's corner toggles it by hand — its corner marks point out to open and in
-to close; on a folded block, which opens on a click anyway, it waits for the
-pointer — and the `Detail` switch flips the
-whole canvas between `auto`, `all` and `step`. See
+group's corner toggles it by hand: its corner marks point out to open and in
+to close, and on a folded block, which opens on a click anyway, it waits for
+the pointer. The `Detail` switch flips the whole canvas between `auto`, `all`
+and `step`. See
 [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
+Folding or unfolding a group re-lays the canvas out, so the change is shown:
+boxes glide to their new places, children come out of (or slide into) their
+block, and viewfinder corners close in on the group that was toggled.
 
 The chrome stays out of the diagram's way. The step rail is a dimension line
 down the left margin — a tick per step, the current one circled — and it opens
@@ -76,39 +86,53 @@ its titles *over* the canvas on hover or keyboard focus, so the diagram never
 reflows. Narration and code sit in a dock the shell frames *around*: the scale
 comes from the larger of the two areas that clear it, and the diagram is moved
 off centre only as far as it takes to get out from under the panel. When a
-step has more than the dock shows, a disc on its top border, the same one a
-group fence carries, takes it to full height in one press and back, and its top edge is a grip for everything in
-between — drag it, or focus it and use ↑ ↓. The diagram re-frames around
-whatever height the reader picks. A step that fits shows neither.
-Folding or unfolding a group re-lays the canvas out, so the change is shown:
-boxes glide to their new places, children come out of (or slide into) their
-block, and viewfinder corners close in on the group that was toggled. Everything
-read once rather than per step — the thesis, the catch, the naive alternative,
-the cost — is behind the `Brief` button.
+step has more than the dock shows, a disc on its top border (a group fence's
+disc, carrying a chevron) takes it to full height in one press and back, and
+its top edge is a grip for everything in between — drag it, or focus it and
+use ↑ ↓. The diagram re-frames around whatever height the reader picks. A step
+that fits shows neither.
 
-Default working copy for a repo session: `tmp/you-dont-know/<slug>/`.
+Two buttons in the top bar take chrome away. One hides the dock and gives the
+whole sheet to the diagram. Dzen, the focus mode, goes further: it drops what
+*describes* the lesson — the kicker with its kind, the thesis, the `Brief`
+button, the dock — and keeps what *drives* it: the title, the step controls
+and the rail. Leaving Dzen brings the dock back the way the reader had it.
+Both are for the session only; a reload opens the full layout.
+
+What is read once rather than per step — the catch, the naive alternative,
+the cost, and the thesis in full — is behind the `Brief` button. It opens in
+its own dialog, so it can run as long as the mechanism needs: a blank line
+starts a new paragraph, and the title and close button stay pinned while it
+scrolls.
 
 ## Colour
 
-The shell is built on the `<AG/>` design system: a void ground (`#0b0712`), Unbounded / Onest / JetBrains Mono, radii no larger than 6px, hairline strokes, and elevation by stepping the surface rather than by shadow. Three hues, each with one job:
+The shell is built on the `<AG/>` design system: a void ground (`#0b0712`), Unbounded / Onest / JetBrains Mono, radii no larger than 6px, hairline strokes, and elevation by stepping the surface, with a shadow only on what floats over the canvas (the dock, the open rail, the zoombar, the aside pop, the brief). Three hues, each with one job:
 
 | Token | | Role |
 |-------|---|------|
 | `--color-primary` | violet | focus rings, structural marks |
 | `--color-accent` | coral | the current material — this step, this node, this edge |
-| `--color-accent-2` | peach | status: a `boundary` node, the lesson's catch |
+| `--color-accent-2` | peach | status: a `boundary` node, the headings of the brief |
 
 Edges are the one place a lesson picks a colour, and it picks a token, not a value: `edges[].tone` is `ink-soft` (default), `ink`, `primary` or `accent-2`, next to `edges[].line`, which is `solid`, `dashed`, `dotted` or `chain`. Coral is refused: a lit edge is coral whatever its tone.
 
 The shell does not repaint per lesson. `kind` sets the tone of one dot in the kicker (violet · muted ink · peach) and the chrome names the kind in words — the reader has nothing to choose. `accent` in the JSON is legacy: old values still parse so existing lessons rebuild untouched, but nothing repaints.
 
-Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). A node's `kind` picks its shape and default glyph; `nodes[].icon` names what the node is from a fixed, domain-neutral set — `database`, `cache`, `screen`, `function`, `key`, `route`, `server` and 21 more — so a lesson can tell a database from a handler without inventing shapes. Card shells are rect, stadium, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
+Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). A node's `kind` picks its shape and default glyph; `nodes[].icon` names what the node is from a fixed, domain-neutral set — `database`, `cache`, `screen`, `function`, `key`, `route`, `server` and 21 more — so a lesson can tell a database from a handler without inventing shapes. The shapes stay few — a rect, a stadium (`start`, `queue`, `cloud`), a circle for a `junction`, the group fence — and the glyph says the rest.
 
 ## Roadmap
 
 - [x] Locked lesson shell, contract, `inject-lesson.mjs`
 - [x] `npx`-shaped installer (`bin/install.mjs`)
 - [x] Publish `@gorand/you-dont-know` to npm
+- [ ] A click on an open group, as opposed to a click on a box inside it.
+  Today both follow one rule, go to the first step that highlights what was
+  clicked, so a click on the fence lands on a step that lights several boxes
+  at once and reads as "it selected a bunch of things". Design what a group
+  click means, with a hover that says which of
+  the two is about to happen — the place for "a node opens its step" too, in
+  context rather than as a standing caption.
 
 ## Versioning
 

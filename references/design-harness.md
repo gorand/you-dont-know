@@ -690,6 +690,61 @@ a click on the still-hidden disc, and an emulated touch screen.
 Still open from round 13: what a click on an open group should do, as
 opposed to a click on a box inside it.
 
+## Round 17 — the brief can be long
+
+Two asks from the author. All three section headings of the brief should
+carry the accent, not only the catch. And the brief no longer needs to be
+short: it was kept to a sentence or two while it lived on the main screen,
+and it has been a dialog since round 8, so a complicated process can be
+explained there at the length it takes.
+
+- **Peach on all three headings, not coral.** Read literally, "accent" is
+  `--color-accent`, which SKILL.md keeps for the current material. The
+  author was asked and chose peach, the colour the catch already wore, so
+  coral still means "here". Peach's row in SKILL.md now names the brief's
+  headings instead of the catch alone. `.note-problem` is gone with the
+  exception it carried.
+- **A blank line in a brief field starts a paragraph.** `problem`,
+  `whyNotBasic` and `cost` render through `renderParas`, which splits on
+  `\n\n` and runs each part through `renderRich`, so code chips and asides
+  work inside. A single newline stays a space. Lists were offered and not
+  taken.
+- **The title and the close button stay pinned; the thesis scrolls.** The
+  first try pinned the whole head. With the thesis inside it, that was a
+  third of the dialog at 1280×800 and at 390 wide. The thesis is read once,
+  so it moved out of the pinned block. The dialog itself stays the scroller
+  rather than an inner body: focus opens on the close button, and the arrow
+  keys scroll the container that holds the focus. A hairline appears under
+  the pinned block once text has gone under it, a box-shadow, so nothing
+  shifts.
+- **Moving the thesis out let the close button set the row's height.** The
+  button is about 30px and a one-line title about 23px, so on `palette` and
+  `dense-request` the thesis slid 7px down while two-line titles stayed put.
+  `margin-block: -0.25rem` on the button keeps it no taller than a line of
+  the title, and centres it on that first line. Until now it hung from the
+  line's top. It moved 4px up, and nothing else moved.
+- Found while testing a long fixture: **an aside planted in the brief opened
+  behind it.** `#pop` lived outside the `<dialog>`, and a modal dialog sits
+  in the top layer and makes the rest inert. The click registered, the pop
+  opened under the backdrop, and Esc then closed the brief and left the pop
+  hanging over the page. No example planted an aside in the brief, so
+  nothing showed it. The pop now moves into the dialog when opened from
+  there and back to its place otherwise. Esc with a pop open closes only the
+  pop, and scrolling the brief closes it, as a resize does on the main
+  screen.
+- `inject-pipeline`'s `cost` is now two paragraphs with an aside, so a
+  shipped example covers both. Its old text counted "five invariants" at
+  `inject-lesson.mjs:19-50`, but the script checks more than ten things now
+  and the lines have moved, so it lists what is checked and says no line
+  numbers.
+
+Checked: heading colour, paragraph count, pinned close button after a
+scroll, the hairline, arrow keys and PageDown scrolling the brief from the
+focused close button, the pop on top inside the dialog, Esc order, the pop
+back on the main screen after the brief closes, no horizontal scroll at
+390 wide, and no console errors on any example. The four other examples'
+title, sections and heights match 0.9.2 to the pixel at 1280×800.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**
