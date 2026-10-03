@@ -913,6 +913,13 @@
       72% { opacity: 1; transform: scale(1); }
       100% { opacity: 0; transform: scale(1); }
     }
+    /* The node whose links are on screen keeps its corners for as long as
+       the links stay: they close in once and hold. */
+    .locator.hold { animation: lock-in 0.5s var(--ease-out) both; }
+    @keyframes lock-in {
+      0% { opacity: 0; transform: scale(1.22); }
+      100% { opacity: 1; transform: scale(1); }
+    }
 
     /* ---- the group's own strip ------------------------------------------
        An open fence answers the pointer on its caption strip only — the band
@@ -932,6 +939,47 @@
       stroke: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
     }
     .node.kind-group[aria-hidden="true"] { pointer-events: none; }
+
+    /* ---- links in focus --------------------------------------------------
+       One node and what it talks to: lit, the rest of the sheet stepped back.
+       Dimmed by opacity on the whole mark, so a dimmed edge keeps its line
+       type and a dimmed box its label. */
+    #flow.focusing .node.dim,
+    #flow.peeking .node.peek-dim { opacity: 0.24; }
+    #flow.focusing .edge.dim,
+    #flow.focusing .edge-halo.dim,
+    #flow.peeking .edge.peek-dim,
+    #flow.peeking .edge-halo.peek-dim { opacity: 0.12; }
+    #flow.focusing .edge-label.dim,
+    #flow.peeking .edge-label.peek-dim { opacity: 0.22; }
+    #flow .node, #flow .edge, #flow .edge-halo, #flow .edge-label {
+      transition: opacity var(--dur-hover) var(--ease-out);
+    }
+    /* A preview borrows the live colours without re-laying anything out. */
+    #flow.peeking .edge.peek { stroke: var(--color-accent); stroke-width: var(--stroke-mark); }
+    #flow.peeking .edge-label.peek { fill: var(--color-accent); }
+    #flow.peeking .node.peek .node-shell { stroke: color-mix(in srgb, var(--color-accent) 70%, var(--color-line)); }
+    #flow.peeking .node.peek .node-ico { stroke: var(--color-accent); opacity: 1; }
+    /* One link picked from the list: it stays coral, its companions step back. */
+    #flow.picking .edge.live:not(.pick),
+    #flow.picking .token:not(.pick) { opacity: 0.3; }
+    #flow.picking .edge-label.live:not(.pick) { opacity: 0.45; }
+
+    /* The design system's keycap, at the size a line of mono carries. */
+    kbd.cap {
+      display: inline-grid;
+      place-items: center;
+      min-width: 1.2rem;
+      height: 1.2rem;
+      padding: 0 0.25rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      color: var(--color-ink-soft);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-1);
+      background: var(--ui-ground);
+      flex: 0 0 auto;
+    }
 
     /* A box's actions are discs on its own top border, the fence disc's
        size and spot, waiting for the pointer as a folded group's disc does.
@@ -978,6 +1026,122 @@
     }
     .tip.on { opacity: 1; }
     .tip b { font-weight: 500; color: var(--color-ink); }
+
+    /* ---- the focus bar: what is on screen, and the way out ------------- */
+    .focusbar {
+      position: absolute;
+      top: var(--space-2);
+      left: 50%;
+      z-index: var(--z-raised);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      max-width: calc(100% - var(--space-4) * 2);
+      padding: 3px 3px 3px 0.6rem;
+      transform: translateX(-50%);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-2);
+      background: var(--color-surface);
+      --ui-ground: var(--color-surface);
+      box-shadow: var(--shadow-tip);
+      white-space: nowrap;
+    }
+    .focusbar[hidden] { display: none; }
+    .focusbar button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      height: 26px;
+      padding: 0 0.5rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      letter-spacing: var(--track-1);
+      color: var(--color-ink-soft);
+      background: transparent;
+      border: 0;
+      border-radius: var(--radius-1);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: color var(--dur-hover) var(--ease-out);
+    }
+    .focusbar button:hover { color: var(--color-accent); }
+    .focusbar button:active { transform: scale(0.96); }
+    .focusbar .ico { width: 13px; height: 13px; }
+    .focusbar > .ico { color: var(--color-accent); margin-right: 0.45rem; }
+    /* The bar takes the top of the canvas; the wheel hint is not the
+       reader's question while links are on screen. */
+    .canvas:has(.focusbar:not([hidden])) .hint { display: none; }
+    .focusbar .name {
+      min-width: 0;
+      max-width: 22rem;
+      margin: 0 0.5rem 0 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: var(--text-sm);
+      color: var(--color-ink);
+    }
+    .focusbar .sep { width: var(--stroke-hairline); height: 16px; margin: 0 3px; background: var(--color-line); flex: 0 0 auto; }
+    .focusbar button[aria-pressed="true"] { color: var(--color-ink); box-shadow: inset 0 calc(var(--stroke-mark) * -1) 0 var(--color-accent); border-radius: 0; }
+    .focusbar .close { gap: 0.35rem; }
+
+    /* ---- the dock in focus: the links in words -------------------------- */
+    .dock-n svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: var(--stroke-icon); stroke-linecap: round; stroke-linejoin: round; }
+    .links-meta {
+      margin: 0 0 0.5rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      letter-spacing: var(--track-1);
+      color: var(--color-ink-soft);
+    }
+    .links { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+    .links h4 {
+      margin: 0.6rem 0 0.2rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      font-weight: 500;
+      letter-spacing: var(--track-3);
+      text-transform: uppercase;
+      color: var(--color-ink-soft);
+    }
+    /* The partner's name keeps its room; when the links do not fit beside
+       it they drop to a line of their own instead of squeezing it away. */
+    .link-row {
+      appearance: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.15rem 0.75rem;
+      width: 100%;
+      padding: 0.3rem 0.45rem;
+      border: 0;
+      border-radius: var(--radius-1);
+      background: transparent;
+      color: var(--color-ink);
+      font: inherit;
+      font-size: var(--text-base);
+      line-height: 1.35;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color var(--dur-hover) var(--ease-out);
+    }
+    .link-row:hover, .link-row:focus-visible { background: var(--color-surface-2); }
+    .link-row .ico { width: 14px; height: 14px; color: var(--color-accent); flex: 0 0 auto; }
+    .link-row .nm { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .link-row .lks { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.2rem 0.7rem; margin-left: auto; min-width: 0; }
+    .link-row .lk { display: inline-flex; align-items: center; gap: 0.3rem; min-width: 0; }
+    .link-row .lb {
+      max-width: 9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      letter-spacing: var(--track-1);
+      color: var(--color-ink-soft);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .chips .link-row { display: inline-flex; width: auto; padding: 0.15rem 0.45rem; border: var(--stroke-hairline) solid var(--color-line); font-size: var(--text-sm); }
 
     /* ---- asides --------------------------------------------------------- */
     .fn {
@@ -1225,6 +1389,9 @@
         max-height: 48%;
       }
       .zoombar { top: var(--space-2); bottom: auto; }
+      /* The zoombar has the canvas's top edge here; the focus bar takes the
+         line under it. */
+      .focusbar { top: calc(var(--space-2) + 2.5rem); }
     }
     @media (max-width: 720px) {
       h1 { font-size: 1.02rem; }
@@ -1299,6 +1466,18 @@
         </button>
         <button type="button" id="fold-all" hidden>
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.2 2.4 V6.8 H13.6"/><path d="M2.4 9.2 H6.8 V13.6"/></svg>
+        </button>
+      </div>
+      <div class="focusbar" id="focusbar" role="toolbar" hidden>
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5 H12.5"/><path d="M10 3 L12.5 5.5 L10 8"/><path d="M13.5 10.5 H3.5"/><path d="M6 8 L3.5 10.5 L6 13"/></svg>
+        <span class="name" id="fb-name"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" id="fb-links" aria-pressed="true"></button>
+        <button type="button" id="fb-path" aria-pressed="false"></button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="close" id="fb-close">
+          <kbd class="cap">esc</kbd>
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5 L11.5 11.5"/><path d="M11.5 4.5 L4.5 11.5"/></svg>
         </button>
       </div>
       <div class="tip" id="tip" role="tooltip"></div>
@@ -1946,16 +2125,17 @@
     const TOKEN_SPEED = 140;
     const TOKEN_MIN = 0.3;
 
-    function tokenMark(d, liveEdge, dir) {
+    function tokenMark(d, liveEdge, dir, raw) {
       if (!liveEdge) return "";
+      const data = raw ? ` data-raw="${raw}"` : "";
       if (REDUCE_MOTION) {
         const start = /M\s*([\d.-]+)\s+([\d.-]+)/.exec(d);
-        return start ? `<circle r="4" class="token" cx="${start[1]}" cy="${start[2]}"></circle>` : "";
+        return start ? `<circle r="4" class="token"${data} cx="${start[1]}" cy="${start[2]}"></circle>` : "";
       }
       const dur = Math.max(TOKEN_MIN, pathLength(d) / TOKEN_SPEED).toFixed(2);
       // keyPoints run along the path's length, so the return trip keeps the
       // speed too.
-      const one = (home) => `<circle r="4" class="token"><animateMotion dur="${dur}s" repeatCount="indefinite" path="${d}"${home ? ' keyPoints="1;0" keyTimes="0;1" calcMode="linear"' : ""} /></circle>`;
+      const one = (home) => `<circle r="4" class="token"${data}><animateMotion dur="${dur}s" repeatCount="indefinite" path="${d}"${home ? ' keyPoints="1;0" keyTimes="0;1" calcMode="linear"' : ""} /></circle>`;
       // A two-way edge carries a token each way, or it reads as one-way.
       return dir === "both" ? one(false) + one(true) : one(false);
     }
@@ -1991,7 +2171,11 @@
         detail: { auto: "auto", full: "all", step: "step" },
         foldAll: "Fold every group (Esc)",
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan',
-        step: "Step", click: "Click", unfold: "Open the group", fold: "Fold the group"
+        links: "Links", path: "Path", step: "Step", click: "Click",
+        noLinks: "No links", leave: "Leave (Esc)",
+        unfold: "Open the group", fold: "Fold the group",
+        up: "Leads here", down: "Leads on",
+        linkWord: ["link", "links"], boxWord: ["box", "boxes"]
       },
       ru: {
         back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза",
@@ -2013,9 +2197,20 @@
         detail: { auto: "авто", full: "всё", step: "шаг" },
         foldAll: "Свернуть все группы (Esc)",
         hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас',
-        step: "Шаг", click: "Клик", unfold: "Раскрыть группу", fold: "Свернуть группу"
+        links: "Связи", path: "Путь", step: "Шаг", click: "Клик",
+        noLinks: "Связей нет", leave: "Выйти (Esc)",
+        unfold: "Раскрыть группу", fold: "Свернуть группу",
+        up: "Ведёт сюда", down: "Ведёт дальше",
+        linkWord: ["связь", "связи", "связей"], boxWord: ["блок", "блока", "блоков"]
       }
     };
+    // en has two forms, ru three.
+    function plural(n, forms) {
+      if (forms.length === 2) return forms[n === 1 ? 0 : 1];
+      const a = n % 10;
+      const b = n % 100;
+      return forms[a === 1 && b !== 11 ? 0 : a >= 2 && a <= 4 && (b < 12 || b > 14) ? 1 : 2];
+    }
     function ui() {
       const lang = String((LESSON && LESSON.lang) || document.documentElement.lang || "en").slice(0, 2);
       return UI[lang] || UI.en;
@@ -2162,11 +2357,13 @@
       return isComplex();
     }
 
-    function collapsedSet(highlight, step) {
+    function collapsedSet(highlight, step, F) {
       const out = new Set();
       collapsibleGroups().forEach((g) => {
         let collapsed;
-        if (collapseOverride.has(g.id)) collapsed = collapseOverride.get(g.id);
+        // Links in focus outrank everything: their groups open, the rest fold.
+        if (F) collapsed = !F.keep.has(g.id);
+        else if (collapseOverride.has(g.id)) collapsed = collapseOverride.get(g.id);
         else if (foldedAt && foldedAt === step) collapsed = true;
         else if (detailMode === "full") collapsed = false;
         else if (detailMode === "step") collapsed = !stepNeeds(g.id, highlight, step);
@@ -2181,6 +2378,7 @@
     // One entry point for every manual fold/unfold, so all of them share the
     // same rule: the step does not change and the frame does not move.
     function setCollapsed(id, collapsed) {
+      endFocus(false);
       collapseOverride.set(id, collapsed);
       renderFlow(CURRENT.highlight, CURRENT.step, id);
     }
@@ -2189,6 +2387,7 @@
     // toggle and the detail mode forgotten, the whole diagram framed again.
     function foldAll() {
       const hadFocus = document.activeElement === $("fold-all");
+      endFocus(false);
       collapseOverride.clear();
       detailMode = null;
       foldedAt = CURRENT.step;
@@ -2197,6 +2396,199 @@
       // The button goes away once there is nothing left to fold; focus
       // lands on its neighbour instead of falling to the page.
       if (hadFocus) $("detail").focus();
+    }
+
+    /* ---------- links in focus ----------
+       A step lights what its narration is about, which is mostly the forward
+       flow. What else a box talks to — a retry looping back, a cache read
+       and written, the screens a store serves — stays faint at rest, or is
+       folded into a block where every edge merges into one ×N. Focus turns
+       that around for one box: every link it has, both ways, on screen at
+       once. The groups holding the box or any partner open, every other
+       group folds, and whatever is not on a link steps back. The step
+       underneath is left alone, and leaving puts back the frame the reader
+       had. `path` widens the same view to the whole process the box sits on:
+       everything that leads to it and everything it leads to. */
+    let focus = null; // { id, mode: "links" | "path", back: { cx, cy, s, pinned } }
+
+    function ancestors(id) {
+      const by = nodeIndex();
+      const out = [];
+      let p = by[id] && by[id].parent;
+      let guard = 0;
+      while (p && guard++ < 12) { out.push(p); p = by[p] && by[p].parent; }
+      return out;
+    }
+
+    // The box itself, or a group and everything inside it.
+    function ownIds(id) {
+      const n = nodeIndex()[id];
+      if (!n) return new Set();
+      return new Set([id, ...(kindOf(n) === "group" ? childrenDeep(id).map((k) => k.id) : [])]);
+    }
+
+    // Every edge with exactly one end on the box — or, for a group, in it:
+    // edges wholly inside a group are its insides, not its links.
+    function linksOf(id) {
+      const own = ownIds(id);
+      const raw = [];
+      const partners = new Set();
+      (LESSON.edges || []).forEach((e, k) => {
+        const a = own.has(e.from);
+        const b = own.has(e.to);
+        if (a === b) return;
+        raw.push(k);
+        partners.add(a ? e.to : e.from);
+      });
+      return { own, raw, partners };
+    }
+
+    // What leads to the box and what it leads to. A loop-back is not a way
+    // forward, so the walk does not follow `back` edges; it lights one when
+    // both of its ends are on the path, which is where the loop is.
+    function pathOf(id) {
+      const own = ownIds(id);
+      const edges = LESSON.edges || [];
+      const walk = (forward) => {
+        const seen = new Set(own);
+        const queue = [...own];
+        while (queue.length) {
+          const at = queue.shift();
+          edges.forEach((e) => {
+            const dir = edgeDir(e);
+            if (dir === "back") return;
+            const go = (x, y) => { if (x === at && !seen.has(y)) { seen.add(y); queue.push(y); } };
+            if (forward || dir === "both") go(e.from, e.to);
+            if (!forward || dir === "both") go(e.to, e.from);
+          });
+        }
+        own.forEach((o) => seen.delete(o));
+        return seen;
+      };
+      const down = walk(true);
+      const up = walk(false);
+      // The box's own links are on its path whatever their kind: a 429 that
+      // loops back from the limiter is part of the limiter's process. The walk
+      // just does not continue from there.
+      const near = linksOf(id);
+      near.raw.forEach((k) => {
+        const e = edges[k];
+        if (own.has(e.from)) { if (!up.has(e.to)) down.add(e.to); }
+        else if (!down.has(e.from)) up.add(e.from);
+      });
+      const on = new Set([...own, ...up, ...down]);
+      const lead = (x) => up.has(x) || own.has(x);
+      const trail = (x) => down.has(x) || own.has(x);
+      const raw = new Set(near.raw);
+      edges.forEach((e, k) => {
+        if (own.has(e.from) && own.has(e.to)) return;
+        if (!on.has(e.from) || !on.has(e.to)) return;
+        const dir = edgeDir(e);
+        if (dir !== "flow" || (lead(e.from) && lead(e.to)) || (trail(e.from) && trail(e.to))) raw.add(k);
+      });
+      return { own, raw: [...raw], partners: new Set([...up, ...down]), up, down };
+    }
+
+    function focusSet() {
+      if (!focus) return null;
+      const f = focus.mode === "path" ? pathOf(focus.id) : linksOf(focus.id);
+      const raw = new Set(f.raw);
+      // A group's children light only where a link touches them: lighting
+      // all of them would answer "the whole group", which is not the question.
+      const lit = new Set(f.partners);
+      lit.add(focus.id);
+      (LESSON.edges || []).forEach((e, k) => {
+        if (!raw.has(k)) return;
+        if (f.own.has(e.from)) lit.add(e.from);
+        if (f.own.has(e.to)) lit.add(e.to);
+      });
+      const keep = new Set();
+      lit.forEach((id) => ancestors(id).forEach((g) => keep.add(g)));
+      if (kindOf(nodeIndex()[focus.id]) === "group") keep.add(focus.id);
+      return { ...f, raw, lit, keep };
+    }
+
+    function toggleFocus(id) {
+      if (focus && focus.id === id) { endFocus(true); return; }
+      startFocus(id, focus ? focus.mode : "links");
+    }
+
+    function startFocus(id, mode) {
+      hoverOutNow();
+      // Walking from one box to the next keeps the frame the reader had
+      // before the first one.
+      const back = focus ? focus.back : { cx: VIEW.cx, cy: VIEW.cy, s: VIEW.s, pinned: viewPinned };
+      focus = { id, mode: mode || "links", back };
+      viewPinned = true;
+      renderFlow(CURRENT.highlight, CURRENT.step);
+      // The bar and the dock first: the frame is computed around both.
+      renderFocusUi();
+      frameFocus();
+    }
+
+    function setFocusMode(mode) {
+      if (!focus || focus.mode === mode) return;
+      focus.mode = mode;
+      renderFlow(CURRENT.highlight, CURRENT.step);
+      renderFocusUi();
+      frameFocus();
+    }
+
+    // `restore` puts the reader's own frame back. A step change passes false:
+    // it frames the new step itself.
+    function endFocus(restore) {
+      if (!focus) return;
+      const back = focus.back;
+      focus = null;
+      $("focusbar").hidden = true;
+      renderDock(CURRENT.step);
+      if (!restore) return;
+      renderFlow(CURRENT.highlight, CURRENT.step);
+      setView(back, true);
+      viewPinned = back.pinned;
+    }
+
+    // The frame holds the lit boxes AND the lit edges: a link that leaves for
+    // the rail runs well outside the boxes it joins, and framing the boxes
+    // alone ran it under the focus bar. When the whole of a path would not
+    // be legible at once (a lesson that is one long chain lights nearly
+    // everything), the frame takes the box and its own links, and the rest
+    // of the path is a pan away, lit.
+    function frameFocus() {
+      const svg = $("flow");
+      const grow = (box, el) => {
+        const r = el.getBBox();
+        if (!box) return { x: r.x, y: r.y, w: r.width, h: r.height };
+        const x0 = Math.min(box.x, r.x);
+        const y0 = Math.min(box.y, r.y);
+        return { x: x0, y: y0, w: Math.max(box.x + box.w, r.x + r.width) - x0, h: Math.max(box.y + box.h, r.y + r.height) - y0 };
+      };
+      // Room for the focus bar over the top of the canvas, in screen pixels;
+      // it turns into world units only once the scale is known.
+      const bar = $("focusbar");
+      const room = bar.hidden ? 0 : bar.offsetTop + bar.offsetHeight;
+      const fit = (ids, raw) => {
+        let box = boxOf(ids);
+        svg.querySelectorAll("path.edge.live").forEach((el) => {
+          if (!raw || el.getAttribute("data-raw").split(" ").some((k) => raw.has(Number(k)))) box = grow(box, el);
+        });
+        if (!box) return null;
+        const b = inflate(box, 40);
+        const first = viewFor(b, 1.4);
+        const extra = Math.max(0, room - 40 * first.s) / first.s;
+        b.y -= extra;
+        b.h += extra;
+        return viewFor(b, 1.4);
+      };
+      let v = fit(liveIds(), null);
+      if (v && v.s < LEGIBLE && focus.mode === "path") {
+        const near = linksOf(focus.id);
+        const ids = [focus.id, ...near.partners].map((id) => ANCHOR_OF[id] || id);
+        v = fit(ids, new Set(near.raw)) || v;
+      }
+      if (!v) return;
+      setView(v, true);
+      viewPinned = true;
     }
 
     function visibleGraph(collapsed) {
@@ -2224,7 +2616,7 @@
       const visible = new Set(nodes.map((n) => n.id));
       const merged = new Map();
       const edges = [];
-      (LESSON.edges || []).forEach((e) => {
+      (LESSON.edges || []).forEach((e, idx) => {
         const from = anchorOf[e.from] || e.from;
         const to = anchorOf[e.to] || e.to;
         if (from === to) return; // both ends folded into the same block
@@ -2233,13 +2625,16 @@
         const prev = merged.get(key);
         if (prev) {
           prev._n += 1;
+          // Which lesson edges a drawn one stands for, so a link can be found
+          // on the canvas whatever it was merged into.
+          prev._raw.push(idx);
           if ((e.label || "") !== prev._label) prev._mixed = true;
           if (edgeDir(e) !== prev.kind) prev.kind = "flow";
           if (edgeLine(e) !== prev.line) prev.line = "solid";
           if (edgeTone(e) !== edgeTone(prev)) delete prev.tone;
           return;
         }
-        const ne = { ...e, from, to, kind: edgeDir(e), line: edgeLine(e), _n: 1, _label: e.label || "" };
+        const ne = { ...e, from, to, kind: edgeDir(e), line: edgeLine(e), _n: 1, _label: e.label || "", _raw: [idx] };
         if (ne.via && (hidden.has(ne.via) || !visible.has(ne.via))) delete ne.via;
         merged.set(key, ne);
         edges.push(ne);
@@ -3610,6 +4005,7 @@
     function runAction(id, act) {
       if (act === "unfold") setCollapsed(id, false);
       else if (act === "fold") setCollapsed(id, true);
+      else if (act === "links") toggleFocus(id);
       else {
         const si = stepForNode(id);
         if (si >= 0) show(si);
@@ -3626,6 +4022,11 @@
       return title ? `${label} — ${t.opensStep}: ${title}` : label;
     }
 
+    // Two arrows passing each other: the links glyph, on the disc's grid.
+    const linksMark = (x, y) =>
+      `M ${x - 4.6} ${y - 2.3} H ${x + 4.2} M ${x + 2} ${y - 4.5} L ${x + 4.2} ${y - 2.3} L ${x + 2} ${y - 0.1} `
+      + `M ${x + 4.6} ${y + 2.3} H ${x - 4.2} M ${x - 2} ${y + 0.1} L ${x - 4.2} ${y + 2.3} L ${x - 2} ${y + 4.5}`;
+
     // The box's actions as discs on its top border, right-aligned and
     // stepping left from the fence's own disc where there is one. The step
     // disc is the rail's callout with that step's number in it. Its class is
@@ -3634,19 +4035,33 @@
     // between press and release, so the click landed on the box behind it.
     function actDiscs(n) {
       const t = ui();
-      const si = stepForNode(n.id);
-      if (si < 0) return "";
-      const cx = n.x + n.w - DISC_R - 5 - (n._kids ? DISC_R * 2 + 4 : 0);
+      const def = defaultAction(n);
+      const label = n.label || n.id;
+      const gap = DISC_R * 2 + 4;
+      let cx = n.x + n.w - DISC_R - 5 - (n._kids ? gap : 0);
       const cy = n.y + 4;
-      const def = defaultAction(n) === "step" ? " default" : "";
-      return `<g class="act act-step${si === i ? " now" : ""}${def}" data-act="step" data-for="${escapeHtml(n.id)}"
-          role="button" tabindex="-1" aria-label="${escapeHtml(`${t.step} ${pad(si)} — ${stepTitle(si)}`)}">
-        <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
-        <text class="act-n" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central">${pad(si)}</text>
-      </g>`;
+      const out = [];
+      const count = linksOf(n.id).raw.length;
+      if (count) {
+        out.push(`<g class="act act-links${def === "links" ? " default" : ""}" data-act="links" data-for="${escapeHtml(n.id)}"
+            role="button" tabindex="-1" aria-label="${escapeHtml(`${t.links} — ${label} (${count})`)}">
+          <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
+          <path class="disclose-mark" d="${linksMark(cx, cy)}"/>
+        </g>`);
+        cx -= gap;
+      }
+      const si = stepForNode(n.id);
+      if (si >= 0) {
+        out.push(`<g class="act act-step${si === i ? " now" : ""}${def === "step" ? " default" : ""}" data-act="step" data-for="${escapeHtml(n.id)}"
+            role="button" tabindex="-1" aria-label="${escapeHtml(`${t.step} ${pad(si)} — ${stepTitle(si)}`)}">
+          <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
+          <text class="act-n" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central">${pad(si)}</text>
+        </g>`);
+      }
+      return out.join("");
     }
 
-    function renderNode(n, live, part) {
+    function renderNode(n, live, part, dim) {
       const on = live.has(n.id) ? "on" : "";
       const k = kindOf(n);
       // A group's caption sits in its top-left corner, folded or open. Folded,
@@ -3690,10 +4105,12 @@
       // An expanded fence renders as TWO <g class="node">, so only the late
       // pass — the one carrying the hit rect — may be a control. Naming both
       // would put one fence in the tab order twice under the same name.
+      const keys = linksOf(n.id).raw.length ? ' aria-keyshortcuts="L"' : "";
       const a11y = part === "shell"
         ? 'aria-hidden="true"'
-        : `role="button" tabindex="0" aria-label="${escapeHtml(nodeName(n))}"`;
-      return `<g class="node ${on}${n._collapsed ? " collapsed" : ""} kind-${escapeHtml(k)}" data-id="${n.id}" ${a11y}>
+        : `role="button" tabindex="0" aria-label="${escapeHtml(nodeName(n))}"${keys}`;
+      const cls = [on, n._collapsed && "collapsed", dim && "dim", focus && focus.id === n.id && "focal"].filter(Boolean).join(" ");
+      return `<g class="node ${cls} kind-${escapeHtml(k)}" data-id="${n.id}" ${a11y}>
         ${shellHtml}
         ${contentHtml}
       </g>`;
@@ -4106,7 +4523,7 @@
       frame(t0);
     }
 
-    function locate(svg, id) {
+    function locate(svg, id, hold) {
       const box = NODE_BOX[id];
       if (!box) return;
       const x = box.x - 6;
@@ -4115,12 +4532,12 @@
       const h = box.h + 12;
       const l = Math.min(14, w / 3, h / 3);
       const mark = document.createElementNS(svg.namespaceURI, "path");
-      mark.setAttribute("class", "locator");
+      mark.setAttribute("class", hold ? "locator hold" : "locator");
       mark.setAttribute("aria-hidden", "true");
       mark.setAttribute("d", `M ${x} ${y + l} V ${y} H ${x + l} M ${x + w - l} ${y} H ${x + w} V ${y + l} `
         + `M ${x + w} ${y + h - l} V ${y + h} H ${x + w - l} M ${x + l} ${y + h} H ${x} V ${y + h - l}`);
       svg.append(mark);
-      setTimeout(() => mark.remove(), 1900);
+      if (!hold) setTimeout(() => mark.remove(), 1900);
     }
 
     // The boxes as drawn, folded state included, for whatever a click or a
@@ -4131,7 +4548,8 @@
       const prevBox = NODE_BOX;
       const prevAnchor = ANCHOR_OF;
       hoverOutNow();
-      const collapsed = collapsedSet(highlight, step);
+      const F = focusSet();
+      const collapsed = collapsedSet(highlight, step, F);
       const graph = visibleGraph(collapsed);
       ANCHOR_OF = graph.anchorOf;
       const nodes = layoutNodes(graph.nodes, graph.edges);
@@ -4156,9 +4574,14 @@
       NODE_BOX = Object.fromEntries(nodes.map((n) => [n.id, { x: n.x, y: n.y, w: n.w, h: n.h }]));
       VISIBLE = pos;
       // A highlighted node that is currently folded away lights up the block
-      // standing in for it, so no step ever points at nothing.
-      const live = new Set((highlight || []).map((id) => graph.anchorOf[id] || id));
+      // standing in for it, so no step ever points at nothing. In focus the
+      // links take the step's place.
+      const live = new Set((F ? [...F.lit] : (highlight || [])).map((id) => graph.anchorOf[id] || id));
       CURRENT.live = [...live];
+      // An open fence around something lit is structure, not background.
+      const dimmed = F
+        ? new Set(nodes.filter((n) => !live.has(n.id) && !(isFence(n) && F.keep.has(n.id))).map((n) => n.id))
+        : null;
       const marks = `<defs>
         <style>
           .node-label, .node-label .txt {
@@ -4209,33 +4632,39 @@
           if (!fromP[ei] || !toP[ei]) return;
           ({ d, lx, ly, vertical } = orthoPath(a, b, fromP[ei], toP[ei], laneOf[ei] || 0, countOf[ei] || 1, bands, nodes));
         }
-        const liveEdge = live.has(e.from) && live.has(e.to);
+        // In focus an edge is lit when it carries one of the links, whatever
+        // its ends are drawn as; otherwise when both of its ends are lit.
+        const liveEdge = F ? e._raw.some((k) => F.raw.has(k)) : live.has(e.from) && live.has(e.to);
         const mk = edgeMarks(e, liveEdge);
-        const token = tokenMark(d, liveEdge, e.kind);
-        edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
+        const raw = e._raw.join(" ");
+        const dim = F && !liveEdge ? " dim" : "";
+        const token = tokenMark(d, liveEdge, e.kind, raw);
+        edgeEls.push(`<path class="edge-halo${dim}" data-raw="${raw}" d="${d}"></path><path class="${mk.cls}${dim}" data-raw="${raw}"${mk.start}${mk.end} d="${d}"></path>${token}`);
         if (e.label) {
           const y = nudgeLabel(lx, ly, e.label, placed, vertical, nodes);
-          labelEls.push(`<text class="edge-label${liveEdge ? " live" : mk.tone ? ` tone-${mk.tone}` : ""}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
+          labelEls.push(`<text class="edge-label${liveEdge ? " live" : mk.tone ? ` tone-${mk.tone}` : ""}${dim}" data-raw="${raw}" x="${lx}" y="${y}" fill="#f4f2ee" text-anchor="${vertical ? "start" : "middle"}">${escapeHtml(e.label)}</text>`);
         }
       });
       // Only an EXPANDED fence splits into two passes (translucent shell
       // before the edges, caption after). A collapsed group is an ordinary
       // solid block and draws with the rest of them.
+      const isDim = (n) => !!(dimmed && dimmed.has(n.id));
       const fences = nodes.filter((n) => isFence(n));
-      const fenceShellEls = fences.map((n) => renderNode(n, live, "shell")).join("");
-      const fenceLabelEls = fences.map((n) => renderNode(n, live, "content")).join("");
-      const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live)).join("");
+      const fenceShellEls = fences.map((n) => renderNode(n, live, "shell", isDim(n))).join("");
+      const fenceLabelEls = fences.map((n) => renderNode(n, live, "content", isDim(n))).join("");
+      const nodeEls = nodes.filter((n) => !isFence(n)).map((n) => renderNode(n, live, undefined, isDim(n))).join("");
       const oldEls = new Map();
       svg.querySelectorAll(".node[data-id]").forEach((el) => {
         const id = el.getAttribute("data-id");
         oldEls.set(id, (oldEls.get(id) || []).concat(el));
       });
       // Re-rendering replaces every box, and the one that had keyboard focus
-      // would drop it to the page: the reader pressed Enter on a box and is
-      // then nowhere. It goes back to the box with the same id.
+      // would drop it to the page: the reader pressed L or Enter on a box and
+      // is then nowhere. It goes back to the box with the same id.
       const had = document.activeElement && document.activeElement.closest && document.activeElement.closest("#flow .node[data-id]");
       const hadId = had && had.getAttribute("data-id");
       svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
+      svg.classList.toggle("focusing", !!F);
       animateRelayout(svg, prevBox, prevAnchor, graph.anchorOf, oldEls);
       svg.querySelectorAll(".node[role='button']").forEach((el) => {
         const id = el.getAttribute("data-id");
@@ -4269,10 +4698,20 @@
           runAction(id, act);
         });
         el.addEventListener("pointerenter", () => {
-          showTip(el, `<b>${pad(stepForNode(id))}</b> · ${escapeHtml(stepTitle(stepForNode(id)))}`);
+          showTip(el, act === "links"
+            ? `<b>${escapeHtml(ui().links)}</b> · ${linksOf(id).raw.length}`
+            : `<b>${pad(stepForNode(id))}</b> · ${escapeHtml(stepTitle(stepForNode(id)))}`);
+          if (act === "links" && !focus) peek(id);
         });
-        el.addEventListener("pointerleave", hideTip);
+        el.addEventListener("pointerleave", () => {
+          hideTip();
+          if (act === "links") unpeek();
+        });
       });
+      if (F) {
+        const focal = graph.anchorOf[focus.id] || focus.id;
+        if (NODE_BOX[focal]) locate(svg, focal, true);
+      }
       if (hadId) {
         const back = svg.querySelector(`.node[role='button'][data-id="${CSS.escape(hadId)}"]`);
         if (back) back.focus({ preventScroll: true });
@@ -4310,11 +4749,18 @@
        A click on an open group and a click on a box inside it used to share
        one rule, and nothing said which was about to happen. The group now
        answers on its strip only, and either one, under the pointer, shows
-       the step a click opens as a disc on its top border, in the rail's own
-       callout. Resting on it names the click's action in words, over the
-       disc that does the same. */
+       its actions as discs on its top border: the step a click opens, in the
+       rail's own callout, and its links. Resting on it names the click's
+       action in words, over the disc that does the same. */
+    const LINKS_ICO = '<path d="M2.5 5.5 H12.5"/><path d="M10 3 L12.5 5.5 L10 8"/><path d="M13.5 10.5 H3.5"/><path d="M6 8 L3.5 10.5 L6 13"/>';
+    const DIR_ICO = {
+      out: '<path d="M2.5 8 H13"/><path d="M9.5 4.5 L13 8 L9.5 11.5"/>',
+      in: '<path d="M13.5 8 H3"/><path d="M6.5 4.5 L3 8 L6.5 11.5"/>',
+      both: LINKS_ICO
+    };
     let HOVER = null;
     let hoverHide = 0;
+    let PEEK = null;
 
     function hoverIn(id, el, byKey) {
       clearTimeout(hoverHide);
@@ -4358,6 +4804,7 @@
       if (HOVER.shell) HOVER.shell.classList.remove("hot");
       HOVER = null;
       hideTip();
+      unpeek();
     }
 
     function showTip(target, html) {
@@ -4377,15 +4824,142 @@
 
     function hideTip() { $("tip").classList.remove("on"); }
 
-    function show(index) {
-      const steps = LESSON.steps || [];
-      if (!steps.length) return;
-      closePop();
-      i = (index + steps.length) % steps.length;
-      const step = steps[i];
-      $("counter").textContent = `${i + 1} / ${steps.length}`;
-      $("prev").disabled = i === 0 && !timer;
-      $("next").disabled = i === steps.length - 1 && !timer;
+    // The links of one box, previewed in place: no fold opens, nothing moves.
+    // A partner folded away lights the block that holds it.
+    function peek(id) {
+      unpeek();
+      const f = linksOf(id);
+      if (!f.raw.length) return;
+      const svg = $("flow");
+      const raw = new Set(f.raw);
+      const ends = new Set([id, ...f.partners]);
+      (LESSON.edges || []).forEach((e, k) => {
+        if (!raw.has(k)) return;
+        if (f.own.has(e.from)) ends.add(e.from);
+        if (f.own.has(e.to)) ends.add(e.to);
+      });
+      const lit = new Set([...ends].map((x) => ANCHOR_OF[x] || x));
+      const keep = new Set();
+      ends.forEach((x) => ancestors(x).forEach((g) => keep.add(g)));
+      svg.classList.add("peeking");
+      svg.querySelectorAll("[data-raw]").forEach((el) => {
+        const hit = el.getAttribute("data-raw").split(" ").some((k) => raw.has(Number(k)));
+        el.classList.add(hit ? "peek" : "peek-dim");
+        if (hit && el.matches("path.edge") && !el.classList.contains("live")) {
+          const g = document.createElementNS(svg.namespaceURI, "g");
+          g.setAttribute("class", "peek-token");
+          g.innerHTML = tokenMark(el.getAttribute("d"), true, el.hasAttribute("marker-start") ? "both" : "flow");
+          el.after(g);
+        }
+      });
+      svg.querySelectorAll(".node[data-id]").forEach((el) => {
+        const nid = el.getAttribute("data-id");
+        if (lit.has(nid)) el.classList.add("peek");
+        else if (!keep.has(nid)) el.classList.add("peek-dim");
+      });
+      PEEK = { id };
+    }
+
+    function unpeek() {
+      if (!PEEK) return;
+      const svg = $("flow");
+      svg.classList.remove("peeking");
+      svg.querySelectorAll(".peek, .peek-dim").forEach((el) => el.classList.remove("peek", "peek-dim"));
+      svg.querySelectorAll(".peek-token").forEach((el) => el.remove());
+      PEEK = null;
+    }
+
+    /* ---------- focus: the bar on the canvas and the dock ---------- */
+    function renderFocusUi() {
+      const t = ui();
+      const bar = $("focusbar");
+      if (!focus) { bar.hidden = true; return; }
+      const n = nodeIndex()[focus.id];
+      const label = (n && n.label) || focus.id;
+      renderRich($("fb-name"), label);
+      $("fb-links").textContent = t.links;
+      $("fb-path").textContent = t.path;
+      $("fb-links").setAttribute("aria-pressed", String(focus.mode === "links"));
+      $("fb-path").setAttribute("aria-pressed", String(focus.mode === "path"));
+      $("fb-close").title = t.leave;
+      $("fb-close").setAttribute("aria-label", t.leave);
+      bar.setAttribute("aria-label", `${t.links} — ${String(label).replace(/`/g, "")}`);
+      bar.hidden = false;
+      renderFocusDock();
+    }
+
+    function pick(raw) {
+      const svg = $("flow");
+      svg.querySelectorAll(".pick").forEach((el) => el.classList.remove("pick"));
+      svg.classList.toggle("picking", !!raw);
+      if (!raw) return;
+      const want = new Set(String(raw).split(" "));
+      svg.querySelectorAll("[data-raw]").forEach((el) => {
+        if (el.getAttribute("data-raw").split(" ").some((k) => want.has(k))) el.classList.add("pick");
+      });
+    }
+
+    // The dock says the same thing in words: one row per partner, with every
+    // link to it on that row, so a pair that runs both ways reads as one
+    // exchange — POST out, 201 back — rather than two unrelated arrows.
+    function renderFocusDock() {
+      const t = ui();
+      const by = nodeIndex();
+      const n = by[focus.id];
+      const edges = LESSON.edges || [];
+      $("dock-n").innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true">${LINKS_ICO}</svg>`;
+      renderRich($("dock-title"), (n && n.label) || focus.id);
+      $("code").classList.remove("on");
+      $("dock").classList.add("no-code");
+      const narr = $("narration");
+      const name = (id) => escapeHtml(String((by[id] && by[id].label) || id).replace(/`/g, ""));
+      let html = "";
+      if (focus.mode === "links") {
+        const f = linksOf(focus.id);
+        const rows = new Map();
+        f.raw.forEach((k) => {
+          const e = edges[k];
+          const out = f.own.has(e.from);
+          const other = out ? e.to : e.from;
+          if (!rows.has(other)) rows.set(other, []);
+          rows.get(other).push({ k, dir: edgeDir(e) === "both" ? "both" : out ? "out" : "in", label: e.label || "" });
+        });
+        html = `<p class="links-meta">${f.raw.length
+          ? `${f.raw.length} ${plural(f.raw.length, t.linkWord)} · ${rows.size} ${plural(rows.size, t.boxWord)}`
+          : t.noLinks}</p><ul class="links">`;
+        rows.forEach((list, other) => {
+          const lks = list.map((l) => `<span class="lk" data-raw="${l.k}">${ico(DIR_ICO[l.dir])}${l.label ? `<span class="lb">${escapeHtml(l.label)}</span>` : ""}</span>`).join("");
+          html += `<li><button type="button" class="link-row" data-to="${escapeHtml(other)}" data-raw="${list.map((l) => l.k).join(" ")}"><span class="nm">${name(other)}</span><span class="lks">${lks}</span></button></li>`;
+        });
+        html += "</ul>";
+      } else {
+        const p = pathOf(focus.id);
+        const chips = (set) => [...set].map((id) => `<button type="button" class="link-row" data-to="${escapeHtml(id)}"><span class="nm">${name(id)}</span></button>`).join("");
+        html = `<p class="links-meta">${t.up}: ${p.up.size} · ${t.down}: ${p.down.size}</p>`
+          + (p.up.size ? `<div class="links"><h4>${t.up}</h4><div class="chips">${chips(p.up)}</div></div>` : "")
+          + (p.down.size ? `<div class="links"><h4>${t.down}</h4><div class="chips">${chips(p.down)}</div></div>` : "");
+      }
+      narr.innerHTML = html;
+      narr.querySelectorAll(".link-row").forEach((row) => {
+        row.onclick = () => startFocus(row.getAttribute("data-to"), focus ? focus.mode : "links");
+        if (row.hasAttribute("data-raw")) {
+          row.onpointerenter = () => pick(row.getAttribute("data-raw"));
+          row.onpointerleave = () => pick(null);
+          row.onfocus = () => pick(row.getAttribute("data-raw"));
+          row.onblur = () => pick(null);
+        }
+        row.querySelectorAll(".lk").forEach((lk) => {
+          lk.onpointerenter = () => pick(lk.getAttribute("data-raw"));
+          lk.onpointerleave = () => pick(row.getAttribute("data-raw"));
+        });
+      });
+      narr.scrollTop = 0;
+      syncDockFit();
+    }
+
+    // The step's own text in the dock.
+    function renderDock(step) {
+      if (!step) return;
       $("dock-n").textContent = pad(i);
       renderRich($("dock-title"), step.title || "");
       renderRich($("narration"), step.narration || "");
@@ -4399,6 +4973,19 @@
       $("code-file").textContent = file + start;
       renderCode((step.code && step.code.text) || "", step.code && step.code.startLine);
       syncDockFit();
+    }
+
+    function show(index) {
+      const steps = LESSON.steps || [];
+      if (!steps.length) return;
+      closePop();
+      endFocus(false);
+      i = (index + steps.length) % steps.length;
+      const step = steps[i];
+      $("counter").textContent = `${i + 1} / ${steps.length}`;
+      $("prev").disabled = i === 0 && !timer;
+      $("next").disabled = i === steps.length - 1 && !timer;
+      renderDock(step);
       [...document.querySelectorAll(".step")].forEach((btn, idx) => {
         if (idx === i) btn.setAttribute("aria-current", "true");
         else btn.removeAttribute("aria-current");
@@ -4505,7 +5092,17 @@
         if (document.querySelector("dialog[open]")) return;
         if (ev.key === "Escape") {
           if (!$("pop").hidden) { ev.preventDefault(); closePop(); }
+          else if (focus) { ev.preventDefault(); endFocus(true); }
           else if (!$("fold-all").hidden) { ev.preventDefault(); foldAll(); }
+          return;
+        }
+        // L: the links of the box under the pointer or under keyboard focus,
+        // and again to leave. By key code, so it works in any layout.
+        if (ev.code === "KeyL" && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+          const el = ev.target.closest && ev.target.closest("#flow .node[data-id]");
+          const id = (HOVER && HOVER.id) || (el && el.getAttribute("data-id")) || null;
+          if (id) { ev.preventDefault(); toggleFocus(id); }
+          else if (focus) { ev.preventDefault(); endFocus(true); }
           return;
         }
         // Figma-side of the keyboard. `+ / - / 0 / 1 / 2` work bare and with
@@ -4543,12 +5140,16 @@
       $("zoom-fit").onclick = () => fitAll(true);
       $("zoom-step").onclick = () => focusLive(true);
       $("detail").onclick = () => {
+        endFocus(false);
         detailMode = detailMode === null ? "full" : (detailMode === "full" ? "step" : null);
         collapseOverride.clear(); // the switch speaks for the whole canvas again
         foldedAt = null;
         renderFlow(CURRENT.highlight, CURRENT.step);
       };
       $("fold-all").onclick = foldAll;
+      $("fb-links").onclick = () => setFocusMode("links");
+      $("fb-path").onclick = () => setFocusMode("path");
+      $("fb-close").onclick = () => endFocus(true);
 
       canvas.addEventListener("wheel", (ev) => {
         ev.preventDefault();
@@ -4565,15 +5166,24 @@
       const pointers = new Map();
       let drag = null;
       let pinch = null;
+      // Touch has no hover to offer a second action on, so holding a box
+      // shows its links; the click that ends the hold is swallowed.
+      let press = 0;
       const pinchState = () => {
         const [a, b] = [...pointers.values()];
         return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       };
       canvas.addEventListener("pointerdown", (ev) => {
         justDragged = false;
+        clearTimeout(press);
         if (ev.pointerType === "mouse" && ev.button !== 0 && ev.button !== 1) return;
+        const held = ev.pointerType === "touch" && ev.target.closest && ev.target.closest("#flow .node[role='button']");
+        if (held) {
+          const id = held.getAttribute("data-id");
+          press = setTimeout(() => { justDragged = true; toggleFocus(id); }, 520);
+        }
         pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-        if (pointers.size === 2) { drag = null; pinch = pinchState(); return; }
+        if (pointers.size === 2) { clearTimeout(press); drag = null; pinch = pinchState(); return; }
         if (pointers.size > 2) return;
         // No pointer capture yet: capturing here would retarget the click and
         // kill every node tap. It is claimed only once this becomes a drag.
@@ -4593,6 +5203,7 @@
         const dy = ev.clientY - drag.y;
         if (!drag.moved) {
           if (Math.abs(dx) + Math.abs(dy) < 4) return;
+          clearTimeout(press);
           drag.moved = true;
           justDragged = true;
           canvas.classList.add("panning");
@@ -4603,6 +5214,7 @@
         panBy(-dx, -dy);
       });
       const endPointer = (ev) => {
+        clearTimeout(press);
         pointers.delete(ev.pointerId);
         if (pointers.size < 2) pinch = null;
         if (!drag || drag.id !== ev.pointerId) return;
@@ -4624,6 +5236,13 @@
       canvas.addEventListener("dblclick", (ev) => {
         if (ev.target.closest(".node")) return;
         fitAll(true);
+      });
+      // A click on empty canvas lets go of the links, as it would of a
+      // selection anywhere else.
+      canvas.addEventListener("click", (ev) => {
+        if (!focus || justDragged) return;
+        if (ev.target.closest(".node[role='button'], .act, .disclose, .zoombar, .focusbar")) return;
+        endFocus(true);
       });
       if (window.ResizeObserver) {
         // Re-frame, don't blind-fit: on a narrow canvas fitting the whole
