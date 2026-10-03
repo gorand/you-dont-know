@@ -552,14 +552,19 @@
       color: var(--color-ink);
       overflow-wrap: anywhere;
     }
-    /* Full height in one press; the grip fine-tunes it from there. The
-       disc's size, so the head is as tall with it as without. */
+    /* Full height in one press; the grip fine-tunes it from there. Pulled
+       out of the head's padding into the corner, --space-1 off the top and
+       the right edge; the negative margins keep the row as tall, and the
+       title as wide, as without it. Above the grip strip it overlaps. */
     button.ctrl.dock-fit {
+      position: relative;
+      z-index: 2;
+      align-self: start;
       width: 1.65rem;
       height: 1.65rem;
       padding: 0;
       justify-content: center;
-      margin-right: -0.4rem;
+      margin: calc(var(--space-1) - var(--space-2)) calc(var(--space-1) - var(--space-3)) 0 0;
     }
     .dock-body {
       display: grid;
@@ -2279,9 +2284,10 @@
     }
 
     const DOCK_GLYPH = {
-      // An arrow up to the top line, and the same arrow turned back down.
-      full: '<path d="M3.5 2.75 H12.5"/><path d="M8 13.25 V5.25"/><path d="M5.25 8 L8 5.25 L10.75 8"/>',
-      back: '<path d="M3.5 2.75 H12.5"/><path d="M8 5.25 V13.25"/><path d="M5.25 10.5 L8 13.25 L10.75 10.5"/>'
+      // The chevron the group disc carried before its corner marks: up
+      // raises the dock's top edge, down brings it back. Its foot never moves.
+      full: '<path d="M3.4 10.35 L8 5.65 L12.6 10.35"/>',
+      back: '<path d="M3.4 5.65 L8 10.35 L12.6 5.65"/>'
     };
 
     function syncDockButton() {
