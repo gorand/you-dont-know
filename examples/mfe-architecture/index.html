@@ -2723,13 +2723,17 @@
       // dead-letter queue hanging off a consumer did exactly that, and since
       // a group unit takes the LOWEST rank among its children, it hoisted the
       // whole async tail above the request that produces it. Park such a node
-      // level with whatever loops back into it instead.
+      // level with whatever loops back into it instead. Only a node that
+      // starts nothing: one with an edge out of it is a source, and the top
+      // row is where a source belongs, loop-backs or not — the start of the
+      // inject pipeline sank to the bottom row next to the check that sends
+      // a bad lesson back to it.
       let lifted = true;
       let passes = 0;
       while (lifted && passes++ < nodes.length) {
         lifted = false;
         nodes.forEach((n) => {
-          if (indeg[n.id] > 0 || !backIn[n.id].length) return;
+          if (indeg[n.id] > 0 || !backIn[n.id].length || outs[n.id].length) return;
           const r = Math.max(...backIn[n.id].map((id) => rank[id] || 0));
           if (r > rank[n.id]) { rank[n.id] = r; lifted = true; }
         });
