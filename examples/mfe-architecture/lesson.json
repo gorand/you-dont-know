@@ -2,13 +2,13 @@
   "lang": "ru",
   "kind": "architecture",
   "detail": "progressive",
-  "title": "Как устроен leave-planner: экспозы, роли и общее ядро",
+  "title": "Как устроен map-studio: экспозы, роли и общее ядро",
   "pattern": "Module Federation · 11 экспозов",
-  "repo": "leave-planner · обезличенный пример",
+  "repo": "map-studio · обезличенный пример",
   "thesis": "Одиннадцать независимых корней делят между собой не друг друга, а общее ядро: состояние, UI и утилиты.",
   "problem": "Из списка экспозов не видно, кто что делает и где общее. Страниц много, названия похожи, а связи идут через импорты общих модулей, а не через вызовы между экспозами.",
-  "whyNotBasic": "«Одно приложение с роутами» не объясняет, почему у каждого экспоза свои провайдеры и почему нет межстраничных импортов. «Просто набор экспозов» не объясняет, откуда берётся повторяющаяся схема заявка + задача.",
-  "cost": "Провайдеры и часть структуры дублируются в корнях, а перенос держит собственное параллельное состояние. Взамен экспозы грузятся независимо и не ломают друг друга.",
+  "whyNotBasic": "«Одно приложение с роутами» не объясняет, почему у каждого экспоза свои провайдеры и почему нет межстраничных импортов. «Просто набор экспозов» не объясняет, откуда берётся повторяющаяся схема настройка + предпросмотр.",
+  "cost": "Провайдеры и часть структуры дублируются в корнях, а тайлы держат собственное параллельное состояние. Взамен экспозы грузятся независимо и не ломают друг друга.",
   "asides": [
     {
       "id": "why-selfcontained",
@@ -18,22 +18,22 @@
     {
       "id": "why-401",
       "title": "Известный пробел: handle401",
-      "body": "`useUnauthorizedHandler(handle401)` вызывается в корнях планирования, подписания и переноса. В отгулах проп `handle401` доходит только до контекста `RequestTimeOffProvider`, а `RequestUnpaid`, `TaskManagerTimeOff` и `TaskManagerUnpaid` его не принимают. Там 401 не обработается. Это вопрос #1 в `docs/spec/open-questions.md`; чинить точечно и по запросу."
+      "body": "`useUnauthorizedHandler(handle401)` вызывается в корнях редактора, экспорта и тайлов. В GPX проп `handle401` доходит только до контекста `GpxSourceProvider`, а `CsvSourceSetup`, `GpxSourcePreview` и `CsvSourcePreview` его не принимают. Там 401 не обработается. Это вопрос #1 в `docs/spec/open-questions.md`; чинить точечно и по запросу."
     },
     {
       "id": "why-local-ctx",
       "title": "Почему провайдеры собираются на странице",
-      "body": "Редьюсеры и расчёты лежат в `src/state/*` и общие, но данные для них приходят из хуков конкретного экрана. Поэтому провайдеры монтируются во view каждой страницы с её `apiData`, а страничный `PlanIntervalsProvider` оборачивает общий редьюсер и добавляет правила и пересечения с коллегами."
+      "body": "Редьюсеры и расчёты лежат в `src/state/*` и общие, но данные для них приходят из хуков конкретного экрана. Поэтому провайдеры монтируются во view каждой страницы с её `apiData`, а страничный `MapLayersProvider` оборачивает общий редьюсер и добавляет правила стиля и пересечения слоёв."
     },
     {
       "id": "why-parallel",
-      "title": "Перенос живёт отдельно от планирования",
-      "body": "Заявка на перенос не использует `plan-info` и `plan-limits`: у неё свои `reschedule-info`, `reschedule-limits`, `reschedule-intervals` и `reschedule-rules`. Общего с планированием только чистые функции из `plan-intervals`, например `intervalsOverlap`. Параллельное состояние дублирует структуру, но не тащит правила планирования в сценарий переноса."
+      "title": "Тайлы живут отдельно от редактора",
+      "body": "Источник тайлов не использует `map-info` и `map-limits`: у него свои `tiles-info`, `tiles-limits`, `tiles-layers` и `tiles-rules`. Общего с редактором только чистые функции из `map-layers`, например `bboxOverlap`. Параллельное состояние дублирует структуру, но не тащит правила редактора в сценарий тайлов."
     },
     {
       "id": "why-nocross",
-      "title": "Почему HR_API_URLS вынесен в config",
-      "body": "В заголовке файла сказано, что константы перенесены из `RequestUnpaid/config/hrApi`, чтобы убрать кросс-страничные импорты. Правило: страницы не импортируют друг друга, общее живёт в `src/config`, `src/components`, `src/utils`, `src/state`."
+      "title": "Почему MAP_API_URLS вынесен в config",
+      "body": "В заголовке файла сказано, что константы перенесены из `CsvSourceSetup/config/mapApi`, чтобы убрать кросс-страничные импорты. Правило: страницы не импортируют друг друга, общее живёт в `src/config`, `src/components`, `src/utils`, `src/state`."
     }
   ],
   "files": [
@@ -71,67 +71,67 @@
       "parent": "g-host"
     },
     {
-      "id": "g-plan",
-      "label": "Планирование графика",
+      "id": "g-map",
+      "label": "Редактор карты",
       "kind": "group"
     },
     {
-      "id": "emp",
-      "label": "TaskPlanEmployee",
+      "id": "editor",
+      "label": "MapLayerEditor",
       "kind": "process",
-      "parent": "g-plan"
+      "parent": "g-map"
     },
     {
-      "id": "mgr",
-      "label": "TaskPlanManager",
+      "id": "viewer",
+      "label": "MapLayerViewer",
       "kind": "process",
-      "parent": "g-plan"
+      "parent": "g-map"
     },
     {
-      "id": "mfe",
-      "label": "PlanForEmployee",
+      "id": "embed",
+      "label": "LayerEmbedWidget",
       "kind": "process",
-      "parent": "g-plan"
+      "parent": "g-map"
     },
     {
-      "id": "g-sign",
-      "label": "Подписание графика",
+      "id": "g-export",
+      "label": "Экспорт карты",
       "kind": "group"
     },
     {
-      "id": "signer",
-      "label": "TaskScheduleSign",
+      "id": "export",
+      "label": "MapExportSheet",
       "kind": "process",
-      "parent": "g-sign"
+      "parent": "g-export"
     },
     {
       "id": "alias",
-      "label": "…ScheduleApproval (алиас)",
+      "label": "…PrintLayout (алиас)",
       "kind": "subroutine",
-      "parent": "g-sign"
+      "parent": "g-export"
     },
     {
-      "id": "g-req",
-      "label": "Заявка + задача",
+      "id": "g-src",
+      "label": "Источники данных",
       "kind": "group"
     },
     {
-      "id": "transfer",
-      "label": "Перенос: Request + Task",
+      "id": "tiles",
+      "label": "Тайлы: Setup + Sync",
       "kind": "process",
-      "parent": "g-req"
+      "parent": "g-src"
     },
     {
-      "id": "dayoff",
-      "label": "Отгул: Request + Manager",
+      "id": "gpx",
+      "label": "GPX: Setup + Preview",
       "kind": "process",
-      "parent": "g-req"
+      "parent": "g-src"
     },
     {
-      "id": "unpaid",
-      "label": "БС: Request + Manager",
+      "id": "csv",
+      "label": "CSV: Setup + Preview",
       "kind": "process",
-      "parent": "g-req"
+      "parent": "g-src"
     },
     {
       "id": "g-state",
@@ -139,38 +139,38 @@
       "kind": "group"
     },
     {
-      "id": "pinfo",
-      "label": "plan-info",
+      "id": "minfo",
+      "label": "map-info",
       "kind": "process",
       "parent": "g-state"
     },
     {
-      "id": "plimits",
-      "label": "plan-limits",
+      "id": "mlimits",
+      "label": "map-limits",
       "kind": "process",
       "parent": "g-state"
     },
     {
-      "id": "pints",
-      "label": "plan-intervals",
+      "id": "layers",
+      "label": "map-layers",
       "kind": "process",
       "parent": "g-state"
     },
     {
       "id": "rules",
-      "label": "plan-rules · 13 правил",
+      "label": "style-rules · 13 правил",
       "kind": "decision",
       "parent": "g-state"
     },
     {
-      "id": "tvac",
-      "label": "team-calendar",
+      "id": "catalog",
+      "label": "layer-catalog",
       "kind": "process",
       "parent": "g-state"
     },
     {
-      "id": "uleave",
-      "label": "unpaid-leave",
+      "id": "csvparse",
+      "label": "csv-parse",
       "kind": "process",
       "parent": "g-state"
     },
@@ -193,7 +193,7 @@
     },
     {
       "id": "utils",
-      "label": "taskUtils · pluralize · даты",
+      "label": "geoUtils · pluralize · единицы",
       "kind": "process",
       "parent": "g-ui"
     },
@@ -210,13 +210,13 @@
     },
     {
       "id": "apicfg",
-      "label": "config/hrApi · gantt",
+      "label": "config/mapApi · tiles",
       "kind": "file",
       "parent": "g-data"
     },
     {
       "id": "msw",
-      "label": "MSW: фикстура по task_id",
+      "label": "MSW: фикстура по map_id",
       "kind": "queue",
       "parent": "g-data"
     }
@@ -234,93 +234,93 @@
     },
     {
       "from": "root",
-      "to": "emp",
+      "to": "editor",
       "label": "Routes"
     },
     {
       "from": "root",
-      "to": "mgr",
+      "to": "viewer",
       "label": "Routes"
     },
     {
       "from": "root",
-      "to": "mfe",
+      "to": "embed",
       "label": "Routes"
     },
     {
       "from": "root",
-      "to": "signer",
+      "to": "export",
       "label": "Routes"
     },
     {
       "from": "root",
-      "to": "transfer",
+      "to": "tiles",
       "label": "Routes"
     },
     {
       "from": "root",
-      "to": "dayoff",
+      "to": "gpx",
       "label": "Routes"
     },
     {
       "from": "root",
-      "to": "unpaid",
+      "to": "csv",
       "label": "Routes"
     },
     {
       "from": "alias",
-      "to": "signer",
+      "to": "export",
       "label": "реэкспорт",
       "kind": "dashed"
     },
     {
-      "from": "emp",
-      "to": "pints",
+      "from": "editor",
+      "to": "layers",
       "label": "провайдер"
     },
     {
-      "from": "mgr",
-      "to": "tvac",
-      "label": "команда"
+      "from": "viewer",
+      "to": "catalog",
+      "label": "каталог"
     },
     {
-      "from": "mfe",
-      "to": "plimits",
+      "from": "embed",
+      "to": "mlimits",
       "label": "лимиты"
     },
     {
-      "from": "transfer",
-      "to": "pints",
+      "from": "tiles",
+      "to": "layers",
       "label": "хелперы",
       "kind": "dashed"
     },
     {
-      "from": "dayoff",
-      "to": "pinfo",
-      "label": "календарь"
+      "from": "gpx",
+      "to": "minfo",
+      "label": "метаданные"
     },
     {
-      "from": "unpaid",
-      "to": "uleave",
-      "label": "БС"
+      "from": "csv",
+      "to": "csvparse",
+      "label": "разбор"
     },
     {
-      "from": "pints",
+      "from": "layers",
       "to": "rules",
       "label": "правила"
     },
     {
-      "from": "signer",
+      "from": "export",
       "to": "shell",
       "label": "каркас"
     },
     {
-      "from": "dayoff",
+      "from": "gpx",
       "to": "utils",
-      "label": "даты"
+      "label": "единицы"
     },
     {
-      "from": "pinfo",
+      "from": "minfo",
       "to": "rq",
       "label": "запрос"
     },
@@ -331,7 +331,7 @@
       "kind": "dashed"
     },
     {
-      "from": "unpaid",
+      "from": "csv",
       "to": "apicfg",
       "label": "URL"
     }
@@ -340,7 +340,7 @@
     {
       "id": "host",
       "title": "Хост и список экспозов",
-      "narration": "Хост грузит экспоузы по имени из `vite.config.ts`. Их 11, и у каждого своя папка в `src/pages`; алиас `TaskScheduleApproval` нужен, пока хост просит старое имя.",
+      "narration": "Хост грузит экспоузы по имени из `vite.config.ts`. Их 11, и у каждого своя папка в `src/pages`; алиас `MapPrintLayout` нужен, пока хост просит старое имя.",
       "highlight": [
         "host",
         "contract",
@@ -349,7 +349,7 @@
       "code": {
         "file": "vite.config.ts",
         "startLine": 40,
-        "text": "      exposes: {\n        './TaskPlanEmployee': './src/pages/TaskPlanEmployee',\n        './TaskPlanManager': './src/pages/TaskPlanManager',\n        './TaskPlanForEmployee': './src/pages/TaskPlanForEmployee',\n        './TaskScheduleSign': './src/pages/TaskScheduleSign',\n        './RequestReschedule': './src/pages/RequestReschedule',\n        './TaskReschedule': './src/pages/TaskReschedule',\n        './RequestUnpaid': './src/pages/RequestUnpaid',\n        './TaskManagerUnpaid': './src/pages/TaskManagerUnpaid',\n        './RequestTimeOff': './src/pages/RequestTimeOff',\n        './TaskManagerTimeOff': './src/pages/TaskManagerTimeOff',\n        // алиас старого имени подписания: хост загружает его до сих пор\n        './TaskScheduleApproval':\n          './src/pages/TaskScheduleApproval',\n      },"
+        "text": "      exposes: {\n        './MapLayerEditor': './src/pages/MapLayerEditor',\n        './MapLayerViewer': './src/pages/MapLayerViewer',\n        './MapLayerEmbedWidget': './src/pages/MapLayerEmbedWidget',\n        './MapExportSheet': './src/pages/MapExportSheet',\n        './TilesSourceSetup': './src/pages/TilesSourceSetup',\n        './TilesSourceSync': './src/pages/TilesSourceSync',\n        './CsvSourceSetup': './src/pages/CsvSourceSetup',\n        './CsvSourcePreview': './src/pages/CsvSourcePreview',\n        './GpxSourceSetup': './src/pages/GpxSourceSetup',\n        './GpxSourcePreview': './src/pages/GpxSourcePreview',\n        // алиас старого имени экспорта: хост загружает его до сих пор\n        './MapPrintLayout':\n          './src/pages/MapPrintLayout',\n      },"
       }
     },
     {
@@ -362,91 +362,91 @@
         "g-host"
       ],
       "code": {
-        "file": "src/pages/TaskScheduleSign/TaskScheduleSign.tsx",
+        "file": "src/pages/MapExportSheet/MapExportSheet.tsx",
         "startLine": 37,
-        "text": "const TaskScheduleSign: React.FC<TProps> = ({ handle401 }) => {\n  useUnauthorizedHandler(handle401);\n\n  return (\n    <DesignSystemProvider value={appDS}>\n      <WidthProvider {...dsUtils.WIDTH_OPTIONS}>\n        <QueryProvider>\n          <Notifications />\n          <Routes>\n            <Route path=\":taskId/*\" element={<TaskScheduleSignContent />} />\n          </Routes>\n        </QueryProvider>\n      </WidthProvider>\n    </DesignSystemProvider>\n  );\n};\n\nexport default withMonitoring(React.memo(TaskScheduleSign));\n"
+        "text": "const MapExportSheet: React.FC<TProps> = ({ handle401 }) => {\n  useUnauthorizedHandler(handle401);\n\n  return (\n    <DesignSystemProvider value={appDS}>\n      <WidthProvider {...dsUtils.WIDTH_OPTIONS}>\n        <QueryProvider>\n          <Notifications />\n          <Routes>\n            <Route path=\":mapId/*\" element={<MapExportSheetContent />} />\n          </Routes>\n        </QueryProvider>\n      </WidthProvider>\n    </DesignSystemProvider>\n  );\n};\n\nexport default withMonitoring(React.memo(MapExportSheet));\n"
       }
     },
     {
-      "id": "plan",
-      "title": "Планирование: три роли",
-      "narration": "Сотрудник собирает график, руководитель согласует команду, руководитель планирует за сотрудника. Три страницы (`TaskPlanForEmployee` на схеме сокращён) сидят на одних и тех же `plan-*` и `team-calendar` [[why-401]].",
+      "id": "map",
+      "title": "Редактор: три роли",
+      "narration": "Автор правит слои, зритель смотрит карту без правки, виджет показывает её на сторонней странице. Три страницы (`MapLayerEmbedWidget` на схеме сокращён) сидят на одних и тех же `map-*` и `layer-catalog` [[why-401]].",
       "highlight": [
-        "g-plan",
-        "emp",
-        "mgr",
-        "mfe",
-        "pints",
-        "tvac",
-        "plimits"
+        "g-map",
+        "editor",
+        "viewer",
+        "embed",
+        "layers",
+        "catalog",
+        "mlimits"
       ],
       "expand": [
         "g-state"
       ],
       "code": {
-        "file": "src/pages/TaskPlanEmployee/views/ViewDesktop/ViewDesktop.tsx",
+        "file": "src/pages/MapLayerEditor/views/ViewDesktop/ViewDesktop.tsx",
         "startLine": 93,
-        "text": "  }\n\n  return (\n    <PlanInfoProvider apiData={queryPlan.data}>\n      <PlanLimitsProvider apiData={queryLimits.data}>\n        <PlanIntervalsProvider apiData={queryPlan.data}>\n          <div className={styles['view-desktop']}>\n            <Content />\n          </div>"
+        "text": "  }\n\n  return (\n    <MapInfoProvider apiData={queryMap.data}>\n      <MapLimitsProvider apiData={queryLimits.data}>\n        <MapLayersProvider apiData={queryMap.data}>\n          <div className={styles['view-desktop']}>\n            <Content />\n          </div>"
       }
     },
     {
-      "id": "sign",
-      "title": "Подписание графика",
-      "narration": "`TaskScheduleSign` — отдельный экран на подпись, без доменного состояния планирования. Старое имя экспоуза просто реэкспортирует его.",
+      "id": "export",
+      "title": "Экспорт карты",
+      "narration": "`MapExportSheet` — отдельный экран печати и выгрузки, без доменного состояния редактора. Старое имя экспоуза просто реэкспортирует его.",
       "highlight": [
-        "g-sign",
-        "signer",
+        "g-export",
+        "export",
         "alias",
         "shell"
       ],
       "code": {
-        "file": "src/pages/TaskScheduleApproval/index.tsx",
+        "file": "src/pages/MapPrintLayout/index.tsx",
         "startLine": 1,
-        "text": "/** @deprecated Старое имя expose для хоста — используйте TaskScheduleSign */\nexport { default } from '../TaskScheduleSign';"
+        "text": "/** @deprecated Старое имя expose для хоста — используйте MapExportSheet */\nexport { default } from '../MapExportSheet';"
       }
     },
     {
-      "id": "req",
-      "title": "Перенос, отгул, БС",
-      "narration": "Везде одна схема: заявка сотрудника и задача руководителя. Перенос живёт на своём состоянии [[why-parallel]], отгул опирается на `plan-info`, БС добавляет `unpaid-leave`.",
+      "id": "sources",
+      "title": "Тайлы, GPX, CSV",
+      "narration": "Везде одна схема: настройка источника и предпросмотр того, что из него придёт. Тайлы живут на своём состоянии [[why-parallel]], GPX опирается на `map-info`, CSV добавляет `csv-parse`.",
       "highlight": [
-        "g-req",
-        "transfer",
-        "dayoff",
-        "unpaid",
-        "pinfo",
-        "uleave",
-        "pints"
+        "g-src",
+        "tiles",
+        "gpx",
+        "csv",
+        "minfo",
+        "csvparse",
+        "layers"
       ],
       "code": {
-        "file": "src/pages/RequestTimeOff/RequestTimeOff.tsx",
+        "file": "src/pages/GpxSourceSetup/GpxSourceSetup.tsx",
         "startLine": 18,
-        "text": "type TProps = { basePath?: string; handle401?: () => Promise<void> };\n\nconst RequestView: FC<TProps> = ({ basePath = '', handle401 }) => {\n  const { isMobile } = useWidth();\n\n  return (\n    <RequestTimeOffProvider basePath={basePath} handle401={handle401}>\n      {isMobile ? <ViewMobile /> : <ViewDesktop />}\n    </RequestTimeOffProvider>\n  );\n};"
+        "text": "type TProps = { basePath?: string; handle401?: () => Promise<void> };\n\nconst SourceView: FC<TProps> = ({ basePath = '', handle401 }) => {\n  const { isMobile } = useWidth();\n\n  return (\n    <GpxSourceProvider basePath={basePath} handle401={handle401}>\n      {isMobile ? <ViewMobile /> : <ViewDesktop />}\n    </GpxSourceProvider>\n  );\n};"
       }
     },
     {
       "id": "state",
       "title": "Общее ядро: состояние",
-      "narration": "Домен разложен по `src/state/*` в одном формате: context, reducer, `calculations.ts`, `normalize.ts`. Правила валидации лежат отдельным движком [[why-local-ctx]].",
+      "narration": "Домен разложен по `src/state/*` в одном формате: context, reducer, `calculations.ts`, `normalize.ts`. Правила стиля лежат отдельным движком [[why-local-ctx]].",
       "highlight": [
         "g-state",
-        "pinfo",
-        "plimits",
-        "pints",
+        "minfo",
+        "mlimits",
+        "layers",
         "rules",
-        "tvac",
-        "uleave"
+        "catalog",
+        "csvparse"
       ],
       "code": {
-        "file": "src/pages/TaskPlanEmployee/state/plan-intervals/plan-intervals.context.tsx",
+        "file": "src/pages/MapLayerEditor/state/map-layers/map-layers.context.tsx",
         "startLine": 9,
-        "text": "\nimport usePlanIntervalsReducer from '@/state/plan-intervals/plan-intervals.reducer';\nimport {\n  RuleOutcome,\n  TIntervalWithOverlaps,\n  TPlanIntervalWithRules,\n  useColleagueOverlaps,\n  useLimitsSync,\n} from '@/state/plan-intervals';\nimport {\n  useIntervalsWithRules,\n  usePlanRules,\n} from '@/state/plan-intervals/plan-rules/rules';\nimport { usePlanInfo } from '@/state/plan-info';\nimport type { TPlanRule } from '@/state/plan-intervals/plan-rules';\nimport { RULES } from '@/state/plan-intervals/plan-rules/config';\n\ntype TPlanIntervalsContextValue = {\n  state: {"
+        "text": "\nimport useMapLayersReducer from '@/state/map-layers/map-layers.reducer';\nimport {\n  RuleOutcome,\n  TLayerWithOverlaps,\n  TMapLayerWithRules,\n  useLayerOverlaps,\n  useLimitsSync,\n} from '@/state/map-layers';\nimport {\n  useLayersWithRules,\n  useStyleRules,\n} from '@/state/map-layers/style-rules/rules';\nimport { useMapInfo } from '@/state/map-info';\nimport type { TStyleRule } from '@/state/map-layers/style-rules';\nimport { RULES } from '@/state/map-layers/style-rules/config';\n\ntype TMapLayersContextValue = {\n  state: {"
       }
     },
     {
       "id": "ui",
       "title": "Общее ядро: UI и утилиты",
-      "narration": "Загрузка, панель действий и подсказки об ошибке используются почти везде, каркас и даты тоже. Это то, что экспозы делят между собой вместо импортов друг друга [[why-nocross]].",
+      "narration": "Загрузка, панель действий и подсказки об ошибке используются почти везде, каркас и единицы измерения тоже. Это то, что экспозы делят между собой вместо импортов друг друга [[why-nocross]].",
       "highlight": [
         "g-ui",
         "shell",
@@ -455,27 +455,27 @@
         "apicfg"
       ],
       "code": {
-        "file": "src/config/hrApi.ts",
+        "file": "src/config/mapApi.ts",
         "startLine": 1,
-        "text": "/**\n * Общие URL-ы HR API, используемые на нескольких страницах.\n * Определение перенесено сюда из @/pages/RequestUnpaid/config/hrApi\n * для устранения кросс-страничных импортов.\n */\nexport const HR_API_URLS = {\n  EMPLOYEE_CALENDAR: '/api/hr/absence/employee-calendar',\n  CHECK_UNPAID: '/api/hr/absence/check-unpaid',\n  CHECK_TIME_OFF: '/api/hr/absence/check-time-off',\n  DOCS: '/api/hr/absence/time-off-docs',\n  UNPAID_DOCS: '/api/hr/absence/unpaid-docs',\n  REQUEST_INFO: '/api/hr/absence/request-info',"
+        "text": "/**\n * Общие URL-ы Map API, используемые на нескольких страницах.\n * Определение перенесено сюда из @/pages/CsvSourceSetup/config/mapApi\n * для устранения кросс-страничных импортов.\n */\nexport const MAP_API_URLS = {\n  LAYER_CATALOG: '/api/maps/layers/catalog',\n  CHECK_CSV: '/api/maps/sources/check-csv',\n  CHECK_GPX: '/api/maps/sources/check-gpx',\n  DOCS: '/api/maps/sources/gpx-docs',\n  CSV_DOCS: '/api/maps/sources/csv-docs',\n  SOURCE_INFO: '/api/maps/sources/source-info',"
       }
     },
     {
       "id": "data",
       "title": "Данные и dev на моках",
-      "narration": "Данные берутся только из хуков `@acme/query-hooks`. В dev MSW подменяет эндпоинты, а сценарий выбирается по `task_id` из URL.",
+      "narration": "Данные берутся только из хуков `@acme/query-hooks`. В dev MSW подменяет эндпоинты, а сценарий выбирается по `map_id` из URL.",
       "highlight": [
         "g-data",
         "rq",
         "msw",
         "apicfg",
-        "pinfo",
-        "plimits"
+        "minfo",
+        "mlimits"
       ],
       "code": {
         "file": "src/mocks/handlers.ts",
         "startLine": 148,
-        "text": "  http.get(ApiPath.PLAN_LIMITS, async ({ request }) => {\n    const url = new URL(request.url);\n\n    const taskId = url.searchParams.get('task_id');\n\n    await new Promise((res) => {\n      setTimeout(res, 3000);\n    });\n\n    if (taskId === '1001') {\n      return HttpResponse.json(planLimitsFixture1001);\n    }\n\n    if (taskId === '1002') {\n      return HttpResponse.json(planLimitsFixture1001);\n    }"
+        "text": "  http.get(ApiPath.MAP_LIMITS, async ({ request }) => {\n    const url = new URL(request.url);\n\n    const mapId = url.searchParams.get('map_id');\n\n    await new Promise((res) => {\n      setTimeout(res, 3000);\n    });\n\n    if (mapId === '1001') {\n      return HttpResponse.json(mapLimitsFixture1001);\n    }\n\n    if (mapId === '1002') {\n      return HttpResponse.json(mapLimitsFixture1001);\n    }"
       }
     }
   ]
