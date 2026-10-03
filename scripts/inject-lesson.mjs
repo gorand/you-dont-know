@@ -65,6 +65,21 @@ if (badKind.length) {
   process.exit(1);
 }
 
+// The icon names are the keys of NODE_ICON and KIND_ICON in the template
+// itself, so the shell and this check cannot drift apart. An unknown name
+// would otherwise fall back to the kind's glyph without a word.
+const iconKeys = (table) => {
+  const m = template.match(new RegExp(`const ${table} = \\{([\\s\\S]*?)\\n    \\};`));
+  return m ? [...m[1].matchAll(/^\s+([a-z][a-z-]*): '/gm)].map((k) => k[1]) : [];
+};
+const KNOWN_ICONS = new Set([...iconKeys("NODE_ICON"), ...iconKeys("KIND_ICON")]);
+const badIcon = (data.nodes || []).filter((n) => n.icon !== undefined && !KNOWN_ICONS.has(n.icon));
+if (badIcon.length) {
+  console.error("nodes[].icon not in the shell's icon set: " + badIcon.map((n) => `${n.id} (${n.icon})`).join(", ")
+    + "\n  known: " + [...KNOWN_ICONS].sort().join(" "));
+  process.exit(1);
+}
+
 const groupIds = new Set((data.nodes || []).filter((n) => n.kind === "group").map((n) => n.id));
 const badCollapsed = (data.nodes || []).filter(
   (n) => n.collapsed !== undefined && (typeof n.collapsed !== "boolean" || !groupIds.has(n.id))
