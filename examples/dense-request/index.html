@@ -834,6 +834,11 @@
       height: 100%;
       pointer-events: none;
     }
+    /* A group's caption hangs from the top of its 50px row, so its first
+       line sits on the icon's axis (16.5 and 16 from the top). Centred in
+       the row, a one-line caption fell 11px below its icon; the row is
+       sized for two lines. */
+    .node.kind-group .node-label { align-items: flex-start; }
     .node-label .txt {
       min-width: 0;
       display: -webkit-box;
@@ -3418,9 +3423,12 @@
     function renderNode(n, live, part) {
       const on = live.has(n.id) ? "on" : "";
       const k = kindOf(n);
-      const group = k === "group" && !n._collapsed;
+      // A group's caption sits in its top-left corner, folded or open. Folded,
+      // it used to be centred like a box's, and a closed container read as
+      // one more step of the flowchart beside the boxes of an open one.
+      const group = k === "group";
       const icoY = group ? n.y + 8 : n.y + (n.h - 16) / 2;
-      const foY = group ? n.y + 2 : n.y;
+      const foY = n.y;
       const foH = group ? 50 : n.h;
       const badge = discloseMark(n);
       const labelW = Math.max(24, n.w - 30 - (badge && group ? 40 : 0));
