@@ -3342,13 +3342,19 @@
       }).join("");
     }
 
+    // `back` is a loop-back: it runs from `from` to `to` like any arrow, and
+    // only the layout treats it differently (it is not a rank dependency).
+    // It used to carry its head at `from` instead, while its token ran to
+    // `to` — the token moved away from its own arrowhead, and a pair such
+    // as fetch → retry / retry → fetch drew two heads on retry and read as
+    // one-way. Every `back` edge in the examples was written from→to.
     function edgeMarks(e, liveEdge) {
       const dir = edgeDir(e);
       const line = edgeLine(e);
       const tone = liveEdge ? "" : edgeTone(e);
       const tip = liveEdge ? "arrow-live" : tone ? `arrow-${tone}` : "arrow";
-      const start = (dir === "back" || dir === "both") ? ` marker-start="url(#${tip}-rev)"` : "";
-      const end = dir === "back" ? "" : ` marker-end="url(#${tip})"`;
+      const start = dir === "both" ? ` marker-start="url(#${tip}-rev)"` : "";
+      const end = ` marker-end="url(#${tip})"`;
       const cls = ["edge", liveEdge && "live", line !== "solid" && line, tone && `tone-${tone}`].filter(Boolean).join(" ");
       return { cls, start, end, tone };
     }
