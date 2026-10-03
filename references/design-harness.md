@@ -630,6 +630,66 @@ controls on the page are one control.
   the title has its full width again; hidden on a step that fits, it is
   `display: none`, which no longer moves anything.
 
+## Round 16 — group discs: quieter, and in the corner
+
+Three asks from the author after using 0.9.1. The disc on a folded group does
+what a click on the block does, yet pulls the eye. A folded group looked like
+a box of the flowchart: icon and label centred, where an open fence carries
+them in its corner. And the lock-on corners from round 11, violet, jumped out
+of the composition. A fourth question came with them: the dock's disc carried
+a chevron while the fences carried corners.
+
+All four went through one scratch rig, the working template with a switch
+per question (disc: always · on hover · on hover and lit; caption: centred ·
+the fence's geometry · on the icon's line; corners: violet · ink-soft ·
+halfway to ink · ink; glyph: as is · chevrons everywhere · corners
+everywhere). Each candidate was shot on `mfe-architecture` at the canvas's
+real 100%, at rest, hovered and focused, at natural size and ×4, and the
+author picked from the sheet.
+
+- **A folded block's disc waits for the pointer.** It appears when the
+  pointer is over the block or when the block or the disc has keyboard focus,
+  through `opacity`, so it stays in the tab order and focusing it is what
+  reveals it. An open fence keeps its disc: nothing else closes it. Touch has
+  no hover to wait for (`@media (hover: none)`), so it shows there as before.
+  A third candidate lit the disc coral on block hover, on the grounds that a
+  click anywhere does the disc's action. The author kept it neutral, so coral
+  is for hovering the disc itself and nothing else.
+- Found while drawing that candidate: **a folded block had no hover response
+  at all.** `.node.kind-group.collapsed .node-shell` outranks
+  `.node:hover .node-shell`, so the stroke never moved. The disc coming in is
+  now the response.
+- **Copying the fence's caption geometry would have copied its flaw.** The
+  row is 50px tall for two lines, and a one-line caption centred in it sat
+  11px below its icon. Invisible on a translucent fence, it looked like a
+  mistake on a solid block. Group captions now hang from the top of the row,
+  first line on the icon's axis (16.5 and 16 from the top), folded or open.
+- **A class inside a `foreignObject` is in the page's cascade.** The first
+  try marked the top-aligned label `.top`. That is the page header's class,
+  `border-bottom` included, and it drew a faint line exactly along the
+  foreignObject's bottom edge, which took a bisection to find. The rule now
+  selects on the node's kind and adds no class.
+- **The lock-on corners are neutral**, halfway from ink-soft to ink. Compared
+  on the whole canvas, ink-soft alone read as the canvas's own corner marks,
+  and full ink came close to the violet's pull. The author chose the middle.
+  The closing-in from 1.22 does the pointing.
+- **The dock keeps its chevron; the groups keep their corners.** The sheet's
+  "corners everywhere" was picked and built, then reversed by the author
+  before merge: the dock, the panel that carries the explanation, stays
+  with the chevron of rounds 13 and 15. So the mismatch raised at the start
+  stays, and it is now a decision, not an oversight. The two discs share
+  size, spot and states, but not the mark. The chevron points where the
+  dock's one moving edge will go. A group grows in both directions, and the
+  corners do not point either way. Do not unify them again unasked.
+
+Checked: frame and dock rectangle identical to 0.9.1 on all 102 step ×
+window combinations, the 20 dock checks from round 13 pass, and the reveal
+rules hold for pointer, keyboard (Tab onto the block and onto the disc),
+a click on the still-hidden disc, and an emulated touch screen.
+
+Still open from round 13: what a click on an open group should do, as
+opposed to a click on a box inside it.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

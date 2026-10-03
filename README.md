@@ -65,7 +65,8 @@ carry its label.
 Past ~12 nodes the shell also stages the diagram: groups fold into single
 blocks, and each step opens exactly the group it talks about. The disc on a
 group's corner toggles it by hand — its corner marks point out to open and in
-to close — and the `Detail` switch flips the
+to close; on a folded block, which opens on a click anyway, it waits for the
+pointer — and the `Detail` switch flips the
 whole canvas between `auto`, `all` and `step`. See
 [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 
