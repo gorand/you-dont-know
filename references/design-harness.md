@@ -517,10 +517,15 @@ to say "all of it". Measured before touching anything: at 1440×900, 22 of the
   size, so the head is exactly as tall as before. Checked: frame and dock
   rectangle identical to 0.7.2 on all 99 step × size combinations (five
   examples, three window sizes).
-- **The glyph is an arrow up to a line, and the same arrow turned back down.**
-  The dock's foot is fixed and only its top moves, so "to the top" is literal;
-  a symmetric maximise mark would promise growth in both directions. One mark
-  turned around reads as one control, as in round 12.
+- **The glyph is the chevron the group disc carried before round 12**: up to
+  raise the dock, down to bring it back. The first pass drew an arrow up to a
+  line, and the author overruled it for the plain chevron. The dock's foot is
+  fixed and only its top edge moves, so the chevron points where that edge
+  will go. One mark turned around reads as one control, as in round 12.
+- **The button sits in the dock's corner**, `--space-1` off the top and the
+  right edge, pulled out of the head's padding by negative margins so the row
+  keeps its height and the title its width. It overlaps the grip's strip
+  there, so it sits above it (`z-index`), or its top edge would start a drag.
 - **Full is a state, not a number.** A taller window keeps a full dock full
   instead of leaving it at the old window's maximum.
 - **With no excerpt the narration takes the dock's cap**, not its own 11rem.
