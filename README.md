@@ -75,8 +75,8 @@ its titles *over* the canvas on hover or keyboard focus, so the diagram never
 reflows. Narration and code sit in a dock the shell frames *around*: the scale
 comes from the larger of the two areas that clear it, and the diagram is moved
 off centre only as far as it takes to get out from under the panel. When a
-step has more than the dock shows, a button in its corner takes it to full
-height in one press and back, and its top edge is a grip for everything in
+step has more than the dock shows, a disc on its top border, the same one a
+group fence carries, takes it to full height in one press and back, and its top edge is a grip for everything in
 between — drag it, or focus it and use ↑ ↓. The diagram re-frames around
 whatever height the reader picks. A step that fits shows neither.
 Folding or unfolding a group re-lays the canvas out, so the change is shown:
