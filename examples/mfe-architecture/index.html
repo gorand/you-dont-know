@@ -2150,6 +2150,11 @@
       renderRich($("pop-body"), meta.body || "", false);
       btn.setAttribute("aria-expanded", "true");
       const pop = $("pop");
+      // A modal dialog sits in the top layer and makes the rest inert, so a
+      // pop opened from the brief has to live inside it to be seen at all.
+      const host = btn.closest("dialog");
+      if (host) host.append(pop);
+      else if (pop.parentElement !== document.body) $("brief-dlg").after(pop);
       pop.hidden = false;
       placePop(btn);
     }
@@ -4116,6 +4121,14 @@
       // Clicking the backdrop closes it — the dialog element itself fills
       // only the panel, so a click whose target IS the dialog is outside it.
       dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+      // Esc with an aside open closes the aside, not the whole brief.
+      dlg.addEventListener("cancel", (ev) => {
+        if (!$("pop").hidden) { ev.preventDefault(); closePop(); }
+      });
+      dlg.addEventListener("close", closePop);
+      // A fixed pop would stay put while its button scrolls away, so it
+      // closes, as it does on resize.
+      dlg.addEventListener("scroll", closePop);
       $("play").onclick = play;
       $("prev").onclick = () => show(i - 1);
       $("next").onclick = () => show(i + 1);
