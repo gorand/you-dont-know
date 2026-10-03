@@ -745,6 +745,61 @@ back on the main screen after the brief closes, no horizontal scroll at
 390 wide, and no console errors on any example. The four other examples'
 title, sections and heights match 0.9.2 to the pixel at 1280×800.
 
+## Round 18 — fold every group, without a standing control
+
+The author's hypothesis: one action that folds every open group, so a
+complex diagram goes back to its first look, without making the interface
+busier.
+
+The code showed why the canvas drifts from that look. Hand toggles
+(`collapseOverride`) last the whole session and do not reset on a step
+change, so three groups opened on step 2 stay open through step 7. The one
+existing reset was the `Detail` switch, which clears the toggles but cycles
+`auto → all → step`: getting back took up to three presses, and the path
+ran through "everything open", the opposite of what was wanted.
+
+Three placements were put to the author: a control that appears only when
+it can change something, a reset folded into `Detail`, or keys only (`Esc`,
+Alt-click on a disc). They picked the first, with `Esc` as its keyboard
+twin. Asked what "first look" means, they picked **fold everything**,
+including the current step's own group, over "the step as it was on
+arrival".
+
+- **A button at the end of the zoombar, after `Detail`.** Its mark is the
+  open fence's disc mark, two viewfinder corners pointing in, drawn on the
+  zoombar's 16px icon grid. At ×4 next to `fit`'s four outward corners the
+  two do not read alike. Hover is coral, like every zoombar button.
+- **It shows only after the reader has changed the picture.** That means a
+  hand toggle or a detail mode other than `auto`, plus at least one open
+  group. A staged step's own open group does not count, so the canvas at
+  rest carries nothing new, which was the author's condition. It is the
+  round-13 rule again: a control is there only while it can change
+  something.
+- **One press:** every toggle and the detail mode forgotten, every group
+  folded, the view unpinned so `autoFrame` fits the whole diagram again.
+  The button then disappears; focus that was on it moves to `Detail`
+  instead of falling to the page.
+- **It holds for the step it was pressed on and no further.** `foldedAt`
+  keeps that step and is checked after hand toggles and before the detail
+  mode. It clears when the step changes and when `Detail` is pressed.
+  Holding it longer would stop the following steps from opening their own
+  groups, which is what staged detail is for.
+- **`Esc` on the canvas does the same, only while the button is shown.**
+  An open aside still takes `Esc` first.
+- **The zoombar grows leftwards when the button appears.** It is anchored to
+  the canvas's right corner, so `Detail` and its neighbours shift one slot.
+  Putting the button at the zoombar's left end would keep them still but
+  part it from `Detail`. The author kept it beside `Detail`.
+
+Checked on `dense-request` and `mfe-architecture`: hidden at rest; shown
+after a hand toggle and still shown on the next step while that toggle
+holds; a press by mouse and by keyboard folds all groups (6 of 6, 7 of 7),
+resets `Detail` to `auto` and moves focus to it; the next step and a return
+to the folded step stage as usual; `Esc` folds, and does nothing with
+nothing to fold; `Detail` → `all` shows the button, and after a fold-all
+`Detail` opens everything again. No console errors on any example. At rest
+the layout is unchanged, since the button is `display: none` until needed.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

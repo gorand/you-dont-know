@@ -8,7 +8,7 @@ description: >-
   /understand maps.
 license: MIT
 metadata:
-  version: "0.10.0"
+  version: "0.11.0"
 disable-model-invocation: true
 argument-hint: "[topic-or-path]"
 ---
@@ -99,7 +99,7 @@ fold. Put every node in a `kind: "group"` named for the periphery it belongs
 to (client · edge · gateway · service · storage), and let each step highlight
 the children it is actually about. The canvas then shows a handful of large
 blocks and opens one group per step; the reader pans / zooms (Ctrl+wheel,
-Shift+wheel, drag) and toggles any group by the disc on its corner. Details and the
+Shift+wheel, drag) and toggles any group by the disc on its corner; once they have, a button at the end of the zoombar (or `Esc`) folds every group back in one go. Details and the
 `detail` / `collapsed` / `expand` overrides: [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 
 A flat 25-node lesson with no groups gets no staging — it is still one wall

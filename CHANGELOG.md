@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] — 2026-10-04
+
+One action folds every group back and frames the whole diagram, through a
+button that is there only once the reader has opened groups by hand.
+
+### Added
+
+- **Fold every group.** After a hand toggle on a group's disc, or a `Detail`
+  mode other than `auto`, a button appears at the end of the zoombar. Its
+  mark is the open fence's, two corners pointing in. One press folds every
+  group, the current step's own included, forgets the hand toggles and the
+  detail mode, and fits the whole diagram again. The button then goes away.
+  `Esc` on the canvas does the same while the button is shown. At rest a
+  lesson looks exactly as in 0.10.0.
+- The folded overview holds for the step it was pressed on. The next step,
+  or a return to this one, opens its own group as usual.
+
+### Changed
+
+- Hand toggles still last across steps, but they no longer pile up for good.
+  Until now the only way back was `Detail`, up to three presses through "all
+  open".
+
 ## [0.10.0] — 2026-10-04
 
 The brief can be as long as the lesson needs: paragraphs, a title that stays
