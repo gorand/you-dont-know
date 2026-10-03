@@ -794,6 +794,22 @@
       stroke: var(--color-primary);
       stroke-width: 3;
     }
+    /* On a folded block the disc does what a click on the block does, so at
+       rest it only pulls the eye. It waits for the pointer on the block, or
+       focus on either, and comes in neutral: coral stays for the disc's own
+       hover. Opacity, not visibility, keeps it in the tab order, where
+       focusing it is what reveals it. An open fence keeps its disc, the only
+       way to close it, and touch has no hover to wait for. */
+    .node.collapsed .disclose {
+      opacity: 0;
+      transition: opacity var(--dur-hover) var(--ease-out);
+    }
+    .node.collapsed:hover .disclose,
+    .node.collapsed:focus-visible .disclose,
+    .node.collapsed .disclose:focus-visible { opacity: 1; }
+    @media (hover: none) {
+      .node.collapsed .disclose { opacity: 1; }
+    }
     .node-ico {
       overflow: visible;
       pointer-events: none;
@@ -3164,7 +3180,7 @@
       const open = !n._collapsed;
       const cx = n.x + n.w - DISC_R - 5;
       const cy = n.y + 4;
-      // One glyph at rest in either state, and no count: the stack behind a
+      // One glyph in either state, and no count: the stack behind a
       // folded block already says "more underneath", and a numeral in a disc
       // is what the rail uses for a step. How many is still in the name.
       const inner = `<path class="disclose-mark" d="${open ? cornersIn(cx, cy) : cornersOut(cx, cy)}"/>`;
