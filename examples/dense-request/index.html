@@ -891,14 +891,15 @@
     .edge-label.live { fill: var(--color-accent); }
     .token { fill: var(--color-accent); }
     /* Where the thing you just folded or unfolded went. The design system's
-       viewfinder corners close in on its new place once, then let go. A
-       violet, because this marks focus and not the current material — but
-       lifted toward the ink, so it is not mistaken for the keyboard ring or
-       a `frame` border, which are the token itself. Under reduced motion the
-       corners simply stand there for the same time. */
+       viewfinder corners close in on its new place once, then let go.
+       Neutral, halfway from ink-soft to ink: violet, even lifted toward the
+       ink, was a hue the rest of the composition did not have, and it
+       jumped out after the reader's eye had already followed the motion.
+       The closing-in carries the emphasis, not the colour. Under reduced
+       motion the corners simply stand there for the same time. */
     .locator {
       fill: none;
-      stroke: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink));
+      stroke: color-mix(in srgb, var(--color-ink-soft) 50%, var(--color-ink));
       stroke-width: var(--stroke-mark);
       stroke-linecap: square;
       pointer-events: none;
