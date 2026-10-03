@@ -1232,6 +1232,9 @@
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 L14.5 5 L8 8.2 L1.5 5 Z"/><path d="M1.5 8 L8 11.2 L14.5 8"/><path d="M1.5 11 L8 14.2 L14.5 11"/></svg>
           <span id="detail-label">auto</span>
         </button>
+        <button type="button" id="fold-all" hidden>
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.2 2.4 V6.8 H13.6"/><path d="M2.4 9.2 H6.8 V13.6"/></svg>
+        </button>
       </div>
     </div>
     <aside class="dock" id="dock">
@@ -1868,6 +1871,7 @@
         dockFull: "Full height — then the top edge fine-tunes it", dockBack: "Back to the usual height",
         detailTitle: "Detail: auto · all open · current step only",
         detail: { auto: "auto", full: "all", step: "step" },
+        foldAll: "Fold every group (Esc)",
         hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
       },
       ru: {
@@ -1888,6 +1892,7 @@
         dockFull: "Во всю высоту — дальше подстроить за верхний край", dockBack: "Вернуть обычную высоту",
         detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
         detail: { auto: "авто", full: "всё", step: "шаг" },
+        foldAll: "Свернуть все группы (Esc)",
         hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
       }
     };
@@ -1984,6 +1989,9 @@
     */
     const collapseOverride = new Map();
     let detailMode = null; // null = auto · "full" = everything open · "step" = only the current step opens
+    // "Fold every group" holds for the step it was pressed on and no further:
+    // the next step opens its own material as usual.
+    let foldedAt = null;
 
     function nodeIndex() {
       const by = {};
@@ -2039,6 +2047,7 @@
       collapsibleGroups().forEach((g) => {
         let collapsed;
         if (collapseOverride.has(g.id)) collapsed = collapseOverride.get(g.id);
+        else if (foldedAt && foldedAt === step) collapsed = true;
         else if (detailMode === "full") collapsed = false;
         else if (detailMode === "step") collapsed = !stepNeeds(g.id, highlight, step);
         else collapsed = stagedByDefault(g) && !stepNeeds(g.id, highlight, step);
@@ -2054,6 +2063,20 @@
     function setCollapsed(id, collapsed) {
       collapseOverride.set(id, collapsed);
       renderFlow(CURRENT.highlight, CURRENT.step, id);
+    }
+
+    // Back to the overview in one action: every group folded, every hand
+    // toggle and the detail mode forgotten, the whole diagram framed again.
+    function foldAll() {
+      const hadFocus = document.activeElement === $("fold-all");
+      collapseOverride.clear();
+      detailMode = null;
+      foldedAt = CURRENT.step;
+      viewPinned = false;
+      renderFlow(CURRENT.highlight, CURRENT.step);
+      // The button goes away once there is nothing left to fold; focus
+      // lands on its neighbour instead of falling to the page.
+      if (hadFocus) $("detail").focus();
     }
 
     function visibleGraph(collapsed) {
@@ -3761,6 +3784,19 @@
       $("detail").title = t.detailTitle;
     }
 
+    // Shown only once the reader has changed the picture by hand — a toggle
+    // or a detail mode — and only while some group is open, so a press always
+    // changes something. A staged step's own open group does not count: the
+    // canvas at rest carries no extra control.
+    function syncFoldAll(collapsed) {
+      const t = ui();
+      const touched = collapseOverride.size > 0 || detailMode !== null;
+      const anyOpen = collapsibleGroups().some((g) => !collapsed.has(g.id));
+      $("fold-all").hidden = !(touched && anyOpen);
+      $("fold-all").title = t.foldAll;
+      $("fold-all").setAttribute("aria-label", t.foldAll);
+    }
+
     function focusLive(animate) {
       const box = boxOf(liveIds());
       if (!box) { fitAll(animate); return; }
@@ -3899,7 +3935,8 @@
     function renderFlow(highlight, step, keep) {
       const prevBox = NODE_BOX;
       const prevAnchor = ANCHOR_OF;
-      const graph = visibleGraph(collapsedSet(highlight, step));
+      const collapsed = collapsedSet(highlight, step);
+      const graph = visibleGraph(collapsed);
       ANCHOR_OF = graph.anchorOf;
       const nodes = layoutNodes(graph.nodes, graph.edges);
       const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
@@ -4033,6 +4070,7 @@
         });
       });
       syncDetailUi();
+      syncFoldAll(collapsed);
       syncViewport([...live], keep);
       if (keep) locate(svg, keep);
     }
@@ -4075,6 +4113,7 @@
         if (idx === i) btn.setAttribute("aria-current", "true");
         else btn.removeAttribute("aria-current");
       });
+      if (step !== CURRENT.step) foldedAt = null;
       CURRENT = { highlight: step.highlight || [], step, live: CURRENT.live };
       renderFlow(step.highlight || [], step);
     }
@@ -4176,6 +4215,7 @@
         if (document.querySelector("dialog[open]")) return;
         if (ev.key === "Escape") {
           if (!$("pop").hidden) { ev.preventDefault(); closePop(); }
+          else if (!$("fold-all").hidden) { ev.preventDefault(); foldAll(); }
           return;
         }
         // Figma-side of the keyboard. `+ / - / 0 / 1 / 2` work bare and with
@@ -4215,8 +4255,10 @@
       $("detail").onclick = () => {
         detailMode = detailMode === null ? "full" : (detailMode === "full" ? "step" : null);
         collapseOverride.clear(); // the switch speaks for the whole canvas again
+        foldedAt = null;
         renderFlow(CURRENT.highlight, CURRENT.step);
       };
+      $("fold-all").onclick = foldAll;
 
       canvas.addEventListener("wheel", (ev) => {
         ev.preventDefault();
