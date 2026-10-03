@@ -1864,13 +1864,34 @@
     let preDzen = null;
     const REDUCE_MOTION = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
-    function tokenMark(d, liveEdge) {
+    // Every route is straight segments, so its length is their sum.
+    function pathLength(d) {
+      const v = (d.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+      let len = 0;
+      for (let k = 2; k + 1 < v.length; k += 2) len += Math.hypot(v[k] - v[k - 2], v[k + 1] - v[k - 1]);
+      return len;
+    }
+
+    // One speed on every edge. A fixed 1.6s made the token crawl along a
+    // 48px link and race down a 1400px rail in the same time — 28 times
+    // faster on the long one, which read as a different kind of edge. The
+    // speed is in world units, so a zoom changes it the way it changes the
+    // rest of the drawing.
+    const TOKEN_SPEED = 140;
+    const TOKEN_MIN = 0.3;
+
+    function tokenMark(d, liveEdge, dir) {
       if (!liveEdge) return "";
-      if (!REDUCE_MOTION) {
-        return `<circle r="4" class="token"><animateMotion dur="1.6s" repeatCount="indefinite" path="${d}" /></circle>`;
+      if (REDUCE_MOTION) {
+        const start = /M\s*([\d.-]+)\s+([\d.-]+)/.exec(d);
+        return start ? `<circle r="4" class="token" cx="${start[1]}" cy="${start[2]}"></circle>` : "";
       }
-      const start = /M\s*([\d.-]+)\s+([\d.-]+)/.exec(d);
-      return start ? `<circle r="4" class="token" cx="${start[1]}" cy="${start[2]}"></circle>` : "";
+      const dur = Math.max(TOKEN_MIN, pathLength(d) / TOKEN_SPEED).toFixed(2);
+      // keyPoints run along the path's length, so the return trip keeps the
+      // speed too.
+      const one = (home) => `<circle r="4" class="token"><animateMotion dur="${dur}s" repeatCount="indefinite" path="${d}"${home ? ' keyPoints="1;0" keyTimes="0;1" calcMode="linear"' : ""} /></circle>`;
+      // A two-way edge carries a token each way, or it reads as one-way.
+      return dir === "both" ? one(false) + one(true) : one(false);
     }
 
     // The kind names itself in one of the three tones the palette already
@@ -4055,7 +4076,7 @@
         }
         const liveEdge = live.has(e.from) && live.has(e.to);
         const mk = edgeMarks(e, liveEdge);
-        const token = tokenMark(d, liveEdge);
+        const token = tokenMark(d, liveEdge, e.kind);
         edgeEls.push(`<path class="edge-halo" d="${d}"></path><path class="${mk.cls}"${mk.start}${mk.end} d="${d}"></path>${token}`);
         if (e.label) {
           const y = nudgeLabel(lx, ly, e.label, placed, vertical, nodes);
