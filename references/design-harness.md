@@ -557,6 +557,55 @@ it are different intents that currently share one rule. Draft the variants
 a hover that says which one is about to happen. That hover is also where
 "click a node for its step" belongs: in context, not as a permanent caption.
 
+## Round 14 — node icons from what the examples needed
+
+The author's ask: more glyphs, universal ones, chosen from what the
+examples had shown the existing set could not say. Counted before drawing
+anything: `process` (the cube) was 16 of 30 nodes in `mfe-architecture`
+(screens, state modules, components, utilities, the props contract) and 9 of
+31 in `dense-request` (a database, a JWT check, a route, a handler, a lock).
+Where an author wanted a better picture they borrowed a kind for its glyph
+instead: `queue` for a Redis cache and for MSW mocks, `cloud` for an npm
+package of hooks, `file` for a config module. The vocabulary was missing,
+not the authors' care.
+
+- **A separate field, not more kinds.** `kind` already means a shape and a
+  role in the flow (stadium terminator, fork, fence, peach boundary). Adding
+  "database" as a kind would have tied a meaning to a shape, so every new
+  meaning would need a shape. `nodes[].icon` replaces only the glyph; a
+  `process` box with `icon: "database"` lays out, lights and folds exactly as
+  before. Checked: frame and dock rectangle on every step of the four
+  lessons are identical to 0.8.0.
+- **Twenty-eight names, all generic.** `database`, not "orders table";
+  `screen`, not "page of app X". Each was picked against nodes the examples
+  actually contain: who and where (`user`, `browser`, `screen`, `component`,
+  `terminal`), code (`function`, `package`, `link`, `config`, `state`,
+  `rules`), data (`database`, `cache`, `disk`, `lock`, `key`), network
+  (`route`, `server`, `request`, `response`, `broadcast`, `mail`), and
+  time, failure and test (`retry`, `timer`, `limit`, `trace`, `error`,
+  `mock`). An icon may also name a kind's glyph, so the old set stays
+  reachable as icons too: 44 names in all.
+- **Chosen at the size they are read**, 16px at the node's stroke, in a box
+  with a real label, alternatives side by side. `screen` is
+  `panels-top-left`, not `app-window`, which is the `host` glyph already.
+  `state` is `variable`: `cylinder` read as a second database. `route` is
+  `signpost`: Lucide's `route` and `workflow` blend into the edges and the
+  fork. `retry` is the single-arrow `rotate-cw`; the double arrow reads as
+  sync.
+- **The template is the registry.** `inject-lesson.mjs` reads the keys of
+  `NODE_ICON` and `KIND_ICON` out of the template it injects into, and fails
+  on an unknown name with the list. A second copy of the list in the script
+  would drift the first time someone added an icon to one of them.
+- **Two meanings were allowed to share a glyph on purpose**: `lock` is both
+  a row lock and TLS, `key` both a JWT and an idempotency key. Readers
+  already use a padlock and a key that way; splitting them would have cost
+  two glyphs nobody could tell apart at 16px.
+
+The examples show the set in context, not just on the sheet: `dense-request`
+and `mfe-architecture` carry icons where the kind left a cube, and the
+palette has a last step with every icon under its own name. Every `kind` in
+`mfe-architecture` is still the agent's; only icons were added.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

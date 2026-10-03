@@ -83,6 +83,41 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 | `action` | rect | event |
 | `boundary` | rect, dashed peach | isolation |
 | `subroutine` | rect | predefined process |
+
+- Optional `nodes[].icon`: what the node **is**, apart from its `kind`. The kind keeps the shape and the role in the flow; the icon replaces only the glyph, so a `process` box with `"icon": "database"` is still a process box. An icon may also name any kind's glyph (`"icon": "cloud"`). An unknown name fails the build and prints the list.
+
+| icon | Means | e.g. |
+|------|-------|------|
+| `user` | a person, an actor | the user who clicks |
+| `browser` | a client runtime, the web | browser, `fetch()` caller |
+| `screen` | a page, a view, a route's UI | one exposed page |
+| `component` | UI building blocks | layout, tooltip, loader |
+| `terminal` | a command, a CLI | `/command`, a shell |
+| `function` | pure code, a helper, a callback | parser, utils, `then()` |
+| `package` | a library, a dependency | an npm package of hooks |
+| `link` | an alias, a re-export, a reference | the old name of a module |
+| `config` | settings, constants, props contract | `config/api.ts` |
+| `state` | in-memory state, a store, a context | a reducer and its context |
+| `rules` | a rule set, validation, invariants | 13 validation rules |
+| `database` | a database, a table, a write to one | PostgreSQL, an outbox insert |
+| `cache` | a cache, a key-value store | Redis, a response cache |
+| `disk` | durable storage, a filesystem | WAL, `fsync` |
+| `lock` | a lock, encryption | `FOR UPDATE`, TLS |
+| `key` | a key, a token, a credential | JWT, an idempotency key |
+| `route` | routing, path matching | `/orders` route |
+| `server` | a service, a handler, a worker | a POST handler, a relay |
+| `request` | an outgoing call | `fetch()` |
+| `response` | the answer that goes back | `201 + Location` |
+| `broadcast` | an event stream, pub/sub | a Kafka topic |
+| `mail` | a message to a person | an e-mail, a notification |
+| `retry` | a retry, a repeat | back-off on 429 |
+| `timer` | a delay, a timeout, a scheduled task | a timer task |
+| `limit` | a rate limit, a quota | 100 rps |
+| `trace` | tracing, logs, metrics | a trace id |
+| `error` | a failure path, a dead end | a dead-letter queue, `exit(1)` |
+| `mock` | a test double, a fixture | MSW handlers |
+
+  Pick by what the thing is, not by what it does in this step: two nodes with the same icon read as the same sort of thing, so a Redis key and a response cache share `cache`, and a database is never `queue` just because the stadium looked right. Leave it out where the kind's glyph already says it (`decision`, `boundary`, `file`).
 - **Every `nodes[].id` appears in at least one `steps[].highlight`.** Otherwise the node is dead (not clickable).
 - 4–8 `steps` that follow **runtime**, not a file-tree tour
 - Architecture lessons: `code.text` copied from the cited file; trim, do not invent

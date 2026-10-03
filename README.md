@@ -101,7 +101,7 @@ Edges are the one place a lesson picks a colour, and it picks a token, not a val
 
 The shell does not repaint per lesson. `kind` sets the tone of one dot in the kicker (violet · muted ink · peach) and the chrome names the kind in words — the reader has nothing to choose. `accent` in the JSON is legacy: old values still parse so existing lessons rebuild untouched, but nothing repaints.
 
-Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). Card shells are rect, stadium, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
+Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)). A node's `kind` picks its shape and default glyph; `nodes[].icon` names what the node is from a fixed, domain-neutral set — `database`, `cache`, `screen`, `function`, `key`, `route`, `server` and 21 more — so a lesson can tell a database from a handler without inventing shapes. Card shells are rect, stadium, or group fence. `folder` / `file` use the rect + glyph — not a tab polygon. `cloud` is Lucide on a stadium.
 
 ## Roadmap
 
