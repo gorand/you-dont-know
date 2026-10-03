@@ -3972,6 +3972,9 @@
           return;
         }
         if (ev.key === "2") { ev.preventDefault(); focusLive(true); return; }
+        // A focused control owns Space: a button presses, a node opens its
+        // step. Taking it here for play swallowed both.
+        if (ev.key === " " && ev.target.closest("button, [role='button']")) return;
         if (ev.key === " ") { ev.preventDefault(); play(); }
         if (ev.key === "ArrowRight") show(i + 1);
         if (ev.key === "ArrowLeft") show(i - 1);
