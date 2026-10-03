@@ -5,6 +5,43 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-10-04
+
+The brief can be as long as the lesson needs: paragraphs, a title that stays
+put while it scrolls, and the accent on every section heading.
+
+### Added
+
+- **A brief field can run to several paragraphs.** A blank line (`\n\n`) in
+  `problem`, `whyNotBasic` or `cost` starts a new one; a single newline stays
+  a space. Code chips and `[[asides]]` work inside. The brief has been its own
+  dialog since 0.6.0, so the contract no longer keeps these three fields to a
+  sentence or two: a hard process gets explained there at the length it
+  takes. Step narration and the thesis keep their 1–2 sentences.
+- **The brief's title and close button stay pinned while it scrolls**, with a
+  hairline once text has gone under them. The thesis scrolls away with the
+  rest, so the pinned part stays small on a phone. The arrow keys and
+  PageDown scroll the brief from the close button, where focus opens.
+
+### Changed
+
+- **All three section headings of the brief are peach**, icon and label, not
+  only the catch. Coral stays for the current material.
+- The close button is centred on the title's first line, 4px higher than
+  before. A one-paragraph brief otherwise sits where it did in 0.9.2, on
+  every example.
+- `inject-pipeline`'s cost is two paragraphs with an aside, so a shipped
+  example shows both. It no longer counts "five invariants" at line numbers
+  that had moved.
+
+### Fixed
+
+- **An aside planted in the brief opened behind it.** The pop lived outside
+  the modal dialog, which sits in the top layer and makes the rest of the
+  page inert: the click registered, nothing appeared, and Esc then closed the
+  brief and left the pop over the page. It now opens over the brief, Esc
+  closes the pop first, and scrolling the brief closes it.
+
 ## [0.9.2] — 2026-10-03
 
 A folded group's disc waits for the pointer, its caption sits in its corner,

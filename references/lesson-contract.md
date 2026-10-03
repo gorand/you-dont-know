@@ -124,7 +124,8 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - Concept lessons: snippet may be canonical; `code.file` says so (e.g. `spec: Promise`)
 - `repeats` may be `[]`
 - `thesis`, `problem`, `whyNotBasic`, `cost` and `repeats` are the lesson's **brief**: the thesis also sits in the top bar, the rest live behind the `Бриф` / `Brief` button. They are read once, so they do not hold canvas height on every step — write them as standing context, not as commentary on the current step
-- Surface copy 1–2 sentences. Depth in `asides[]`. Plant `[[asideId]]`. Overlay, not in-flow
+- `problem`, `whyNotBasic` and `cost` have no length cap: the brief is a scrolling dialog, so a process that needs explaining gets explained there. A blank line (`\n\n`) starts a new paragraph; a single newline is a space. `` `code` `` and `[[asideId]]` work as anywhere else
+- Surface copy — the thesis, step narration — 1–2 sentences. Depth in `asides[]`. Plant `[[asideId]]`. Overlay, not in-flow
 - `asides[].id` is `[A-Za-z0-9_-]+`. No nested `[[…]]`
 - Prose may use `` `identifier` ``; no HTML in JSON
 - Node `label` ≤ ~40 characters
