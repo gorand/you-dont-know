@@ -5,6 +5,43 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-10-03
+
+The dock goes to full height in one press, and shows its height controls
+only on a step that has more than it can show.
+
+### Added
+
+- **A full-height button in the dock's head.** One press shows the whole
+  step; a second takes the dock back to its usual height. The grip on the top
+  edge still fine-tunes anything in between, and full height stays full when
+  the window is resized. It sits in the dock's top-right corner as a single
+  chevron: up while the dock can be raised, down once it is.
+
+### Changed
+
+- **The grip and the button appear only when the step is cut off** at the
+  usual height, or at a lower one the reader set. Most steps fit (22 of 33
+  across the examples at 1440×900), and on those the grip promised a change
+  it could not make. The check runs on a new step, a resize and the panel
+  coming back, never mid-drag. The button keeps its place when hidden, so
+  titles do not re-wrap between steps; frame and dock land exactly where
+  0.7.2 put them on every step of every example.
+- **A step without a code excerpt lets its narration use the dock's height**
+  rather than its own 11rem, so full height can show a long one whole.
+- **The canvas caption "Diagram · node opens a step" is gone.** It was the
+  heading of the diagram pane in 0.1's split layout; on a full-bleed canvas
+  it named the obvious, and a dock at full height covered it. The svg's
+  accessible name still carries it.
+
+### Fixed
+
+- **Space presses a focused button.** The page took Space for play/pause
+  whatever had focus, so it never pressed Brief, Dzen, the panel toggle or
+  zoom, and on a focused node it opened the step and started autoplay too.
+- **Under 1100px, full height stops under the zoombar**, which sits at the
+  top of the canvas there; a dock at full height used to cover its edge.
+
 ## [0.7.2] — 2026-10-02
 
 The fold/unfold disc says open or close with one mark that turns inside out,
