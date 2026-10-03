@@ -154,12 +154,21 @@ other node. Neither fold nor unfold changes the current step or moves the
 frame: the reader who opened a group is looking at that group, and the view
 only shifts when what they just opened no longer fits on screen.
 
-Which groups are open comes from three layers, most specific first:
+Which groups are open comes from four layers, most specific first:
 
-1. the reader's own toggle on that group's disc;
-2. the canvas-wide `Детали / Detail` switch — `auto` · `all` (nothing folds)
-   · `step` (only the current step opens);
-3. `auto`, i.e. the lesson's own default: a group opens when the current step
+1. the reader's own toggle on that group's disc — it lasts across steps until
+   one of the two resets below;
+2. **fold every group**, pressed on the current step: every group folded,
+   every toggle and the detail mode forgotten, the whole diagram framed
+   again. It holds for that step only; the next step opens its own material
+   as usual. The button sits at the end of the zoombar and shows only once
+   the reader has changed the picture by hand (a toggle or a detail mode) and
+   some group is open, so at rest the canvas carries no extra control. `Esc`
+   on the canvas does the same while the button is there;
+3. the canvas-wide `Детали / Detail` switch — `auto` · `all` (nothing folds)
+   · `step` (only the current step opens). Pressing it also drops every hand
+   toggle;
+4. `auto`, i.e. the lesson's own default: a group opens when the current step
    highlights one of its children or names it in `steps[].expand`, and stays
    folded otherwise — **but only for a complex diagram** (more than one
    collapsible group AND >12 nodes or >14 edges). Below that everything is

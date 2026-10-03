@@ -74,7 +74,10 @@ blocks, and each step opens exactly the group it talks about. The disc on a
 group's corner toggles it by hand: its corner marks point out to open and in
 to close, and on a folded block, which opens on a click anyway, it waits for
 the pointer. The `Detail` switch flips the whole canvas between `auto`, `all`
-and `step`. See
+and `step`. Once the reader has opened groups by hand, a button at the end of
+the zoombar folds every one of them back and frames the whole diagram, and
+`Esc` does the same; it disappears again once there is nothing to fold, and
+the next step opens its own group as usual. See
 [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 Folding or unfolding a group re-lays the canvas out, so the change is shown:
 boxes glide to their new places, children come out of (or slide into) their
@@ -126,6 +129,7 @@ Diagram glyphs follow [Lucide](https://lucide.dev) 24×24 outline icons ([ISC](h
 - [x] Locked lesson shell, contract, `inject-lesson.mjs`
 - [x] `npx`-shaped installer (`bin/install.mjs`)
 - [x] Publish `@gorand/you-dont-know` to npm
+- [x] Fold every group back in one action, without a permanent control
 - [ ] A click on an open group, as opposed to a click on a box inside it.
   Today both follow one rule, go to the first step that highlights what was
   clicked, so a click on the fence lands on a step that lights several boxes
