@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-10-03
+
+A node can say what it is — a database, a cache, a screen, a key — with an
+icon of its own, without changing its kind's shape.
+
+### Added
+
+- **`nodes[].icon`**, one of 28 domain-neutral names: `user` · `browser` ·
+  `screen` · `component` · `terminal` · `function` · `package` · `link` ·
+  `config` · `state` · `rules` · `database` · `cache` · `disk` · `lock` ·
+  `key` · `route` · `server` · `request` · `response` · `broadcast` · `mail`
+  · `retry` · `timer` · `limit` · `trace` · `error` · `mock`. It replaces
+  only the glyph: the kind still sets the shape and the role in the flow, so
+  the layout does not move (checked against 0.8.0 on every step of the four
+  lessons). An icon may also name any kind's glyph. The set comes from
+  Lucide 1.51.0, like the kind glyphs.
+- The palette's last step shows every icon under its own name.
+
+### Changed
+
+- `inject-lesson.mjs` fails on an unknown `nodes[].icon` and prints the
+  names it knows. It reads them from the template, so the two cannot drift.
+- `dense-request`, `mfe-architecture`, `inject-pipeline` and `how-promise`
+  use icons where their kind left a generic cube. No kind changed.
+- SKILL.md asks for icons when writing nodes and checks for rows of
+  identical cubes in visual QA.
+
 ## [0.8.0] — 2026-10-03
 
 The dock goes to full height in one press, and shows its height controls

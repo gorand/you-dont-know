@@ -34,7 +34,8 @@
     {
       "id": "user",
       "label": "Пользователь",
-      "kind": "start"
+      "kind": "start",
+      "icon": "user"
     },
     {
       "id": "g-client",
@@ -51,12 +52,14 @@
       "id": "fetch",
       "label": "fetch() + AbortController",
       "kind": "process",
+      "icon": "request",
       "parent": "g-client"
     },
     {
       "id": "retry",
       "label": "429 / сеть → повтор",
       "kind": "decision",
+      "icon": "retry",
       "parent": "g-client"
     },
     {
@@ -68,6 +71,7 @@
       "id": "tls",
       "label": "TLS-терминация",
       "kind": "process",
+      "icon": "lock",
       "parent": "g-edge"
     },
     {
@@ -80,6 +84,7 @@
       "id": "cdn",
       "label": "кэш ответа",
       "kind": "queue",
+      "icon": "cache",
       "parent": "g-edge"
     },
     {
@@ -91,24 +96,28 @@
       "id": "authn",
       "label": "проверка JWT",
       "kind": "process",
+      "icon": "key",
       "parent": "g-gw"
     },
     {
       "id": "rate",
       "label": "лимит 100 rps",
       "kind": "decision",
+      "icon": "limit",
       "parent": "g-gw"
     },
     {
       "id": "route",
       "label": "маршрут /orders",
       "kind": "process",
+      "icon": "route",
       "parent": "g-gw"
     },
     {
       "id": "trace",
       "label": "trace-id в заголовок",
       "kind": "action",
+      "icon": "trace",
       "parent": "g-gw"
     },
     {
@@ -120,6 +129,7 @@
       "id": "handler",
       "label": "handler POST /orders",
       "kind": "process",
+      "icon": "server",
       "parent": "g-svc"
     },
     {
@@ -132,6 +142,7 @@
       "id": "idem",
       "label": "Idempotency-Key",
       "kind": "process",
+      "icon": "key",
       "parent": "g-svc"
     },
     {
@@ -144,6 +155,7 @@
       "id": "outbox",
       "label": "запись в outbox",
       "kind": "inbox",
+      "icon": "database",
       "parent": "g-svc"
     },
     {
@@ -155,24 +167,28 @@
       "id": "redis",
       "label": "Redis: ключ запроса",
       "kind": "queue",
+      "icon": "cache",
       "parent": "g-store"
     },
     {
       "id": "lock",
       "label": "SELECT … FOR UPDATE",
       "kind": "process",
+      "icon": "lock",
       "parent": "g-store"
     },
     {
       "id": "pg",
       "label": "PostgreSQL: orders",
       "kind": "process",
+      "icon": "database",
       "parent": "g-store"
     },
     {
       "id": "wal",
       "label": "WAL / fsync",
       "kind": "file",
+      "icon": "disk",
       "parent": "g-store"
     },
     {
@@ -184,30 +200,35 @@
       "id": "relay",
       "label": "outbox-relay",
       "kind": "process",
+      "icon": "server",
       "parent": "g-async"
     },
     {
       "id": "broker",
       "label": "Kafka: orders.created",
       "kind": "cloud",
+      "icon": "broadcast",
       "parent": "g-async"
     },
     {
       "id": "mailer",
       "label": "consumer: письмо",
       "kind": "inbox",
+      "icon": "mail",
       "parent": "g-async"
     },
     {
       "id": "dlq",
       "label": "DLQ после 5 попыток",
       "kind": "queue",
+      "icon": "error",
       "parent": "g-async"
     },
     {
       "id": "resp",
       "label": "201 + Location",
-      "kind": "action"
+      "kind": "action",
+      "icon": "response"
     }
   ],
   "edges": [

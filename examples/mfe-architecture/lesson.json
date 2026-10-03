@@ -62,6 +62,7 @@
       "id": "contract",
       "label": "basePath · handle401",
       "kind": "process",
+      "icon": "config",
       "parent": "g-host"
     },
     {
@@ -79,18 +80,21 @@
       "id": "editor",
       "label": "MapLayerEditor",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-map"
     },
     {
       "id": "viewer",
       "label": "MapLayerViewer",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-map"
     },
     {
       "id": "embed",
       "label": "LayerEmbedWidget",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-map"
     },
     {
@@ -102,12 +106,14 @@
       "id": "export",
       "label": "MapExportSheet",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-export"
     },
     {
       "id": "alias",
       "label": "…PrintLayout (алиас)",
       "kind": "subroutine",
+      "icon": "link",
       "parent": "g-export"
     },
     {
@@ -119,18 +125,21 @@
       "id": "tiles",
       "label": "Тайлы: Setup + Sync",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-src"
     },
     {
       "id": "gpx",
       "label": "GPX: Setup + Preview",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-src"
     },
     {
       "id": "csv",
       "label": "CSV: Setup + Preview",
       "kind": "process",
+      "icon": "screen",
       "parent": "g-src"
     },
     {
@@ -142,36 +151,42 @@
       "id": "minfo",
       "label": "map-info",
       "kind": "process",
+      "icon": "state",
       "parent": "g-state"
     },
     {
       "id": "mlimits",
       "label": "map-limits",
       "kind": "process",
+      "icon": "state",
       "parent": "g-state"
     },
     {
       "id": "layers",
       "label": "map-layers",
       "kind": "process",
+      "icon": "state",
       "parent": "g-state"
     },
     {
       "id": "rules",
       "label": "style-rules · 13 правил",
       "kind": "decision",
+      "icon": "rules",
       "parent": "g-state"
     },
     {
       "id": "catalog",
       "label": "layer-catalog",
       "kind": "process",
+      "icon": "state",
       "parent": "g-state"
     },
     {
       "id": "csvparse",
       "label": "csv-parse",
       "kind": "process",
+      "icon": "function",
       "parent": "g-state"
     },
     {
@@ -183,18 +198,21 @@
       "id": "shell",
       "label": "Layout · Header · Mobile…",
       "kind": "process",
+      "icon": "component",
       "parent": "g-ui"
     },
     {
       "id": "bits",
       "label": "Loader · PanelAction · Tooltip",
       "kind": "process",
+      "icon": "component",
       "parent": "g-ui"
     },
     {
       "id": "utils",
       "label": "geoUtils · pluralize · единицы",
       "kind": "process",
+      "icon": "function",
       "parent": "g-ui"
     },
     {
@@ -206,18 +224,21 @@
       "id": "rq",
       "label": "хуки @acme/query-hooks",
       "kind": "cloud",
+      "icon": "package",
       "parent": "g-data"
     },
     {
       "id": "apicfg",
       "label": "config/mapApi · tiles",
       "kind": "file",
+      "icon": "config",
       "parent": "g-data"
     },
     {
       "id": "msw",
       "label": "MSW: фикстура по map_id",
       "kind": "queue",
+      "icon": "mock",
       "parent": "g-data"
     }
   ],

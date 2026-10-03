@@ -4,7 +4,7 @@
   "title": "Shell palette — nodes, groups, edges",
   "pattern": "You Don't Know · debug surface",
   "repo": "you-dont-know",
-  "thesis": "One locked shell. Stadium, fork, Lucide cloud, groups, trees, edge kinds — without restyling :root.",
+  "thesis": "One locked shell. Stadium, fork, Lucide cloud, groups, trees, node icons, edge kinds — without restyling :root.",
   "problem": "Custom polygon shells (parallelogram, wave, cylinder, hexagon, freehand cloud) alias against the grid and miss ortho arrow ports.",
   "whyNotBasic": "A unique SVG outline per kind breaks ports. Rect and stadium stay; `decision` is a rect with a fork glyph; cloud is Lucide on a stadium, not a blob path.",
   "cost": "No ISO data / document / store / cpu shells. Aliases (`child`→`process`, `hoc`→`frame`) stay valid.",
@@ -42,7 +42,36 @@
     { "id": "dir-src", "label": "src/", "kind": "folder", "parent": "g-tree" },
     { "id": "dir-pages", "label": "pages/", "kind": "folder", "parent": "g-tree" },
     { "id": "file-main", "label": "main.tsx", "kind": "file", "parent": "g-tree" },
-    { "id": "file-types", "label": "types.ts", "kind": "file", "parent": "g-tree" }
+    { "id": "file-types", "label": "types.ts", "kind": "file", "parent": "g-tree" },
+    { "id": "g-icons", "label": "Node icons", "kind": "group" },
+    { "id": "icon-user", "label": "user", "icon": "user", "parent": "g-icons" },
+    { "id": "icon-browser", "label": "browser", "icon": "browser", "parent": "g-icons" },
+    { "id": "icon-screen", "label": "screen", "icon": "screen", "parent": "g-icons" },
+    { "id": "icon-component", "label": "component", "icon": "component", "parent": "g-icons" },
+    { "id": "icon-terminal", "label": "terminal", "icon": "terminal", "parent": "g-icons" },
+    { "id": "icon-function", "label": "function", "icon": "function", "parent": "g-icons" },
+    { "id": "icon-package", "label": "package", "icon": "package", "parent": "g-icons" },
+    { "id": "icon-link", "label": "link", "icon": "link", "parent": "g-icons" },
+    { "id": "icon-config", "label": "config", "icon": "config", "parent": "g-icons" },
+    { "id": "icon-state", "label": "state", "icon": "state", "parent": "g-icons" },
+    { "id": "icon-rules", "label": "rules", "icon": "rules", "parent": "g-icons" },
+    { "id": "icon-database", "label": "database", "icon": "database", "parent": "g-icons" },
+    { "id": "icon-cache", "label": "cache", "icon": "cache", "parent": "g-icons" },
+    { "id": "icon-disk", "label": "disk", "icon": "disk", "parent": "g-icons" },
+    { "id": "icon-lock", "label": "lock", "icon": "lock", "parent": "g-icons" },
+    { "id": "icon-key", "label": "key", "icon": "key", "parent": "g-icons" },
+    { "id": "icon-route", "label": "route", "icon": "route", "parent": "g-icons" },
+    { "id": "icon-server", "label": "server", "icon": "server", "parent": "g-icons" },
+    { "id": "icon-request", "label": "request", "icon": "request", "parent": "g-icons" },
+    { "id": "icon-response", "label": "response", "icon": "response", "parent": "g-icons" },
+    { "id": "icon-broadcast", "label": "broadcast", "icon": "broadcast", "parent": "g-icons" },
+    { "id": "icon-mail", "label": "mail", "icon": "mail", "parent": "g-icons" },
+    { "id": "icon-retry", "label": "retry", "icon": "retry", "parent": "g-icons" },
+    { "id": "icon-timer", "label": "timer", "icon": "timer", "parent": "g-icons" },
+    { "id": "icon-limit", "label": "limit", "icon": "limit", "parent": "g-icons" },
+    { "id": "icon-trace", "label": "trace", "icon": "trace", "parent": "g-icons" },
+    { "id": "icon-error", "label": "error", "icon": "error", "parent": "g-icons" },
+    { "id": "icon-mock", "label": "mock", "icon": "mock", "parent": "g-icons" }
   ],
   "edges": [
     { "from": "start", "to": "process", "label": "flow" },
@@ -121,6 +150,17 @@
         "file": "lesson.json",
         "startLine": 1,
         "text": "{ \"from\": \"provider\", \"to\": \"host\", \"line\": \"dotted\", \"tone\": \"primary\" }\n{ \"from\": \"frame\", \"to\": \"subroutine\", \"line\": \"chain\", \"tone\": \"ink\" }\n{ \"from\": \"host\", \"to\": \"boundary\", \"tone\": \"accent-2\" }"
+      }
+    },
+    {
+      "id": "icons",
+      "title": "Node icons",
+      "narration": "`kind` sets the shape and the role in the flow; `icon` says what the thing is. The names are generic — data, code, network, time — so any lesson can use them, and a process box with `\"icon\": \"database\"` is still a process box.",
+      "highlight": ["g-icons", "icon-user", "icon-browser", "icon-screen", "icon-component", "icon-terminal", "icon-function", "icon-package", "icon-link", "icon-config", "icon-state", "icon-rules", "icon-database", "icon-cache", "icon-disk", "icon-lock", "icon-key", "icon-route", "icon-server", "icon-request", "icon-response", "icon-broadcast", "icon-mail", "icon-retry", "icon-timer", "icon-limit", "icon-trace", "icon-error", "icon-mock"],
+      "code": {
+        "file": "lesson.json",
+        "startLine": 1,
+        "text": "{ \"id\": \"pg\", \"label\": \"PostgreSQL: orders\", \"icon\": \"database\" }\n{ \"id\": \"redis\", \"label\": \"Redis: request key\", \"kind\": \"queue\", \"icon\": \"cache\" }\n{ \"id\": \"api\", \"label\": \"config/api.ts\", \"kind\": \"file\", \"icon\": \"config\" }"
       }
     }
   ]

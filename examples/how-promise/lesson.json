@@ -21,8 +21,8 @@
     { "id": "stack", "label": "Call stack", "kind": "host" },
     { "id": "promise", "label": "Promise.resolve", "kind": "provider" },
     { "id": "micro", "label": "Microtask queue", "kind": "hoc" },
-    { "id": "then", "label": "then(onFulfilled)", "kind": "action" },
-    { "id": "macro", "label": "Timer / I/O task", "kind": "boundary" }
+    { "id": "then", "label": "then(onFulfilled)", "kind": "action", "icon": "function" },
+    { "id": "macro", "label": "Timer / I/O task", "kind": "boundary", "icon": "timer" }
   ],
   "edges": [
     { "from": "stack", "to": "promise", "label": "creates" },

@@ -46,17 +46,17 @@
     { "module": "palette", "file": "examples/palette/lesson.json", "note": "полный словарь форм/иконок/типов рёбер — для отладки шаблона, не для чтения как урок" }
   ],
   "nodes": [
-    { "id": "invoke", "label": "/you-dont-know", "kind": "start" },
+    { "id": "invoke", "label": "/you-dont-know", "kind": "start", "icon": "terminal" },
     { "id": "phaseA", "label": "Phase A: план", "kind": "process" },
     { "id": "confirm", "label": "Подтверждено?", "kind": "decision" },
     { "id": "slugDir", "label": "tmp/you-dont-know/<slug>/", "kind": "group" },
     { "id": "lessonJson", "label": "lesson.json", "kind": "file", "parent": "slugDir" },
-    { "id": "inject", "label": "inject-lesson.mjs", "kind": "process" },
-    { "id": "validate", "label": "5 инвариантов", "kind": "subroutine" },
-    { "id": "boundary", "label": "process.exit(1)", "kind": "boundary" },
+    { "id": "inject", "label": "inject-lesson.mjs", "kind": "process", "icon": "function" },
+    { "id": "validate", "label": "5 инвариантов", "kind": "subroutine", "icon": "rules" },
+    { "id": "boundary", "label": "process.exit(1)", "kind": "boundary", "icon": "error" },
     { "id": "replace", "label": "__LESSON_JSON__ → JSON", "kind": "action" },
     { "id": "output", "label": "index.html", "kind": "file" },
-    { "id": "browser", "label": "shell / браузер", "kind": "inbox" }
+    { "id": "browser", "label": "shell / браузер", "kind": "inbox", "icon": "browser" }
   ],
   "edges": [
     { "from": "invoke", "to": "phaseA", "label": "" },
