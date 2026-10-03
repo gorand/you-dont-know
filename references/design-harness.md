@@ -606,6 +606,30 @@ and `mfe-architecture` carry icons where the kind left a cube, and the
 palette has a last step with every icon under its own name. Every `kind` in
 `mfe-architecture` is still the agent's; only icons were added.
 
+## Round 15 — the dock's button is a fence's disc
+
+The author's call after using 0.9.0: the chevron button sat in the dock's
+corner on no grid line the rest of the system uses. It is now the disc the
+group fences carry, at a fence's spot, so the two collapse-and-expand
+controls on the page are one control.
+
+- **Same disc, same rules.** The button takes the `disclose` class, so hover
+  (coral ring and mark) and focus (violet ring) come from the fence's own
+  rules rather than a copy of them. The mark is the chevron those discs had
+  before round 12, at its old size (±4.6 × ±2.35, 1.5 stroke), up to raise,
+  down to bring back.
+- **Same spot.** Centred 4px below the top border line and 5px in from the
+  right one, measured: 4.5 / 5.5 from the 1px border box, diameter 26. Filled
+  with the canvas ground, it knocks a hole in the dock's border as a fence's
+  disc does in its dashed line.
+- **The dock stopped clipping.** `overflow: hidden` on the dock would have
+  cut the disc's upper half. Its only other job was rounding the code
+  surface's bottom corners, so `.dock-body`, which already clipped its own
+  content, now carries those radii (the dock's minus its border).
+- **No more column in the head.** The button is out of the head's grid, so
+  the title has its full width again; hidden on a step that fits, it is
+  `display: none`, which no longer moves anything.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**

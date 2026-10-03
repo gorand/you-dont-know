@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] — 2026-10-03
+
+The dock's full-height button is now the same disc the group fences carry,
+sitting on the dock's border where a fence's sits on its own.
+
+### Changed
+
+- **The button is a fence's disc.** Centred 4px below the dock's top border
+  and 5px in from the right, filled with the canvas ground so it breaks the
+  border line, with the fences' hover (coral) and focus (violet ring). Its
+  mark is the chevron the fence discs used before their corner marks: up to
+  raise the dock, down to bring it back.
+- The dock no longer clips its content as a whole, so the disc is not cut
+  in half; the body clips and rounds its own corners instead. Frame and dock
+  position match 0.9.0 on every step of every example.
+
 ## [0.9.0] — 2026-10-03
 
 A node can say what it is — a database, a cache, a screen, a key — with an
