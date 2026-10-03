@@ -914,6 +914,71 @@
       100% { opacity: 0; transform: scale(1); }
     }
 
+    /* ---- the group's own strip ------------------------------------------
+       An open fence answers the pointer on its caption strip only — the band
+       its icon and label sit in. Its inside is canvas again, so a click in
+       the gap between two boxes no longer lands on the group's step, and a
+       drag there pans like anywhere else. The strip lights like a box does
+       and carries the fence's border with it. */
+    .node.kind-group .band {
+      fill: transparent;
+      transition: fill var(--dur-hover) var(--ease-out);
+    }
+    .node.kind-group:not(.collapsed):hover .band,
+    .node.kind-group:not(.collapsed):focus-visible .band {
+      fill: color-mix(in srgb, var(--color-surface-2) 70%, transparent);
+    }
+    .node.kind-group.hot .node-shell {
+      stroke: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
+    }
+    .node.kind-group[aria-hidden="true"] { pointer-events: none; }
+
+    /* A box's actions are discs on its own top border, the fence disc's
+       size and spot, waiting for the pointer as a folded group's disc does.
+       The numbered one is the rail's callout: it names the step a click
+       opens. */
+    .act { cursor: pointer; opacity: 0; transition: opacity var(--dur-hover) var(--ease-out); }
+    .node:hover .act, .node:focus-visible .act, .act:focus-visible { opacity: 1; }
+    @media (hover: none) { .act { display: none; } }
+    .act .disclose-bg { transition: stroke var(--dur-hover) var(--ease-out); }
+    .act:hover .disclose-bg { stroke: var(--color-accent); }
+    .act:hover .disclose-mark { stroke: var(--color-accent); }
+    .act-n {
+      font: 500 9.5px/1 var(--font-mono);
+      fill: var(--color-ink-soft);
+      letter-spacing: 0.02em;
+      pointer-events: none;
+    }
+    .act.now .disclose-bg { stroke: var(--color-accent); }
+    .act.now .act-n, .act:hover .act-n { fill: var(--color-accent); }
+    /* Over the box itself, the disc that a click would press lights. */
+    .node:hover:not(:has(.act:hover, .disclose:hover)) .act.default .disclose-bg,
+    .node:hover:not(:has(.act:hover, .disclose:hover)) .disclose.default .disclose-bg { stroke: color-mix(in srgb, var(--color-accent) 70%, var(--color-line)); }
+    .node:hover:not(:has(.act:hover, .disclose:hover)) .act.default .disclose-mark,
+    .node:hover:not(:has(.act:hover, .disclose:hover)) .disclose.default .disclose-mark { stroke: var(--color-ink); }
+    .node:hover:not(:has(.act:hover, .disclose:hover)) .act.default .act-n { fill: var(--color-ink); }
+    .tip {
+      position: absolute;
+      z-index: var(--z-hover);
+      padding: 0.3rem 0.55rem;
+      max-width: 18rem;
+      background: var(--color-surface-2);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-3);
+      box-shadow: var(--shadow-tip);
+      font-size: var(--text-xs);
+      line-height: 1.35;
+      color: var(--color-ink-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--dur-fast) var(--ease-out);
+    }
+    .tip.on { opacity: 1; }
+    .tip b { font-weight: 500; color: var(--color-ink); }
+
     /* ---- asides --------------------------------------------------------- */
     .fn {
       display: inline-flex;
@@ -1236,6 +1301,7 @@
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.2 2.4 V6.8 H13.6"/><path d="M2.4 9.2 H6.8 V13.6"/></svg>
         </button>
       </div>
+      <div class="tip" id="tip" role="tooltip"></div>
     </div>
     <aside class="dock" id="dock">
       <div class="dock-grip" id="dock-grip" role="separator" aria-orientation="horizontal" tabindex="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -1924,7 +1990,8 @@
         detailTitle: "Detail: auto · all open · current step only",
         detail: { auto: "auto", full: "all", step: "step" },
         foldAll: "Fold every group (Esc)",
-        hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan'
+        hint: '<kbd>Ctrl</kbd>+wheel zoom · <kbd>Shift</kbd>+wheel sideways · drag to pan',
+        step: "Step", click: "Click", unfold: "Open the group", fold: "Fold the group"
       },
       ru: {
         back: "Назад", next: "Далее", play: "Воспроизвести", pause: "Пауза",
@@ -1945,7 +2012,8 @@
         detailTitle: "Детализация: авто · всё раскрыто · только текущий шаг",
         detail: { auto: "авто", full: "всё", step: "шаг" },
         foldAll: "Свернуть все группы (Esc)",
-        hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас'
+        hint: '<kbd>Ctrl</kbd>+колесо — зум · <kbd>Shift</kbd>+колесо — вбок · тяните канвас',
+        step: "Шаг", click: "Клик", unfold: "Раскрыть группу", fold: "Свернуть группу"
       }
     };
     function ui() {
@@ -3512,21 +3580,70 @@
       // is what the rail uses for a step. How many is still in the name.
       const inner = `<path class="disclose-mark" d="${open ? cornersIn(cx, cy) : cornersOut(cx, cy)}"/>`;
       const name = `${open ? t.collapse : t.expand} — ${n.label || n.id} (${n._kids})`;
-      return `<g class="disclose" data-group="${escapeHtml(n.id)}" role="button" tabindex="0"
+      const act = defaultAction(n);
+      const def = act === "fold" || act === "unfold" ? " default" : "";
+      return `<g class="disclose${def}" data-group="${escapeHtml(n.id)}" role="button" tabindex="0"
           aria-expanded="${open}" aria-label="${escapeHtml(name)}">
         <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
         ${inner}
       </g>`;
     }
 
+    function stepTitle(si) {
+      const step = si >= 0 && (LESSON.steps || [])[si];
+      return step ? String(step.title || "").replace(/`/g, "") : "";
+    }
+
+    // What a click does where it lands. A box opens its step. A group's head
+    // works the group, as the disc on it does: a folded block opens, an open
+    // fence's strip folds it — a header folds what it heads. A click on the
+    // fence used to jump to the group's step, which lit several boxes at
+    // once and read as "it selected a bunch of things". A group with nothing
+    // inside cannot fold, so it falls back to its step.
+    function defaultAction(n) {
+      if (!n) return "step";
+      if (n._collapsed) return "unfold";
+      if (isFence(n)) return n._kids ? "fold" : "step";
+      return "step";
+    }
+
+    function runAction(id, act) {
+      if (act === "unfold") setCollapsed(id, false);
+      else if (act === "fold") setCollapsed(id, true);
+      else {
+        const si = stepForNode(id);
+        if (si >= 0) show(si);
+      }
+    }
+
     function nodeName(n) {
       const t = ui();
       const label = n.label || n.id;
-      if (n._collapsed) return `${t.expand} — ${label} (${n._kids})`;
-      const si = stepForNode(n.id);
-      const step = si >= 0 && (LESSON.steps || [])[si];
-      const title = step ? String(step.title || "").replace(/`/g, "") : "";
+      const act = defaultAction(n);
+      if (act === "unfold") return `${t.expand} — ${label} (${n._kids})`;
+      if (act === "fold") return `${t.collapse} — ${label} (${n._kids})`;
+      const title = stepTitle(stepForNode(n.id));
       return title ? `${label} — ${t.opensStep}: ${title}` : label;
+    }
+
+    // The box's actions as discs on its top border, right-aligned and
+    // stepping left from the fence's own disc where there is one. The step
+    // disc is the rail's callout with that step's number in it. Its class is
+    // `act-step`, never `step`: an SVG <g> is in the page's cascade, and the
+    // rail's `.step:active` scale moved the disc out from under the pointer
+    // between press and release, so the click landed on the box behind it.
+    function actDiscs(n) {
+      const t = ui();
+      const si = stepForNode(n.id);
+      if (si < 0) return "";
+      const cx = n.x + n.w - DISC_R - 5 - (n._kids ? DISC_R * 2 + 4 : 0);
+      const cy = n.y + 4;
+      const def = defaultAction(n) === "step" ? " default" : "";
+      return `<g class="act act-step${si === i ? " now" : ""}${def}" data-act="step" data-for="${escapeHtml(n.id)}"
+          role="button" tabindex="-1" aria-label="${escapeHtml(`${t.step} ${pad(si)} — ${stepTitle(si)}`)}">
+        <circle class="disclose-bg" cx="${cx}" cy="${cy}" r="${DISC_R}"/>
+        <text class="act-n" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central">${pad(si)}</text>
+      </g>`;
     }
 
     function renderNode(n, live, part) {
@@ -3554,15 +3671,25 @@
       // splits the two: "shell" for the early pass, "content" for the late
       // one; omitted (ordinary nodes) renders both together as before.
       const shellHtml = part === "content" ? "" : nodeShell(n);
+      // An open fence answers on its caption strip and nowhere else: the
+      // whole-fence hit rect it used to carry turned a click in the gap
+      // between two of its boxes into a jump to the group's step. The strip
+      // is the head band the layout already reserves (groupHead).
+      const strip = part === "content";
+      const hitH = strip ? M.groupHead : n.h;
+      const band = strip
+        ? `<path class="band" d="M ${n.x + 1} ${n.y + hitH} V ${n.y + 6} Q ${n.x + 1} ${n.y + 1} ${n.x + 6} ${n.y + 1} H ${n.x + n.w - 6} Q ${n.x + n.w - 1} ${n.y + 1} ${n.x + n.w - 1} ${n.y + 6} V ${n.y + hitH} Z"/>`
+        : "";
       const contentHtml = part === "shell" ? "" : `
+        ${band}
         <svg class="node-ico" x="${n.x + 8}" y="${icoY}" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">${glyph(n)}</svg>
         ${label}
-        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"></rect>
-        ${badge}`;
+        <rect class="hit" x="${n.x}" y="${n.y}" width="${n.w}" height="${hitH}" fill="transparent"></rect>
+        ${badge}
+        ${actDiscs(n)}`;
       // An expanded fence renders as TWO <g class="node">, so only the late
-      // pass — the one carrying the full-size hit rect — may be a control.
-      // Naming both would put one fence in the tab order twice under the
-      // same name.
+      // pass — the one carrying the hit rect — may be a control. Naming both
+      // would put one fence in the tab order twice under the same name.
       const a11y = part === "shell"
         ? 'aria-hidden="true"'
         : `role="button" tabindex="0" aria-label="${escapeHtml(nodeName(n))}"`;
@@ -3671,6 +3798,8 @@
       canvas.style.backgroundPosition = `${ox}px ${oy}px, ${ox}px ${oy}px`;
       canvas.classList.toggle("coarse", CELL * VIEW.s < 9);
       $("zoom-pct").textContent = Math.round(VIEW.s * 100) + "%";
+      // A disc's tip would point at nothing once the drawing has moved.
+      hideTip();
     }
 
     function clientToWorld(cx, cy) {
@@ -3994,9 +4123,14 @@
       setTimeout(() => mark.remove(), 1900);
     }
 
+    // The boxes as drawn, folded state included, for whatever a click or a
+    // hover has to ask about the element it landed on.
+    let VISIBLE = {};
+
     function renderFlow(highlight, step, keep) {
       const prevBox = NODE_BOX;
       const prevAnchor = ANCHOR_OF;
+      hoverOutNow();
       const collapsed = collapsedSet(highlight, step);
       const graph = visibleGraph(collapsed);
       ANCHOR_OF = graph.anchorOf;
@@ -4020,6 +4154,7 @@
       const svg = $("flow");
       WORLD = { w: maxX, h: maxY };
       NODE_BOX = Object.fromEntries(nodes.map((n) => [n.id, { x: n.x, y: n.y, w: n.w, h: n.h }]));
+      VISIBLE = pos;
       // A highlighted node that is currently folded away lights up the block
       // standing in for it, so no step ever points at nothing.
       const live = new Set((highlight || []).map((id) => graph.anchorOf[id] || id));
@@ -4095,21 +4230,22 @@
         const id = el.getAttribute("data-id");
         oldEls.set(id, (oldEls.get(id) || []).concat(el));
       });
+      // Re-rendering replaces every box, and the one that had keyboard focus
+      // would drop it to the page: the reader pressed Enter on a box and is
+      // then nowhere. It goes back to the box with the same id.
+      const had = document.activeElement && document.activeElement.closest && document.activeElement.closest("#flow .node[data-id]");
+      const hadId = had && had.getAttribute("data-id");
       svg.innerHTML = marks + fenceShellEls + edgeEls.join("") + fenceLabelEls + nodeEls + labelEls.join("");
       animateRelayout(svg, prevBox, prevAnchor, graph.anchorOf, oldEls);
-      svg.querySelectorAll(".node").forEach((el) => {
-        const activate = () => {
-          const id = el.getAttribute("data-id");
-          // A folded block is a closed container first and a step link
-          // second: activating it means "open this", not "jump somewhere
-          // else". Its step stays reachable from the rail, and from the
-          // fence itself once it is open.
-          if (el.classList.contains("collapsed")) { setCollapsed(id, false); return; }
-          const stepIdx = stepForNode(id);
-          if (stepIdx >= 0) show(stepIdx);
-        };
+      svg.querySelectorAll(".node[role='button']").forEach((el) => {
+        const id = el.getAttribute("data-id");
+        // A folded block is a closed container first and a step link
+        // second: activating it means "open this", not "jump somewhere
+        // else". A box opens its step; an open fence's strip does its own
+        // thing (defaultAction).
+        const activate = () => runAction(id, defaultAction(VISIBLE[id]));
         el.addEventListener("click", (ev) => {
-          if (ev.target.closest(".disclose")) return;
+          if (ev.target.closest(".disclose, .act")) return;
           if (justDragged) return;
           activate();
         });
@@ -4119,7 +4255,28 @@
           ev.preventDefault();
           activate();
         });
+        el.addEventListener("pointerenter", (ev) => { if (ev.pointerType !== "touch") hoverIn(id, el, false); });
+        el.addEventListener("pointerleave", () => hoverOut());
+        el.addEventListener("focus", () => { if (el.matches(":focus-visible")) hoverIn(id, el, true); });
+        el.addEventListener("blur", () => hoverOut());
       });
+      svg.querySelectorAll(".act").forEach((el) => {
+        const id = el.getAttribute("data-for");
+        const act = el.getAttribute("data-act");
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          if (justDragged) return;
+          runAction(id, act);
+        });
+        el.addEventListener("pointerenter", () => {
+          showTip(el, `<b>${pad(stepForNode(id))}</b> · ${escapeHtml(stepTitle(stepForNode(id)))}`);
+        });
+        el.addEventListener("pointerleave", hideTip);
+      });
+      if (hadId) {
+        const back = svg.querySelector(`.node[role='button'][data-id="${CSS.escape(hadId)}"]`);
+        if (back) back.focus({ preventScroll: true });
+      }
       svg.querySelectorAll(".disclose").forEach((el) => {
         const toggle = (ev) => {
           ev.preventDefault();
@@ -4148,6 +4305,77 @@
       });
       return steps.findIndex((s) => (s.highlight || []).some((h) => neigh.has(h)));
     }
+
+    /* ---------- hover: what a click does, and what else ----------
+       A click on an open group and a click on a box inside it used to share
+       one rule, and nothing said which was about to happen. The group now
+       answers on its strip only, and either one, under the pointer, shows
+       the step a click opens as a disc on its top border, in the rail's own
+       callout. Resting on it names the click's action in words, over the
+       disc that does the same. */
+    let HOVER = null;
+    let hoverHide = 0;
+
+    function hoverIn(id, el, byKey) {
+      clearTimeout(hoverHide);
+      if (HOVER && HOVER.id === id) return;
+      hoverOutNow();
+      HOVER = { id, timer: 0, shell: null };
+      // The fence's dashed border lives in the other render pass.
+      const shell = $("flow").querySelector(`.node[aria-hidden="true"][data-id="${CSS.escape(id)}"]`);
+      if (shell) { shell.classList.add("hot"); HOVER.shell = shell; }
+      HOVER.timer = setTimeout(() => tipDefault(id), byKey ? 0 : 420);
+    }
+
+    // The words come only after a pause, so a pointer crossing the diagram
+    // leaves nothing behind it.
+    function tipDefault(id) {
+      const n = VISIBLE[id];
+      if (!n || !HOVER || HOVER.id !== id) return;
+      const t = ui();
+      const act = defaultAction(n);
+      const sel = act === "fold" || act === "unfold"
+        ? `.disclose[data-group="${CSS.escape(id)}"]`
+        : `.act[data-act="${act}"][data-for="${CSS.escape(id)}"]`;
+      const disc = $("flow").querySelector(sel);
+      if (!disc) return;
+      let what;
+      if (act === "step") what = `<b>${pad(stepForNode(id))}</b> · ${escapeHtml(stepTitle(stepForNode(id)))}`;
+      else what = `<b>${escapeHtml(act === "fold" ? t.fold : t.unfold)}</b>`;
+      showTip(disc, `${escapeHtml(t.click)} → ${what}`);
+    }
+
+    // A short grace, so the pointer can cross from the box onto a disc.
+    function hoverOut() {
+      clearTimeout(hoverHide);
+      hoverHide = setTimeout(hoverOutNow, 160);
+    }
+
+    function hoverOutNow() {
+      clearTimeout(hoverHide);
+      if (!HOVER) return;
+      clearTimeout(HOVER.timer);
+      if (HOVER.shell) HOVER.shell.classList.remove("hot");
+      HOVER = null;
+      hideTip();
+    }
+
+    function showTip(target, html) {
+      const tip = $("tip");
+      tip.innerHTML = html;
+      tip.classList.add("on");
+      const c = $("canvas").getBoundingClientRect();
+      const r = target.getBoundingClientRect();
+      const w = tip.offsetWidth;
+      const h = tip.offsetHeight;
+      const left = Math.max(8, Math.min(c.width - w - 8, r.left - c.left + r.width / 2 - w / 2));
+      let top = r.top - c.top - h - 6;
+      if (top < 8) top = r.bottom - c.top + 6;
+      tip.style.left = Math.round(left) + "px";
+      tip.style.top = Math.round(top) + "px";
+    }
+
+    function hideTip() { $("tip").classList.remove("on"); }
 
     function show(index) {
       const steps = LESSON.steps || [];
