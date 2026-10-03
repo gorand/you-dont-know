@@ -982,6 +982,17 @@
       box-shadow: var(--shadow-sheet);
     }
     dialog.brief::backdrop { background: var(--scrim-dialog); }
+    /* The bar, the title and the close button stay put while a long brief
+       scrolls under them; the thesis is read once and scrolls away, so the
+       pinned part stays small on a phone. The dialog stays the scroller:
+       focus starts on that button, and the arrow keys scroll what holds it. */
+    .brief-top {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--color-surface);
+    }
+    .brief-top.lifted { box-shadow: 0 var(--stroke-hairline) 0 var(--color-line); }
     /* The one recurring "alive" element, and the only gradient in the shell. */
     .brief-bar { height: 2px; background: var(--gradient-wave); }
     .brief-head {
@@ -989,8 +1000,12 @@
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: start;
       gap: var(--space-2);
-      padding: var(--space-3) var(--space-3) var(--space-2);
+      padding: var(--space-3) var(--space-3) var(--space-1);
     }
+    /* Centred on the title's first line and no taller than it, so the row is
+       the title's height and the thesis keeps one distance from a one-line
+       title and a two-line one alike. */
+    #brief-close { margin-block: -0.25rem; }
     .brief-head h2 {
       margin: 0;
       font-family: var(--font-display);
@@ -1000,7 +1015,8 @@
       line-height: 1.2;
     }
     .brief-thesis {
-      margin: var(--space-1) 0 0;
+      margin: 0;
+      padding: 0 var(--space-3) var(--space-2);
       color: var(--color-ink-soft);
       font-size: var(--text-base);
       line-height: 1.6;
@@ -1021,9 +1037,8 @@
       font-weight: 500;
       letter-spacing: var(--track-3);
       text-transform: uppercase;
-      color: var(--color-ink-soft);
+      color: var(--color-accent-2);
     }
-    .brief-body .note-problem h3 { color: var(--color-accent-2); }
     .brief-body h3 .ico { width: 15px; height: 15px; }
     .brief-body p {
       margin: 0;
@@ -1032,6 +1047,8 @@
       color: var(--color-ink);
       overflow-wrap: anywhere;
     }
+    /* A brief field may run to several paragraphs: a blank line in the JSON. */
+    .brief-body .paras { display: grid; gap: 0.75em; }
     .brief-body section[hidden] { display: none; }
 
     /* Section rule — outward chevrons closing over a dashed cut line. */
@@ -1238,37 +1255,37 @@
   </main>
 
   <dialog class="brief" id="brief-dlg" aria-labelledby="brief-title">
-    <div class="brief-bar" aria-hidden="true"></div>
-    <div class="brief-head">
-      <div>
+    <div class="brief-top" id="brief-top">
+      <div class="brief-bar" aria-hidden="true"></div>
+      <div class="brief-head">
         <h2 id="brief-title"></h2>
-        <p class="brief-thesis" id="thesis-full"></p>
+        <button class="ctrl quiet icon" id="brief-close" type="button">
+          <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4 L12 12"/><path d="M12 4 L4 12"/></svg>
+        </button>
       </div>
-      <button class="ctrl quiet icon" id="brief-close" type="button">
-        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4 L12 12"/><path d="M12 4 L4 12"/></svg>
-      </button>
     </div>
+    <p class="brief-thesis" id="thesis-full"></p>
     <div class="brief-body">
-      <section class="note-problem">
+      <section>
         <h3>
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2 L14.4 13.7 H1.6 Z"/><path d="M8 6.2 V10"/><circle class="fill" cx="8" cy="11.75" r="1.1"/></svg>
           <span id="lbl-problem">The catch</span>
         </h3>
-        <p id="problem"></p>
+        <div class="paras" id="problem"></div>
       </section>
       <section>
         <h3>
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="9" width="11" height="4" rx="1"/><rect x="4" y="5.5" width="8" height="3.5" rx="1"/><rect x="5.5" y="2.5" width="5" height="3" rx="1"/></svg>
           <span id="lbl-why">Why not the basic way</span>
         </h3>
-        <p id="whyNotBasic"></p>
+        <div class="paras" id="whyNotBasic"></div>
       </section>
       <section>
         <h3>
           <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5 V6.5"/><path d="M2 6.5 H14"/><path d="M8 6.5 V12.5"/><path d="M6 12.5 H10"/><path d="M3.4 6.5 V8"/><path d="M2.2 8 V10.6 H4.6 V8"/><path d="M12.6 6.5 V8"/><path d="M11.4 8 V10.6 H13.8 V8"/></svg>
           <span id="lbl-cost">Cost</span>
         </h3>
-        <p id="cost"></p>
+        <div class="paras" id="cost"></div>
       </section>
       <section class="repeats-wrap" id="repeats-wrap" hidden>
         <p class="cut" aria-hidden="true">
@@ -1824,6 +1841,17 @@
         last = m.index + m[0].length;
       }
       if (last < s.length) el.append(s.slice(last));
+    }
+
+    // A brief field splits into paragraphs at a blank line; a single newline
+    // stays a space, as it would in the prose it came from.
+    function renderParas(el, text) {
+      el.textContent = "";
+      String(text || "").split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean).forEach((s) => {
+        const p = document.createElement("p");
+        renderRich(p, s);
+        el.append(p);
+      });
     }
 
     function pad(n) { return String(n + 1).padStart(2, "0"); }
@@ -3728,9 +3756,9 @@
       renderRich($("thesis"), LESSON.thesis || "");
       renderRich($("brief-title"), LESSON.title || "Lesson");
       renderRich($("thesis-full"), LESSON.thesis || "");
-      renderRich($("problem"), LESSON.problem || "");
-      renderRich($("whyNotBasic"), LESSON.whyNotBasic || "");
-      renderRich($("cost"), LESSON.cost || "");
+      renderParas($("problem"), LESSON.problem);
+      renderParas($("whyNotBasic"), LESSON.whyNotBasic);
+      renderParas($("cost"), LESSON.cost);
       const repeats = LESSON.repeats || [];
       if (repeats.length) {
         $("repeats-wrap").hidden = false;
@@ -3757,9 +3785,13 @@
         if (!$("pop").hidden) { ev.preventDefault(); closePop(); }
       });
       dlg.addEventListener("close", closePop);
-      // A fixed pop would stay put while its button scrolls away, so it
-      // closes, as it does on resize.
-      dlg.addEventListener("scroll", closePop);
+      // The hairline under the head appears once text has gone under it. A
+      // fixed pop would stay put while its button scrolls away, so it closes,
+      // as it does on resize.
+      dlg.addEventListener("scroll", () => {
+        $("brief-top").classList.toggle("lifted", dlg.scrollTop > 0);
+        closePop();
+      });
       $("play").onclick = play;
       $("prev").onclick = () => show(i - 1);
       $("next").onclick = () => show(i + 1);
