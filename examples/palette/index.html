@@ -2066,8 +2066,13 @@
       const narr = $("narration");
       // Never taller than the canvas above the dock's foot, never so short
       // that the excerpt is a sliver under the narration — or, with no
-      // excerpt, the narration a sliver under the title.
-      const max = Math.max(head, d.bottom - Math.max(c.top, 0) - 16);
+      // excerpt, the narration a sliver under the title. Under 1100px the
+      // zoombar moves to the top of the canvas, across the dock's width:
+      // full height stops under it, not behind it.
+      const z = $("zoombar").getBoundingClientRect();
+      const under = z.height > 0 && z.left < d.right && z.right > d.left && z.bottom < d.bottom;
+      const ceiling = Math.max(c.top, 0, under ? z.bottom : 0);
+      const max = Math.max(head, d.bottom - ceiling - 16);
       const body = $("code").classList.contains("on") ? narr.offsetHeight + 88 : Math.min(narr.scrollHeight, 88);
       const min = Math.min(max, head + body);
       return { min, max, now: d.height };
