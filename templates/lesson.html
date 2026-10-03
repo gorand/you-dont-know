@@ -794,6 +794,22 @@
       stroke: var(--color-primary);
       stroke-width: 3;
     }
+    /* On a folded block the disc does what a click on the block does, so at
+       rest it only pulls the eye. It waits for the pointer on the block, or
+       focus on either, and comes in neutral: coral stays for the disc's own
+       hover. Opacity, not visibility, keeps it in the tab order, where
+       focusing it is what reveals it. An open fence keeps its disc, the only
+       way to close it, and touch has no hover to wait for. */
+    .node.collapsed .disclose {
+      opacity: 0;
+      transition: opacity var(--dur-hover) var(--ease-out);
+    }
+    .node.collapsed:hover .disclose,
+    .node.collapsed:focus-visible .disclose,
+    .node.collapsed .disclose:focus-visible { opacity: 1; }
+    @media (hover: none) {
+      .node.collapsed .disclose { opacity: 1; }
+    }
     .node-ico {
       overflow: visible;
       pointer-events: none;
@@ -818,6 +834,11 @@
       height: 100%;
       pointer-events: none;
     }
+    /* A group's caption hangs from the top of its 50px row, so its first
+       line sits on the icon's axis (16.5 and 16 from the top). Centred in
+       the row, a one-line caption fell 11px below its icon; the row is
+       sized for two lines. */
+    .node.kind-group .node-label { align-items: flex-start; }
     .node-label .txt {
       min-width: 0;
       display: -webkit-box;
@@ -870,14 +891,15 @@
     .edge-label.live { fill: var(--color-accent); }
     .token { fill: var(--color-accent); }
     /* Where the thing you just folded or unfolded went. The design system's
-       viewfinder corners close in on its new place once, then let go. A
-       violet, because this marks focus and not the current material — but
-       lifted toward the ink, so it is not mistaken for the keyboard ring or
-       a `frame` border, which are the token itself. Under reduced motion the
-       corners simply stand there for the same time. */
+       viewfinder corners close in on its new place once, then let go.
+       Neutral, halfway from ink-soft to ink: violet, even lifted toward the
+       ink, was a hue the rest of the composition did not have, and it
+       jumped out after the reader's eye had already followed the motion.
+       The closing-in carries the emphasis, not the colour. Under reduced
+       motion the corners simply stand there for the same time. */
     .locator {
       fill: none;
-      stroke: color-mix(in srgb, var(--color-primary) 62%, var(--color-ink));
+      stroke: color-mix(in srgb, var(--color-ink-soft) 50%, var(--color-ink));
       stroke-width: var(--stroke-mark);
       stroke-linecap: square;
       pointer-events: none;
@@ -2871,7 +2893,7 @@
       const open = !n._collapsed;
       const cx = n.x + n.w - DISC_R - 5;
       const cy = n.y + 4;
-      // One glyph at rest in either state, and no count: the stack behind a
+      // One glyph in either state, and no count: the stack behind a
       // folded block already says "more underneath", and a numeral in a disc
       // is what the rail uses for a step. How many is still in the name.
       const inner = `<path class="disclose-mark" d="${open ? cornersIn(cx, cy) : cornersOut(cx, cy)}"/>`;
@@ -2896,9 +2918,12 @@
     function renderNode(n, live, part) {
       const on = live.has(n.id) ? "on" : "";
       const k = kindOf(n);
-      const group = k === "group" && !n._collapsed;
+      // A group's caption sits in its top-left corner, folded or open. Folded,
+      // it used to be centred like a box's, and a closed container read as
+      // one more step of the flowchart beside the boxes of an open one.
+      const group = k === "group";
       const icoY = group ? n.y + 8 : n.y + (n.h - 16) / 2;
-      const foY = group ? n.y + 2 : n.y;
+      const foY = n.y;
       const foH = group ? 50 : n.h;
       const badge = discloseMark(n);
       const labelW = Math.max(24, n.w - 30 - (badge && group ? 40 : 0));

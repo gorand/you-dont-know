@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] — 2026-10-03
+
+A folded group's disc waits for the pointer, its caption sits in its corner,
+and the corners that mark a toggled group are neutral.
+
+### Changed
+
+- **A folded group's disc appears on hover or focus.** It does what a click
+  on the block does, so at rest it only pulled the eye. It comes in when the
+  pointer is over the block or when the block or the disc has keyboard focus,
+  neutral until the disc itself is hovered. An open fence, which only its
+  disc can close, and the dock keep theirs, and touch screens show it as
+  before.
+- **A folded group's icon and label sit in its top-left corner**, where an
+  open fence carries them, instead of centred like a box of the flowchart.
+  Group captions, folded or open, now hang on the icon's line; a one-line
+  caption used to sit 11px below its icon.
+- **The viewfinder corners that close in on a toggled group are neutral**,
+  halfway between ink-soft and ink, instead of violet.
+
+Frame and dock position match 0.9.1 on every step of every example.
+
 ## [0.9.1] — 2026-10-03
 
 The dock's full-height button is now the same disc the group fences carry,

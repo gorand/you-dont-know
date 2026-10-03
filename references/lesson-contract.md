@@ -137,9 +137,12 @@ screen and nothing is legible. The shell answers that in two ways, and both
 are automatic — a lesson that says nothing about either still works.
 
 **Folding.** A `kind: "group"` node can stand in FOR its children instead of
-fencing them. Collapsed it draws as one solid block with a disc on its corner
-whose viewfinder corners point out (open me) — open, they point in (close me);
-every edge that touched a hidden child re-anchors onto the block
+fencing them. Collapsed it draws as one solid block, its caption in the
+top-left corner where an open fence carries it, with a disc on its corner
+whose viewfinder corners point out (open me) — open, they point in (close me).
+On a folded block the disc appears on hover or keyboard focus, since a click
+on the block does the same; an open fence, which only its disc can close,
+shows it always, and so does a touch screen. Every edge that touched a hidden child re-anchors onto the block
 (edges wholly inside it disappear, parallel ones merge into a `label ×N`).
 
 A folded block is a closed container first and a step link second: clicking
