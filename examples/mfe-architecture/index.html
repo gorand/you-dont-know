@@ -2180,13 +2180,18 @@
       return len;
     }
 
-    // One speed on every edge. A fixed 1.6s made the token crawl along a
-    // 48px link and race down a 1400px rail in the same time — 28 times
-    // faster on the long one, which read as a different kind of edge. The
-    // speed is in world units, so a zoom changes it the way it changes the
-    // rest of the drawing.
+    // One speed and one rhythm on every edge. A fixed 1.6s made the token
+    // crawl along a 48px link and race down a 1400px rail in the same time.
+    // One speed alone was not enough: a single token on a short link came
+    // round three times a second and still read as fast, while one on a long
+    // rail took ten seconds to cross and read as slow. So every lit edge is a
+    // conveyor: a token leaves it every TOKEN_EVERY seconds and runs at
+    // TOKEN_SPEED, so a long edge carries several, evenly spaced, and a short
+    // one rests between departures. World units, so a zoom changes the speed
+    // the way it changes the rest of the drawing.
     const TOKEN_SPEED = 140;
-    const TOKEN_MIN = 0.3;
+    const TOKEN_EVERY = 1.2;
+    const TOKEN_MAX = 12;
 
     function tokenMark(d, liveEdge, dir, raw) {
       if (!liveEdge) return "";
@@ -2195,12 +2200,30 @@
         const start = /M\s*([\d.-]+)\s+([\d.-]+)/.exec(d);
         return start ? `<circle r="4" class="token"${data} cx="${start[1]}" cy="${start[2]}"></circle>` : "";
       }
-      const dur = Math.max(TOKEN_MIN, pathLength(d) / TOKEN_SPEED).toFixed(2);
-      // keyPoints run along the path's length, so the return trip keeps the
-      // speed too.
-      const one = (home) => `<circle r="4" class="token"${data}><animateMotion dur="${dur}s" repeatCount="indefinite" path="${d}"${home ? ' keyPoints="1;0" keyTimes="0;1" calcMode="linear"' : ""} /></circle>`;
-      // A two-way edge carries a token each way, or it reads as one-way.
-      return dir === "both" ? one(false) + one(true) : one(false);
+      const travel = Math.max(0.05, pathLength(d) / TOKEN_SPEED);
+      // Past TOKEN_MAX tokens on one edge they spread out instead.
+      const count = Math.min(TOKEN_MAX, Math.ceil(travel / TOKEN_EVERY));
+      const every = Math.max(TOKEN_EVERY, travel / count);
+      const cycle = count * every;
+      const f = Math.min(1, travel / cycle).toFixed(4);
+      const dur = cycle.toFixed(3);
+      // Each token runs the length in `travel`, then waits out of sight at the
+      // far end for its next turn; keyPoints run along the path's length, so
+      // the speed holds on the way back too.
+      const one = (home, k) => {
+        const begin = k ? `-${(k * every).toFixed(3)}s` : "0s";
+        return `<circle r="4" class="token"${data}>`
+          + `<animateMotion dur="${dur}s" begin="${begin}" repeatCount="indefinite" path="${d}" keyPoints="${home ? "1;0;0" : "0;1;1"}" keyTimes="0;${f};1" calcMode="linear" />`
+          + `<animate attributeName="opacity" dur="${dur}s" begin="${begin}" repeatCount="indefinite" values="1;0" keyTimes="0;${f}" calcMode="discrete" />`
+          + `</circle>`;
+      };
+      let out = "";
+      for (let k = 0; k < count; k++) {
+        out += one(false, k);
+        // A two-way edge carries tokens each way, or it reads as one-way.
+        if (dir === "both") out += one(true, k);
+      }
+      return out;
     }
 
     // The kind names itself in one of the three tones the palette already
