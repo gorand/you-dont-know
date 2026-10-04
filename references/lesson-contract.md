@@ -59,7 +59,7 @@ Replace the `__LESSON_JSON__` token in `templates/lesson.html` with one JSON obj
 - Optional `nodes[].collapsed`: boolean, `kind: "group"` only — that group's own default state (overrides the `detail` heuristic for it)
 - Optional `steps[].expand`: group ids this step opens even though it highlights none of their children
 - Optional `nodes[].rank`: explicit row
-- Optional `edges[].kind`: `flow` (default) | `back` | `both` — which way it points. `dashed` still parses and means a dashed `flow`; it predates `line`.
+- Optional `edges[].kind`: `flow` (default) | `back` | `both`. `flow` and `back` both point from `from` to `to`, so write every edge the way the thing travels. `back` marks a loop-back against the flow — a retry, a return to an earlier step, an answer going home — and the layout leaves it out of the ranking, so it does not drag its target down a row. `both` has a head at each end and, lit, a token each way. `dashed` still parses and means a dashed `flow`; it predates `line`.
 - Optional `edges[].line`: `solid` (default) | `dashed` | `dotted` | `chain` — how it is drawn. `chain` is the dash-dot of a drafting centre line. A line type means something only if the lesson says what and keeps it: one meaning per type, the same on every step.
 - Optional `edges[].tone`: `ink-soft` (default) | `ink` | `primary` | `accent-2` — a token name. `accent` is refused at build time: coral is the live edge, and an edge that is coral at rest would read as lit. A lit edge turns coral whatever its tone and keeps its `line`. One or two tones a lesson, each with a stated meaning; a tone on every edge is a legend nobody reads.
 - Parallel edges merged into one `label ×N` keep a `kind`, `line` or `tone` only where all of them agree; any disagreement falls back to the default.
@@ -148,9 +148,13 @@ shows it always, and so does a touch screen. Every edge that touched a hidden ch
 
 A folded block is a closed container first and a step link second: clicking
 its body opens it, and so does the disc (`Enter` / `Space` on the disc
-too). How many children it holds is in the disc's accessible name, not on it. Its own step stays reachable from the rail, and from the fence itself
-once it is open — an expanded fence opens its step on a body click like any
-other node. Neither fold nor unfold changes the current step or moves the
+too). How many children it holds is in the disc's accessible name, not on it.
+An open fence answers on its head strip — the band its icon and caption sit
+in — and a click there folds it again: the head of a group works the group,
+both ways. Inside the fence is canvas, so a click between two of its boxes
+does nothing and a drag there pans. A group's own step stays reachable from
+the rail and from the step disc it shows under the pointer (see *Clicks and
+links*). Neither fold nor unfold changes the current step or moves the
 frame: the reader who opened a group is looking at that group, and the view
 only shifts when what they just opened no longer fits on screen.
 
@@ -194,6 +198,38 @@ dock, not around the bare canvas — the scale comes from the larger of the two
 areas that clear the panel, and the diagram is then displaced from centre only
 as far as it takes to get out from under it. After that the frame is theirs —
 it only follows when a step's nodes would sit off screen.
+
+## Clicks and links
+
+A click on a box opens the first step that highlights it; a click on a
+group's head strip folds or opens the group. Under the pointer, or under
+keyboard focus, a group and a box that stands outside any group show a panel
+over them: the step, as the word, the rail's numbered callout and the title,
+then the links (⇄). Folding is not on it: the head strip and the corner disc
+already fold a group. A box inside a group shows its actions as discs on its top border
+instead, the size and spot of a group's disc: the step its click opens,
+numbered as on the rail, and its links when it has any; each disc names
+itself in a tooltip under the pointer. A touch screen has no hover, so
+there a long press stands in for the links button.
+
+**Links.** A step lights what its narration is about, which is mostly the
+forward flow; everything else a box talks to stays faint, or folded into a
+block where its edges merge into a `label ×N`. `L` on the box under the
+pointer or keyboard focus, or its ⇄ button, turns that around for one box:
+the groups that hold it and its partners open, every other group folds,
+whatever is not on one of its edges steps back, and every edge it has is lit
+both ways. The dock lists the partners, one row each with every link to it,
+so a request and its answer read as one exchange; a row opens the partner's
+links. `Path`, in the bar over the canvas, widens the view to everything
+that leads to the box and everything it leads to — `back` edges are not
+followed, but the box's own are on its path. `Esc`, `L` again, a click on
+empty canvas or a step change leaves, and the frame goes back to where the
+reader had it. The JSON has no key for any of this.
+
+Write for it: a short label on every edge, and two edges rather than one
+`both` when the two directions carry different things. `POST` out and `201`
+back is two rows' worth of information in the dock; `both` with one label is
+one.
 
 ## The grid
 

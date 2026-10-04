@@ -8,7 +8,7 @@ description: >-
   /understand maps.
 license: MIT
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 disable-model-invocation: true
 argument-hint: "[topic-or-path]"
 ---
@@ -82,6 +82,7 @@ For each confirmed item:
    - Narration: 1–2 sentences WHAT. WHY / invariant / race → `asides[]` + `[[asideId]]`.
    - Brief (`problem`, `whyNotBasic`, `cost`): as long as the mechanism needs — it opens in its own dialog, not on the canvas. A blank line (`\n\n`) starts a paragraph; a hard process earns several.
    - Nodes: `kind` for the shape and the role in the flow, `nodes[].icon` for what the thing is — `database`, `cache`, `screen`, `function`, `key`… (list in the contract). Without it every module is the same cube.
+   - Edges: `from` → `to` the way the thing travels, `kind: "back"` included — `back` only says it loops back against the flow. A request and its answer are two edges with two short labels, not one `both`: the reader's links view (`L`) lists them as one exchange.
 3. Build:
    ```sh
    node ~/.agents/skills/you-dont-know/scripts/inject-lesson.mjs \
@@ -90,7 +91,7 @@ For each confirmed item:
      tmp/you-dont-know/<slug>/index.html
    ```
    (From a clone of this skill: `node scripts/inject-lesson.mjs templates/lesson.html …`.)
-4. Visual-QA `index.html`: node labels readable on the surface fill; Lucide glyphs not a 2px circle; a node's glyph says what it is — a database, a cache and a handler are not three identical cubes; `` `code` `` as chips; every node clickable; edges on separate rails; asides = overlay; coral marks only the current material, peach only a boundary and the brief's headings. The rail reads as a dimension line collapsed and opens its titles **over** the canvas — the diagram must not reflow when it does. The dock must never sit on top of the diagram it explains: the shell frames around it, so if a step's nodes end up under the panel, that is a bug, not a layout. Dzen (focus mode) keeps the title, the transport and the rail and gives the canvas the rest; leaving it brings back exactly the chrome the reader had. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the disclosure disc is not covered by a label. A fold, an unfold or a step change that re-lays the canvas out shows the move — boxes glide, the toggled one gets the viewfinder corners — and never just cuts to a new picture. A long excerpt must be readable whole after one press of the dock's full-height button, and the grip on its top edge fine-tunes from there; on a step that fits the dock, neither the button nor the grip is shown — a control that cannot change anything is noise. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
+4. Visual-QA `index.html`: node labels readable on the surface fill; Lucide glyphs not a 2px circle; a node's glyph says what it is — a database, a cache and a handler are not three identical cubes; `` `code` `` as chips; every node clickable, and under the pointer it shows the step its click opens; `L` on any box lights all of its links, both ways; edges on separate rails; asides = overlay; coral marks only the current material, peach only a boundary and the brief's headings. The rail reads as a dimension line collapsed and opens its titles **over** the canvas — the diagram must not reflow when it does. The dock must never sit on top of the diagram it explains: the shell frames around it, so if a step's nodes end up under the panel, that is a bug, not a layout. Dzen (focus mode) keeps the title, the transport and the rail and gives the canvas the rest; leaving it brings back exactly the chrome the reader had. On a staged lesson also: the folded top level reads as a few large blocks, each step opens exactly its own group, and the disclosure disc is not covered by a label. A fold, an unfold or a step change that re-lays the canvas out shows the move — boxes glide, the toggled one gets the viewfinder corners — and never just cuts to a new picture. A long excerpt must be readable whole after one press of the dock's full-height button, and the grip on its top edge fine-tunes from there; on a step that fits the dock, neither the button nor the grip is shown — a control that cannot change anything is noise. Every arrow runs *between* boxes, never along one's border or across its face; every box edge lands on a grid line; every edge label sits in the gap it belongs to, not on a node. Two boxes stacked in one column are joined by **one straight line** — a stair with a one-cell jog in it means the ports never lined up. A slanted edge is only right where it replaces such a stair and clears every box; one scraping a corner should have stayed orthogonal.
 
 ### Complex diagrams (>12 nodes)
 
@@ -99,7 +100,7 @@ fold. Put every node in a `kind: "group"` named for the periphery it belongs
 to (client · edge · gateway · service · storage), and let each step highlight
 the children it is actually about. The canvas then shows a handful of large
 blocks and opens one group per step; the reader pans / zooms (Ctrl+wheel,
-Shift+wheel, drag) and toggles any group by the disc on its corner; once they have, a button at the end of the zoombar (or `Esc`) folds every group back in one go. Details and the
+Shift+wheel, drag) and toggles any group by the disc on its corner or a click on its head strip; once they have, a button at the end of the zoombar (or `Esc`) folds every group back in one go. `L` on a box opens whatever groups its links need and folds the rest. Details and the
 `detail` / `collapsed` / `expand` overrides: [references/lesson-contract.md](references/lesson-contract.md) → *Staged detail*.
 
 A flat 25-node lesson with no groups gets no staging — it is still one wall

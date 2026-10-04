@@ -133,7 +133,7 @@
     {
       "id": "edges",
       "title": "Edge kinds",
-      "narration": "`flow` default. `dashed` async. `back` reverse marker. `both` two heads. `via` bends through a junction.",
+      "narration": "`flow` default. `dashed` async. `back` loops back: the same head, no pull on the row. `both` two heads. `via` bends through a junction.",
       "highlight": ["start", "process", "decision", "cloud", "queue", "action", "junction", "inbox", "host", "boundary", "provider", "frame", "subroutine"],
       "code": {
         "file": "lesson.json",

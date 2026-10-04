@@ -800,6 +800,120 @@ nothing to fold; `Detail` → `all` shows the button, and after a fold-all
 `Detail` opens everything again. No console errors on any example. At rest
 the layout is unchanged, since the button is `display: none` until needed.
 
+## Round 19 — what a click on a group means, and links
+
+Three asks from the author, in one session and without questions back. A
+click on an open group must not mean what a click on a box inside it means,
+and a hover should offer the choice while the click keeps its default. One
+action should show a box's links with all the others, both ways: a step
+lights the forward flow, and the rest stays faint or folded away. And the
+token's speed should not depend on the length of its edge.
+
+Three treatments were built into one scratch template behind a switch,
+shot on `dense-request`, and published with a live prototype over five
+lessons for the author to compare. B went into the branch; A and C stay in
+the prototype.
+
+- **The fence answered everywhere.** Its late pass carried a hit rect the
+  size of the whole fence, so a click in the gap between two boxes went to
+  the group's step. Hovering it gave no feedback at all, because
+  `.node:hover .node-shell` cannot reach a shell drawn in the other pass.
+  The group now answers on its head strip only: the 48px band the layout
+  already reserves for the caption. The strip lights when hovered: a surface
+  step on the band, and the coral-mix border the boxes use, carried to the
+  shell pass by a class. Inside the fence is canvas: a drag pans and a click
+  does nothing.
+- **Three treatments, each a reading of the question.** A puts a toolbar
+  over the box, the click's action first and in words ("Клик · 04 ·
+  Хендлер…"); a group's click is its step. B puts discs on the box's top
+  border, the fence disc's size and spot: the step it opens, as the rail's
+  numbered callout, and ⇄ for links. A group's head strip folds the group.
+  C previews the box's links in place after a 0.26s rest, with a callout
+  that says what the click and `L` do; a group's click pins its links. B is
+  the recommendation. It says what the click does with marks the shell
+  already has, adds nothing at rest, and "the head folds what it heads" is
+  the folded block's own rule read in the other direction. Its words come
+  only after a 0.42s pause, over the disc a click would press.
+- **A panel under a group's head took the click meant for its first box.**
+  The C test found it: with the fence near the top of the canvas, the
+  callout dropped below the head onto `handler`, and the next click landed
+  on the callout. When there is no room above, a group's panel now goes
+  beside the group.
+- **`.step` is the rail's class.** The step disc was `class="act step"`,
+  and the rail's `.step:active { transform: scale(0.99) }` scaled the SVG
+  `<g>` around the canvas origin between press and release. The disc moved
+  14px, the release landed on the box behind it, and the click unfolded the
+  block instead of opening the step. It is round 16's `.top` trap again. The
+  discs are `act-step` and `act-links` now. Checking every new class name
+  against the shipped rules found no other collision.
+- **Links.** `L` (matched by key code, so any keyboard layout works), the ⇄
+  disc, or a long press on touch. The groups holding the box and its
+  partners open, every other group folds, and whatever is not on a link drops
+  to a quarter of its opacity. A drawn edge now records the lesson edges it
+  stands for (`_raw`), so a link can be found on the canvas whatever it was
+  merged into. The frame takes the lit boxes and the lit edges. Framing the
+  boxes alone ran a rail edge under the focus bar. When a whole path would
+  fall below the legibility floor, the frame takes the box's own links
+  instead. The dock lists partners, one row each with every link to it, so a
+  request and its answer read as one exchange. `Path` adds everything
+  upstream and downstream. It does not follow `back` edges, but the box's
+  own `back` links count: a 429 that loops back from the limiter is part of
+  the limiter's process. Leaving restores the frame the reader had.
+- **The token's speed.** Lit edges in the examples run from 48 to 1376px,
+  and at a fixed 1.6s the token went from 30 to 860 px/s. It now runs at
+  140 world-px/s, with a 0.3s floor. A `both` edge carries a token each way.
+  The return trip needs `keyPoints="1;0"` with `calcMode="linear"` to keep
+  the speed, because the default `paced` mode ignores keyPoints.
+- **Two bugs found while reading the edges.** `back` drew its head at
+  `from` while its token ran to `to`. All six `back` edges in the examples
+  are written from → to, so `fetch ⇄ retry` showed two heads on `retry`. The
+  head is at `to` now, and `back` differs from `flow` only in the ranking.
+  And since 0.5.0, `inject-pipeline`'s start had sat in row 7. The lift for
+  nodes reached only by back edges, made for a dead-letter queue, also
+  lifted a source. It now lifts only a node with no edge out of it.
+
+Checked:
+
+- 160 step × window combinations (1440, 1280, 900 and 390 wide; the five
+  examples and the review fixture) match `main` in frame, dock, edge paths,
+  boxes and lit set. The exceptions are the `back` heads, `inject-pipeline`'s
+  layout and the palette step whose narration changed.
+- 40 interaction checks across the three treatments and 8 on the discs
+  pass, with no console errors.
+- At 390 wide the focus bar sits under the zoombar, and the dock's rows wrap
+  the links under the partner's name.
+
+The review fixture (OAuth 2.0 + PKCE, 15 nodes, a SPA with ten links, half
+of them answers) lives with the review page, not in `examples/`.
+
+**The author's pick: a hybrid.** A panel for a group, folded or open, and
+for a box that stands outside any group; discs for a box inside one. A's
+panel over an inner box "did not work": it sat on the group's head strip, and
+the pointer on its way up to it crossed the strip, which took the hover and
+closed the panel. Inside a group, discs cost nothing in the corridor; a
+group's head and a lone box have room above them. The head strip still
+folds the group.
+
+Then folding was in three places at once: the head strip, the corner disc
+and the panel's first button ("Клик · Свернуть группу"). The panel lost it.
+It now leads with the step — the word, the rail's callout and the title,
+plainly a button — and then the links, for a group and a lone box alike.
+The same went for the inner boxes: a pause on the box wrote "Клик → 04 · …"
+over the step disc, and the disc's own tooltip said it again. Only the
+disc's tooltip stays.
+
+**One speed was not enough.** Asked again from use: short edges looked fast
+and long ones slow, with the speed already equal (measured: 137 screen px/s
+on a 48px link and on a 1376px rail at 98%). A single token on a short link
+came round three times a second and read as fast; one on a long rail took
+ten seconds to cross and read as slow. Every lit edge is now a conveyor: a
+token leaves it every 1.2s and runs at 140 world-px/s, so a long edge carries
+several, and a short one rests between departures, hidden at the far end by a discrete `opacity`
+animation. Phases come from negative `begin` offsets. At a fixed 168px gap
+a 1376px rail carried nine tokens and read as crowded; past three gaps the
+gap now grows with the edge, up to three times (504px), so a long edge
+carries about three.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**
