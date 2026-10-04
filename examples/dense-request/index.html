@@ -982,7 +982,7 @@
     }
 
     /* ---- the panel over a group, or over a box on its own ---------------
-       The click's action first and in words, the rest beside it. A box
+       Its step, as a word, the rail's callout and the title, then its links. A box
        inside an open group gets discs instead (below): a panel over it sat
        on the group's head strip. */
     .hoverbar {
@@ -4112,8 +4112,8 @@
       return title ? `${label} — ${t.opensStep}: ${title}` : label;
     }
 
-    // A group, and a box that stands on its own, get a panel over them that
-    // names the click; a box inside a group gets discs. A panel over an inner
+    // A group, and a box that stands on its own, get a panel over them with
+    // the step and the links; a box inside a group gets discs. A panel over an inner
     // box sat on its group's head strip, and the pointer, on its way up to
     // the panel, crossed the strip, which took the hover and closed it.
     function usesPanel(n) {
@@ -4853,8 +4853,8 @@
        A click on an open group and a click on a box inside it used to share
        one rule, and nothing said which was about to happen. The group now
        answers on its strip only. Under the pointer a group — and a box that
-       stands on its own — gets a panel: the click's action first, in words,
-       then its links and the rest. A box inside a group gets its actions as
+       stands on its own — gets a panel with its step and its links; folding
+       stays with the group's head and its disc. A box inside a group gets its actions as
        discs on its top border instead — the step a click opens, in the
        rail's own callout, and its links — and a pause names the click. */
     const LINKS_ICO = '<path d="M2.5 5.5 H12.5"/><path d="M10 3 L12.5 5.5 L10 8"/><path d="M13.5 10.5 H3.5"/><path d="M6 8 L3.5 10.5 L6 13"/>';
@@ -4863,8 +4863,6 @@
       in: '<path d="M13.5 8 H3"/><path d="M6.5 4.5 L3 8 L6.5 11.5"/>',
       both: LINKS_ICO
     };
-    const FOLD_ICO = '<path d="M9.2 2.4 V6.8 H13.6"/><path d="M2.4 9.2 H6.8 V13.6"/>';
-    const UNFOLD_ICO = '<path d="M9 2.5 H13.5 V7"/><path d="M7 13.5 H2.5 V9"/>';
     let HOVER = null;
     let hoverHide = 0;
     let PEEK = null;
@@ -4917,36 +4915,26 @@
       if (a && el.classList.contains("on")) placeFloat(el, a.r, a.ax, a.side);
     }
 
-    // The click's own action first, then the rest in a fixed order.
+    // The step, then the links. Folding is not on the panel: a group's head
+    // and its corner disc already fold it, and a third way to do it in the
+    // panel only said the same thing again.
     function actionsFor(n) {
-      const def = defaultAction(n);
-      const has = {
-        links: linksOf(n.id).raw.length > 0,
-        step: stepForNode(n.id) >= 0,
-        fold: !!n._kids && !n._collapsed,
-        unfold: !!n._collapsed
-      };
-      return [def, ...["links", "step", "fold", "unfold"].filter((a) => a !== def && has[a])];
+      return ["step", "links"].filter((a) => a === "step" ? stepForNode(n.id) >= 0 : linksOf(n.id).raw.length > 0);
     }
 
+    // The step reads as one: the word, the rail's numbered callout and the
+    // title, all of it the button.
     function barButton(n, act, main) {
       const t = ui();
-      const click = main ? `<span class="hb-click">${t.click}</span>` : "";
       if (act === "step") {
         const si = stepForNode(n.id);
         const num = `<span class="hb-n${si === i ? " now" : ""}">${pad(si)}</span>`;
         const name = `${t.step} ${pad(si)} · ${stepTitle(si)}`;
-        return main
-          ? `<button type="button" class="main" data-act="step" title="${escapeHtml(name)}">${click}${num}<span class="t">${escapeHtml(stepTitle(si))}</span></button>`
-          : `<button type="button" data-act="step" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${num}</button>`;
+        return `<button type="button" class="main" data-act="step" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}"><span class="hb-click">${t.step}</span>${num}<span class="t">${escapeHtml(stepTitle(si))}</span></button>`;
       }
-      if (act === "links") {
-        const c = linksOf(n.id).raw.length;
-        const name = `${t.links} · ${c} (L)`;
-        return `<button type="button"${main ? ' class="main"' : ""} data-act="links" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${click}${ico(LINKS_ICO)}${main ? `<span class="t">${t.links}</span>` : ""}<span>${c}</span></button>`;
-      }
-      const name = act === "fold" ? t.fold : t.unfold;
-      return `<button type="button"${main ? ' class="main"' : ""} data-act="${act}" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${click}${ico(act === "fold" ? FOLD_ICO : UNFOLD_ICO)}${main ? `<span class="t">${name}</span>` : ""}</button>`;
+      const c = linksOf(n.id).raw.length;
+      const name = `${t.links} · ${c} (L)`;
+      return `<button type="button"${main ? ' class="main"' : ""} data-act="links" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${ico(LINKS_ICO)}${main ? `<span class="t">${t.links}</span>` : ""}<span>${c}</span></button>`;
     }
 
     function showBar(id) {

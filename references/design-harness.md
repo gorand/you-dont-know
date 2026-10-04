@@ -894,6 +894,11 @@ closed the panel. Inside a group, discs cost nothing in the corridor; a
 group's head and a lone box have room above them. The head strip still
 folds the group.
 
+Then folding was in three places at once: the head strip, the corner disc
+and the panel's first button ("Клик · Свернуть группу"). The panel lost it.
+It now leads with the step — the word, the rail's callout and the title,
+plainly a button — and then the links, for a group and a lone box alike.
+
 **One speed was not enough.** Asked again from use: short edges looked fast
 and long ones slow, with the speed already equal (measured: 137 screen px/s
 on a 48px link and on a 1376px rail at 98%). A single token on a short link

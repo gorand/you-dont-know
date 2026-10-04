@@ -87,8 +87,9 @@ A click on a box opens its step. An open group answers on its head strip,
 the band its caption sits in, and a click there folds it, as a click on a
 folded block opens it; inside the fence is canvas, so a click between two
 boxes does nothing and a drag there pans. Under the pointer a group, and a
-box that stands outside any group, show a panel over them: the click's
-action first, in words, then its links (⇄) and the rest. A box inside a
+box that stands outside any group, show a panel over them: the step, as the
+word, the rail's numbered callout and the title, then the links (⇄).
+Folding stays with the group's head and its disc. A box inside a
 group shows its actions as discs on its top border instead, the size of a
 group's: the step its click opens, numbered as on the rail, and its links.
 Resting on it for a moment names the click's action in words.

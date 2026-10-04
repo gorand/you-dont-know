@@ -204,8 +204,9 @@ it only follows when a step's nodes would sit off screen.
 A click on a box opens the first step that highlights it; a click on a
 group's head strip folds or opens the group. Under the pointer, or under
 keyboard focus, a group and a box that stands outside any group show a panel
-over them: the click's action first, in words, then its links (⇄) and the
-rest. A box inside a group shows its actions as discs on its top border
+over them: the step, as the word, the rail's numbered callout and the title,
+then the links (⇄). Folding is not on it: the head strip and the corner disc
+already fold a group. A box inside a group shows its actions as discs on its top border
 instead, the size and spot of a group's disc: the step its click opens,
 numbered as on the rail, and its links when it has any; resting on it for a
 moment names the click's action in words. A touch screen has no hover, so
