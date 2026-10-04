@@ -981,6 +981,99 @@
       flex: 0 0 auto;
     }
 
+    /* ---- the panel over a group, or over a box on its own ---------------
+       The click's action first and in words, the rest beside it. A box
+       inside an open group gets discs instead (below): a panel over it sat
+       on the group's head strip. */
+    .hoverbar {
+      position: absolute;
+      z-index: var(--z-hover);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      white-space: nowrap;
+      background: var(--color-surface);
+      --ui-ground: var(--color-surface);
+      border: var(--stroke-hairline) solid var(--color-line);
+      border-radius: var(--radius-2);
+      box-shadow: var(--shadow-tip);
+      opacity: 0;
+      transform: translateY(3px);
+      pointer-events: none;
+      transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    }
+    .hoverbar.on { opacity: 1; transform: none; pointer-events: auto; }
+    .hoverbar.below { transform: translateY(-3px); }
+    .hoverbar.on.below { transform: none; }
+    /* The tooltip's caret, as the design system draws it: the panel's own
+       fill and border, turned 45° and half tucked under the edge. */
+    .hoverbar::after {
+      content: "";
+      position: absolute;
+      left: var(--caret-x, 50%);
+      bottom: -5px;
+      width: 8px;
+      height: 8px;
+      background: inherit;
+      border: inherit;
+      border-width: 0 var(--stroke-hairline) var(--stroke-hairline) 0;
+      border-radius: 0 0 1px 0;
+      transform: translateX(-50%) rotate(45deg);
+    }
+    .hoverbar.below::after {
+      bottom: auto;
+      top: -5px;
+      border-width: var(--stroke-hairline) 0 0 var(--stroke-hairline);
+      border-radius: 1px 0 0 0;
+    }
+    .hoverbar.side::after { display: none; }
+    .hoverbar button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      height: 26px;
+      padding: 0 0.5rem;
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      letter-spacing: var(--track-1);
+      color: var(--color-ink-soft);
+      background: transparent;
+      border: 0;
+      border-radius: var(--radius-1);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: color var(--dur-hover) var(--ease-out);
+    }
+    .hoverbar button:hover { color: var(--color-accent); }
+    .hoverbar button:active { transform: scale(0.96); }
+    .hoverbar .ico { width: 13px; height: 13px; }
+    .hoverbar .main { color: var(--color-ink); font-family: var(--font-ui); font-size: var(--text-sm); letter-spacing: 0; }
+    .hoverbar .main .t { max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
+    .hoverbar .sep { width: var(--stroke-hairline); height: 16px; background: var(--color-line); margin: 0 1px; }
+    .hb-n {
+      display: inline-grid;
+      place-items: center;
+      width: 1.3rem;
+      height: 1.3rem;
+      flex: 0 0 auto;
+      border: var(--stroke-tick) solid var(--color-line);
+      border-radius: 50%;
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      font-variant-numeric: tabular-nums;
+      color: var(--color-ink-soft);
+    }
+    .hb-n.now { color: var(--color-accent); border-color: var(--color-accent); }
+    .hb-click {
+      font-family: var(--font-mono);
+      font-size: var(--text-3xs);
+      letter-spacing: var(--track-3);
+      text-transform: uppercase;
+      color: var(--color-ink-soft);
+    }
+
     /* A box's actions are discs on its own top border, the fence disc's
        size and spot, waiting for the pointer as a folded group's disc does.
        The numbered one is the rail's callout: it names the step a click
@@ -1481,6 +1574,7 @@
         </button>
       </div>
       <div class="tip" id="tip" role="tooltip"></div>
+      <div class="hoverbar" id="hoverbar" role="toolbar"></div>
     </div>
     <aside class="dock" id="dock">
       <div class="dock-grip" id="dock-grip" role="separator" aria-orientation="horizontal" tabindex="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -3995,6 +4089,17 @@
       return title ? `${label} — ${t.opensStep}: ${title}` : label;
     }
 
+    // A group, and a box that stands on its own, get a panel over them that
+    // names the click; a box inside a group gets discs. A panel over an inner
+    // box sat on its group's head strip, and the pointer, on its way up to
+    // the panel, crossed the strip, which took the hover and closed it.
+    function usesPanel(n) {
+      if (!n) return false;
+      if (kindOf(n) === "group") return true;
+      const by = nodeIndex();
+      return !ancestors(n.id).some((g) => by[g] && kindOf(by[g]) === "group");
+    }
+
     // Two arrows passing each other: the links glyph, on the disc's grid.
     const linksMark = (x, y) =>
       `M ${x - 4.6} ${y - 2.3} H ${x + 4.2} M ${x + 2} ${y - 4.5} L ${x + 4.2} ${y - 2.3} L ${x + 2} ${y - 0.1} `
@@ -4007,6 +4112,7 @@
     // rail's `.step:active` scale moved the disc out from under the pointer
     // between press and release, so the click landed on the box behind it.
     function actDiscs(n) {
+      if (usesPanel(n)) return "";
       const t = ui();
       const def = defaultAction(n);
       const label = n.label || n.id;
@@ -4188,7 +4294,9 @@
       canvas.style.backgroundPosition = `${ox}px ${oy}px, ${ox}px ${oy}px`;
       canvas.classList.toggle("coarse", CELL * VIEW.s < 9);
       $("zoom-pct").textContent = Math.round(VIEW.s * 100) + "%";
-      // A disc's tip would point at nothing once the drawing has moved.
+      // A panel follows the element it names; a disc's tip would point at
+      // nothing once the drawing has moved.
+      placeHover();
       hideTip();
     }
 
@@ -4721,19 +4829,120 @@
     /* ---------- hover: what a click does, and what else ----------
        A click on an open group and a click on a box inside it used to share
        one rule, and nothing said which was about to happen. The group now
-       answers on its strip only, and either one, under the pointer, shows
-       its actions as discs on its top border: the step a click opens, in the
-       rail's own callout, and its links. Resting on it names the click's
-       action in words, over the disc that does the same. */
+       answers on its strip only. Under the pointer a group — and a box that
+       stands on its own — gets a panel: the click's action first, in words,
+       then its links and the rest. A box inside a group gets its actions as
+       discs on its top border instead — the step a click opens, in the
+       rail's own callout, and its links — and a pause names the click. */
     const LINKS_ICO = '<path d="M2.5 5.5 H12.5"/><path d="M10 3 L12.5 5.5 L10 8"/><path d="M13.5 10.5 H3.5"/><path d="M6 8 L3.5 10.5 L6 13"/>';
     const DIR_ICO = {
       out: '<path d="M2.5 8 H13"/><path d="M9.5 4.5 L13 8 L9.5 11.5"/>',
       in: '<path d="M13.5 8 H3"/><path d="M6.5 4.5 L3 8 L6.5 11.5"/>',
       both: LINKS_ICO
     };
+    const FOLD_ICO = '<path d="M9.2 2.4 V6.8 H13.6"/><path d="M2.4 9.2 H6.8 V13.6"/>';
+    const UNFOLD_ICO = '<path d="M9 2.5 H13.5 V7"/><path d="M7 13.5 H2.5 V9"/>';
     let HOVER = null;
     let hoverHide = 0;
     let PEEK = null;
+
+    function screenRect(box) {
+      const v = viewRect();
+      return { x: (box.x - v.x) * VIEW.s, y: (box.y - v.y) * VIEW.s, w: box.w * VIEW.s, h: box.h * VIEW.s };
+    }
+
+    // Over the element, or under it when there is no room above; the caret
+    // stays on it when the panel has to slide along the edge. A group's head
+    // never sends it down: under the head are the group's own boxes, and a
+    // panel there takes the click meant for the first of them. It goes
+    // beside the group instead.
+    function placeFloat(el, r, ax, side) {
+      const b = canvasBox();
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const gap = 10;
+      let top = r.y - h - gap;
+      let left = Math.max(8, Math.min(b.w - w - 8, ax - w / 2));
+      let mode = top >= 8 ? "" : "below";
+      if (mode && side) {
+        const y = Math.max(8, Math.min(b.h - h - 8, r.y));
+        if (side.x + side.w + gap + w <= b.w - 8) { mode = "side"; left = side.x + side.w + gap; top = y; }
+        else if (side.x - gap - w >= 8) { mode = "side"; left = side.x - gap - w; top = y; }
+      }
+      if (mode === "below") top = r.y + r.h + gap;
+      el.style.left = Math.round(left) + "px";
+      el.style.top = Math.round(top) + "px";
+      el.style.setProperty("--caret-x", Math.round(Math.max(12, Math.min(w - 12, ax - left))) + "px");
+      el.classList.toggle("below", mode === "below");
+      el.classList.toggle("side", mode === "side");
+    }
+
+    // A wide fence's strip is mostly empty, so the panel points at its caption.
+    function anchorRect(id) {
+      const n = VISIBLE[id];
+      const box = NODE_BOX[id];
+      if (!n || !box) return null;
+      const fence = isFence(n);
+      const r = screenRect(fence ? { ...box, h: M.groupHead } : box);
+      return { r, ax: fence ? r.x + Math.min(r.w / 2, 150 * VIEW.s) : r.x + r.w / 2, side: fence ? screenRect(box) : null };
+    }
+
+    function placeHover() {
+      if (!HOVER) return;
+      const el = $("hoverbar");
+      const a = anchorRect(HOVER.id);
+      if (a && el.classList.contains("on")) placeFloat(el, a.r, a.ax, a.side);
+    }
+
+    // The click's own action first, then the rest in a fixed order.
+    function actionsFor(n) {
+      const def = defaultAction(n);
+      const has = {
+        links: linksOf(n.id).raw.length > 0,
+        step: stepForNode(n.id) >= 0,
+        fold: !!n._kids && !n._collapsed,
+        unfold: !!n._collapsed
+      };
+      return [def, ...["links", "step", "fold", "unfold"].filter((a) => a !== def && has[a])];
+    }
+
+    function barButton(n, act, main) {
+      const t = ui();
+      const click = main ? `<span class="hb-click">${t.click}</span>` : "";
+      if (act === "step") {
+        const si = stepForNode(n.id);
+        const num = `<span class="hb-n${si === i ? " now" : ""}">${pad(si)}</span>`;
+        const name = `${t.step} ${pad(si)} · ${stepTitle(si)}`;
+        return main
+          ? `<button type="button" class="main" data-act="step" title="${escapeHtml(name)}">${click}${num}<span class="t">${escapeHtml(stepTitle(si))}</span></button>`
+          : `<button type="button" data-act="step" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${num}</button>`;
+      }
+      if (act === "links") {
+        const c = linksOf(n.id).raw.length;
+        const name = `${t.links} · ${c} (L)`;
+        return `<button type="button"${main ? ' class="main"' : ""} data-act="links" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${click}${ico(LINKS_ICO)}${main ? `<span class="t">${t.links}</span>` : ""}<span>${c}</span></button>`;
+      }
+      const name = act === "fold" ? t.fold : t.unfold;
+      return `<button type="button"${main ? ' class="main"' : ""} data-act="${act}" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}">${click}${ico(act === "fold" ? FOLD_ICO : UNFOLD_ICO)}${main ? `<span class="t">${name}</span>` : ""}</button>`;
+    }
+
+    function showBar(id) {
+      const n = VISIBLE[id];
+      if (!n || !HOVER || HOVER.id !== id) return;
+      const bar = $("hoverbar");
+      const acts = actionsFor(n);
+      bar.innerHTML = acts.map((a, k) => barButton(n, a, k === 0) + (k === 0 && acts.length > 1 ? '<span class="sep" aria-hidden="true"></span>' : "")).join("");
+      bar.querySelectorAll("[data-act]").forEach((b) => {
+        const act = b.getAttribute("data-act");
+        b.onclick = (ev) => { ev.stopPropagation(); runAction(id, act); };
+        if (act === "links") {
+          b.onpointerenter = () => { if (!focus) peek(id); };
+          b.onpointerleave = () => unpeek();
+        }
+      });
+      bar.classList.add("on");
+      placeHover();
+    }
 
     function hoverIn(id, el, byKey) {
       clearTimeout(hoverHide);
@@ -4743,7 +4952,9 @@
       // The fence's dashed border lives in the other render pass.
       const shell = $("flow").querySelector(`.node[aria-hidden="true"][data-id="${CSS.escape(id)}"]`);
       if (shell) { shell.classList.add("hot"); HOVER.shell = shell; }
-      HOVER.timer = setTimeout(() => tipDefault(id), byKey ? 0 : 420);
+      HOVER.timer = usesPanel(VISIBLE[id])
+        ? setTimeout(() => showBar(id), byKey ? 0 : 90)
+        : setTimeout(() => tipDefault(id), byKey ? 0 : 420);
     }
 
     // The words come only after a pause, so a pointer crossing the diagram
@@ -4764,7 +4975,8 @@
       showTip(disc, `${escapeHtml(t.click)} → ${what}`);
     }
 
-    // A short grace, so the pointer can cross from the box onto a disc.
+    // A short grace, so the pointer can cross from the box onto a disc or
+    // up to its panel.
     function hoverOut() {
       clearTimeout(hoverHide);
       hoverHide = setTimeout(hoverOutNow, 160);
@@ -4776,6 +4988,7 @@
       clearTimeout(HOVER.timer);
       if (HOVER.shell) HOVER.shell.classList.remove("hot");
       HOVER = null;
+      $("hoverbar").classList.remove("on");
       hideTip();
       unpeek();
     }
@@ -5123,6 +5336,8 @@
       $("fb-links").onclick = () => setFocusMode("links");
       $("fb-path").onclick = () => setFocusMode("path");
       $("fb-close").onclick = () => endFocus(true);
+      $("hoverbar").addEventListener("pointerenter", () => clearTimeout(hoverHide));
+      $("hoverbar").addEventListener("pointerleave", () => hoverOut());
 
       canvas.addEventListener("wheel", (ev) => {
         ev.preventDefault();
@@ -5214,7 +5429,7 @@
       // selection anywhere else.
       canvas.addEventListener("click", (ev) => {
         if (!focus || justDragged) return;
-        if (ev.target.closest(".node[role='button'], .act, .disclose, .zoombar, .focusbar")) return;
+        if (ev.target.closest(".node[role='button'], .act, .disclose, .zoombar, .focusbar, .hoverbar")) return;
         endFocus(true);
       });
       if (window.ResizeObserver) {
