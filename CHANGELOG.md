@@ -5,6 +5,61 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] — 2026-10-04
+
+A click on an open group no longer lands on the group's step, any box can
+show every link it has in both directions, and tokens run at one speed on
+every edge.
+
+### Added
+
+- **Links (`L`).** `L` on the box under the pointer or under keyboard focus,
+  its ⇄ button, or a long press on a touch screen shows that box with every
+  edge it has, both ways. The groups holding it and its partners open, every
+  other group folds, and whatever is not on one of its edges steps back. The
+  dock lists the partners, one row each with every link to it, so a request
+  and its answer read as one exchange; a row opens that partner's links.
+  `Esc`, `L` again, a click on empty canvas or a step change leaves, and the
+  frame goes back to where the reader had it.
+- **Path.** A switch in the bar over the canvas widens the view to everything
+  that leads to the box and everything it leads to. `back` edges are not
+  followed, but the box's own are on its path.
+- **The hover says what a click does.** A group, folded or open, and a box
+  outside any group show a panel over them: the step (the word, the rail's
+  numbered callout and the title, all one button) and the links. A box inside
+  a group shows two discs on its top border, the size and spot of a group's
+  disc: the step its click opens and its links. Each disc names itself in a
+  tooltip.
+
+### Changed
+
+- **An open group answers on its head strip only**, the band its caption
+  sits in, and a click there folds it, as a click on a folded block opens
+  it. Inside the fence is canvas: a click between two boxes does nothing, and
+  a drag there pans. The strip lights under the pointer, with the fence's
+  border.
+- **Tokens run at one speed** (140 world-px/s) instead of taking 1.6s on any
+  edge, which made them 28 times faster on a long rail than on a short link.
+  Every lit edge is a conveyor: a token leaves it at a steady rhythm, a short
+  edge rests between departures, and on a long edge the gap widens with its
+  length, up to three times, so it carries about three. A `both` edge carries
+  tokens each way.
+- **A `back` edge carries its head at `to`**, the way it runs, like `flow`.
+  It used to carry it at `from`, while its token ran to `to`: a pair such as
+  `fetch → retry` / `retry → fetch` showed two heads on `retry` and read as
+  one-way. `back` still stays out of the ranking. Write every edge `from` →
+  `to` the way the thing travels; a lesson that relied on the reversed head
+  will see that arrow turn round. The palette's description of `back`
+  changed with it.
+- Keyboard focus stays on the same box when the canvas re-renders after
+  `Enter` or `L`, instead of dropping to the page.
+
+### Fixed
+
+- **`inject-pipeline`'s first node sat in the bottom row** since 0.5.0. The
+  lift for nodes reached only by `back` edges, made for a dead-letter queue,
+  also lifted a source. Only a node with no edge out of it is lifted now.
+
 ## [0.11.0] — 2026-10-04
 
 One action folds every group back and frames the whole diagram, through a
