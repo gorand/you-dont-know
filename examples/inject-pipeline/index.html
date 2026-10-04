@@ -1978,10 +1978,14 @@
     // rail took ten seconds to cross and read as slow. So every lit edge is a
     // conveyor: a token leaves it every TOKEN_EVERY seconds and runs at
     // TOKEN_SPEED, so a long edge carries several, evenly spaced, and a short
-    // one rests between departures. World units, so a zoom changes the speed
-    // the way it changes the rest of the drawing.
+    // one rests between departures. Spaced at the base gap all the way, a long
+    // rail filled up with tokens — nine on 1400px — so past three gaps the
+    // gap grows with the edge, up to TOKEN_STRETCH times: a long edge carries
+    // about three, at the same speed. World units, so a zoom changes the
+    // speed the way it changes the rest of the drawing.
     const TOKEN_SPEED = 140;
     const TOKEN_EVERY = 1.2;
+    const TOKEN_STRETCH = 3;
     const TOKEN_MAX = 12;
 
     function tokenMark(d, liveEdge, dir, raw) {
@@ -1991,10 +1995,14 @@
         const start = /M\s*([\d.-]+)\s+([\d.-]+)/.exec(d);
         return start ? `<circle r="4" class="token"${data} cx="${start[1]}" cy="${start[2]}"></circle>` : "";
       }
-      const travel = Math.max(0.05, pathLength(d) / TOKEN_SPEED);
+      const len = pathLength(d);
+      const travel = Math.max(0.05, len / TOKEN_SPEED);
+      const gap = TOKEN_SPEED * TOKEN_EVERY;
+      const stretch = Math.min(TOKEN_STRETCH, Math.max(1, len / (gap * 3)));
+      const base = TOKEN_EVERY * stretch;
       // Past TOKEN_MAX tokens on one edge they spread out instead.
-      const count = Math.min(TOKEN_MAX, Math.ceil(travel / TOKEN_EVERY));
-      const every = Math.max(TOKEN_EVERY, travel / count);
+      const count = Math.min(TOKEN_MAX, Math.ceil(travel / base - 1e-6));
+      const every = Math.max(base, travel / count);
       const cycle = count * every;
       const f = Math.min(1, travel / cycle).toFixed(4);
       const dur = cycle.toFixed(3);

@@ -107,8 +107,9 @@ again, a click on empty canvas or a step change leaves, and the frame goes
 back to where the reader had it.
 
 Lit edges carry tokens that leave every edge at one rhythm and run at one
-speed whatever its length: a long edge carries several, evenly spaced, and a
-short one rests between them. A two-way edge carries them each way.
+speed whatever its length: a long edge carries several, evenly spaced — the
+gap widens with the edge, up to three times, so a long rail holds about
+three — and a short one rests between them. A two-way edge carries them each way.
 
 The chrome stays out of the diagram's way. The step rail is a dimension line
 down the left margin — a tick per step, the current one circled — and it opens

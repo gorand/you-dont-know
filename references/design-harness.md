@@ -908,9 +908,11 @@ on a 48px link and on a 1376px rail at 98%). A single token on a short link
 came round three times a second and read as fast; one on a long rail took
 ten seconds to cross and read as slow. Every lit edge is now a conveyor: a
 token leaves it every 1.2s and runs at 140 world-px/s, so a long edge carries
-several, 168px apart (at most 12, then they spread out), and a short one
-rests between departures, hidden at the far end by a discrete `opacity`
-animation. Phases come from negative `begin` offsets.
+several, and a short one rests between departures, hidden at the far end by a discrete `opacity`
+animation. Phases come from negative `begin` offsets. At a fixed 168px gap
+a 1376px rail carried nine tokens and read as crowded; past three gaps the
+gap now grows with the edge, up to three times (504px), so a long edge
+carries about three.
 
 ## Workflow
 
