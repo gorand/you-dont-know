@@ -4881,9 +4881,10 @@
        one rule, and nothing said which was about to happen. The group now
        answers on its strip only. Under the pointer a group — and a box that
        stands on its own — gets a panel with its step and its links; folding
-       stays with the group's head and its disc. A box inside a group gets its actions as
-       discs on its top border instead — the step a click opens, in the
-       rail's own callout, and its links — and a pause names the click. */
+       stays with the group's head and its disc. A box inside a group gets
+       its actions as discs on its top border instead — the step a click
+       opens, in the rail's own callout, and its links — and each disc names
+       itself under the pointer. */
     const LINKS_ICO = '<path d="M2.5 5.5 H12.5"/><path d="M10 3 L12.5 5.5 L10 8"/><path d="M13.5 10.5 H3.5"/><path d="M6 8 L3.5 10.5 L6 13"/>';
     const DIR_ICO = {
       out: '<path d="M2.5 8 H13"/><path d="M9.5 4.5 L13 8 L9.5 11.5"/>',
@@ -4990,27 +4991,9 @@
       // The fence's dashed border lives in the other render pass.
       const shell = $("flow").querySelector(`.node[aria-hidden="true"][data-id="${CSS.escape(id)}"]`);
       if (shell) { shell.classList.add("hot"); HOVER.shell = shell; }
-      HOVER.timer = usesPanel(VISIBLE[id])
-        ? setTimeout(() => showBar(id), byKey ? 0 : 90)
-        : setTimeout(() => tipDefault(id), byKey ? 0 : 420);
-    }
-
-    // The words come only after a pause, so a pointer crossing the diagram
-    // leaves nothing behind it.
-    function tipDefault(id) {
-      const n = VISIBLE[id];
-      if (!n || !HOVER || HOVER.id !== id) return;
-      const t = ui();
-      const act = defaultAction(n);
-      const sel = act === "fold" || act === "unfold"
-        ? `.disclose[data-group="${CSS.escape(id)}"]`
-        : `.act[data-act="${act}"][data-for="${CSS.escape(id)}"]`;
-      const disc = $("flow").querySelector(sel);
-      if (!disc) return;
-      let what;
-      if (act === "step") what = `<b>${pad(stepForNode(id))}</b> · ${escapeHtml(stepTitle(stepForNode(id)))}`;
-      else what = `<b>${escapeHtml(act === "fold" ? t.fold : t.unfold)}</b>`;
-      showTip(disc, `${escapeHtml(t.click)} → ${what}`);
+      // A box inside a group needs nothing more: its discs come in with the
+      // hover, and each names itself when the pointer reaches it.
+      if (usesPanel(VISIBLE[id])) HOVER.timer = setTimeout(() => showBar(id), byKey ? 0 : 90);
     }
 
     // A short grace, so the pointer can cross from the box onto a disc or

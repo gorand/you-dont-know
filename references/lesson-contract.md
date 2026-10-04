@@ -208,8 +208,8 @@ over them: the step, as the word, the rail's numbered callout and the title,
 then the links (⇄). Folding is not on it: the head strip and the corner disc
 already fold a group. A box inside a group shows its actions as discs on its top border
 instead, the size and spot of a group's disc: the step its click opens,
-numbered as on the rail, and its links when it has any; resting on it for a
-moment names the click's action in words. A touch screen has no hover, so
+numbered as on the rail, and its links when it has any; each disc names
+itself in a tooltip under the pointer. A touch screen has no hover, so
 there a long press stands in for the links button.
 
 **Links.** A step lights what its narration is about, which is mostly the

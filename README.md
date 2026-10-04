@@ -91,8 +91,8 @@ box that stands outside any group, show a panel over them: the step, as the
 word, the rail's numbered callout and the title, then the links (⇄).
 Folding stays with the group's head and its disc. A box inside a
 group shows its actions as discs on its top border instead, the size of a
-group's: the step its click opens, numbered as on the rail, and its links.
-Resting on it for a moment names the click's action in words.
+group's: the step its click opens, numbered as on the rail, and its links;
+each disc names itself in a tooltip when the pointer reaches it.
 
 Links are the other half of a box's story. A step lights the flow its
 narration is about; what else the box talks to — a retry looping back, an

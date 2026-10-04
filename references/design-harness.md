@@ -898,6 +898,9 @@ Then folding was in three places at once: the head strip, the corner disc
 and the panel's first button ("Клик · Свернуть группу"). The panel lost it.
 It now leads with the step — the word, the rail's callout and the title,
 plainly a button — and then the links, for a group and a lone box alike.
+The same went for the inner boxes: a pause on the box wrote "Клик → 04 · …"
+over the step disc, and the disc's own tooltip said it again. Only the
+disc's tooltip stays.
 
 **One speed was not enough.** Asked again from use: short edges looked fast
 and long ones slow, with the speed already equal (measured: 137 screen px/s
