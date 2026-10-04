@@ -37,12 +37,12 @@ Inject exits `1` if a node id is missing from every `steps[].highlight`, if `par
 
 ## Shell lock
 
-Do not restyle `:root` per lesson. Primary hue stays 200–320 (iris / glacier / dusk). Traffic-light hues are `--state-*` only.
+Do not restyle `:root` per lesson. Three hues, each with one job: violet `--color-primary` for focus and structure, coral `--color-accent` for the current material, peach `--color-accent-2` for status. Derive anything new with `color-mix()` from those tokens; no hand-picked hex, no fourth hue. See the colour roles in [SKILL.md](SKILL.md).
 
 Glyphs in the diagram are Lucide-style 24×24 strokes. Do not add a one-off circle as `kind: "other"`.
 
 ## Visual QA
 
-Open `examples/palette/index.html`. Check: readable node labels, group fences, reverse/dashed/via edges, selected-step hover on the left rail. The reader has no accent control — to check that `boundary` stays error-red in every accent, change `kind` in a copy of the JSON (or set `accent`) and rebuild.
+Open `examples/palette/index.html`. Check: readable node labels, group fences, back/dashed/via edges, selected-step hover on the left rail. A lesson does not repaint the shell, so there is no accent to check: `kind` tones one dot in the kicker, `boundary` is dashed peach in every lesson, and a lit edge is coral whatever its `tone`. To see the kind's dot in each tone, change `kind` in a copy of the JSON and rebuild.
 
 Chrome: the header names the lesson's `kind`, the Dzen toggle keeps title + transport + rail, and the inspector has a switch of its own. Both switches are session state — a reload comes back to the full layout.

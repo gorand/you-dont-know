@@ -1667,7 +1667,7 @@
     {
       "id": "contract",
       "title": "Что жёстко задано в lesson.json",
-      "body": "`lang`, `kind`, `thesis`/`problem`/`whyNotBasic`/`cost`, `nodes[]`, `edges[]`, `steps[]` — обязательны. `kind` сам выбирает акцент (`how`/`concept`/`api` → iris, `architecture`/`repo` → glacier, `security`/`vuln` → dusk); переопределить можно только на `iris`/`glacier`/`dusk`. HTML внутри строк запрещён — только бэктики для идентификаторов и `[[id]]` для сносок."
+      "body": "`lang`, `kind`, `thesis`/`problem`/`whyNotBasic`/`cost`, `nodes[]`, `edges[]`, `steps[]` — обязательны. `kind` задаёт тон одной точки в шапке (`how`/`concept`/`api` → фиолетовый, `architecture`/`repo` → приглушённый, `security`/`vuln` → персиковый) и больше ничего не перекрашивает; поле `accent` — наследие: старые значения читаются, но не красят. HTML внутри строк запрещён — только бэктики для идентификаторов и `[[id]]` для сносок."
     },
     {
       "id": "deadnode",
@@ -1739,7 +1739,7 @@
     },
     {
       "id": "validate",
-      "label": "5 инвариантов",
+      "label": "проверки контракта",
       "kind": "subroutine",
       "icon": "rules"
     },

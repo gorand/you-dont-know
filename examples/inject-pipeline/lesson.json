@@ -22,7 +22,7 @@
     {
       "id": "contract",
       "title": "Что жёстко задано в lesson.json",
-      "body": "`lang`, `kind`, `thesis`/`problem`/`whyNotBasic`/`cost`, `nodes[]`, `edges[]`, `steps[]` — обязательны. `kind` сам выбирает акцент (`how`/`concept`/`api` → iris, `architecture`/`repo` → glacier, `security`/`vuln` → dusk); переопределить можно только на `iris`/`glacier`/`dusk`. HTML внутри строк запрещён — только бэктики для идентификаторов и `[[id]]` для сносок."
+      "body": "`lang`, `kind`, `thesis`/`problem`/`whyNotBasic`/`cost`, `nodes[]`, `edges[]`, `steps[]` — обязательны. `kind` задаёт тон одной точки в шапке (`how`/`concept`/`api` → фиолетовый, `architecture`/`repo` → приглушённый, `security`/`vuln` → персиковый) и больше ничего не перекрашивает; поле `accent` — наследие: старые значения читаются, но не красят. HTML внутри строк запрещён — только бэктики для идентификаторов и `[[id]]` для сносок."
     },
     {
       "id": "deadnode",
@@ -52,7 +52,7 @@
     { "id": "slugDir", "label": "tmp/you-dont-know/<slug>/", "kind": "group" },
     { "id": "lessonJson", "label": "lesson.json", "kind": "file", "parent": "slugDir" },
     { "id": "inject", "label": "inject-lesson.mjs", "kind": "process", "icon": "function" },
-    { "id": "validate", "label": "5 инвариантов", "kind": "subroutine", "icon": "rules" },
+    { "id": "validate", "label": "проверки контракта", "kind": "subroutine", "icon": "rules" },
     { "id": "boundary", "label": "process.exit(1)", "kind": "boundary", "icon": "error" },
     { "id": "replace", "label": "__LESSON_JSON__ → JSON", "kind": "action" },
     { "id": "output", "label": "index.html", "kind": "file" },

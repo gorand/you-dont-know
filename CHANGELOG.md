@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] — 2026-10-04
+
+Text that still described the shell as it was before 0.6.0 now matches it.
+
+### Fixed
+
+- **`inject-pipeline`'s `contract` aside** said that `kind` picks the accent
+  (iris, glacier, dusk) and that only those three can override it. The
+  accents were removed in 0.6.0: `kind` tones one dot in the kicker and
+  repaints nothing, and `accent` is a legacy field. The aside now says so.
+- **The validation node there read "5 инвариантов"**, while the script checks
+  eleven things; it is "проверки контракта" now.
+- **CONTRIBUTING's shell lock** still named the iris / glacier / dusk hues and
+  `--state-*` traffic-light tokens, and its visual QA asked to check that
+  `boundary` stays error-red in every accent. Both now describe the three
+  colour roles.
+
 ## [0.12.0] — 2026-10-04
 
 A click on an open group no longer lands on the group's step, any box can
