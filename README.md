@@ -86,10 +86,12 @@ block, and viewfinder corners close in on the group that was toggled.
 A click on a box opens its step. An open group answers on its head strip,
 the band its caption sits in, and a click there folds it, as a click on a
 folded block opens it; inside the fence is canvas, so a click between two
-boxes does nothing and a drag there pans. Under the pointer a box shows its
-actions as discs on its top border, the size of a group's: the step its
-click opens, numbered as on the rail, and its links (⇄). Resting on it for a
-moment names the click's action in words.
+boxes does nothing and a drag there pans. Under the pointer a group, and a
+box that stands outside any group, show a panel over them: the click's
+action first, in words, then its links (⇄) and the rest. A box inside a
+group shows its actions as discs on its top border instead, the size of a
+group's: the step its click opens, numbered as on the rail, and its links.
+Resting on it for a moment names the click's action in words.
 
 Links are the other half of a box's story. A step lights the flow its
 narration is about; what else the box talks to — a retry looping back, an
@@ -103,8 +105,9 @@ everything that leads to the box and everything it leads to. `Esc`, `L`
 again, a click on empty canvas or a step change leaves, and the frame goes
 back to where the reader had it.
 
-A lit edge carries a token, and it runs at one speed whatever the edge's
-length; a two-way edge carries one each way.
+Lit edges carry tokens that leave every edge at one rhythm and run at one
+speed whatever its length: a long edge carries several, evenly spaced, and a
+short one rests between them. A two-way edge carries them each way.
 
 The chrome stays out of the diagram's way. The step rail is a dimension line
 down the left margin — a tick per step, the current one circled — and it opens

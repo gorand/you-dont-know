@@ -203,16 +203,18 @@ it only follows when a step's nodes would sit off screen.
 
 A click on a box opens the first step that highlights it; a click on a
 group's head strip folds or opens the group. Under the pointer, or under
-keyboard focus, a box shows its actions as discs on its top border, the size
-and spot of a group's disc: the step its click opens, numbered as on the
-rail, and its links (⇄) when it has any. Resting on it for a moment names the
-click's action in words, over the disc that does the same. A touch screen
-has no hover, so there a long press stands in for the links disc.
+keyboard focus, a group and a box that stands outside any group show a panel
+over them: the click's action first, in words, then its links (⇄) and the
+rest. A box inside a group shows its actions as discs on its top border
+instead, the size and spot of a group's disc: the step its click opens,
+numbered as on the rail, and its links when it has any; resting on it for a
+moment names the click's action in words. A touch screen has no hover, so
+there a long press stands in for the links button.
 
 **Links.** A step lights what its narration is about, which is mostly the
 forward flow; everything else a box talks to stays faint, or folded into a
 block where its edges merge into a `label ×N`. `L` on the box under the
-pointer or keyboard focus, or its ⇄ disc, turns that around for one box:
+pointer or keyboard focus, or its ⇄ button, turns that around for one box:
 the groups that hold it and its partners open, every other group folds,
 whatever is not on one of its edges steps back, and every edge it has is lit
 both ways. The dock lists the partners, one row each with every link to it,

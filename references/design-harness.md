@@ -886,6 +886,24 @@ Checked:
 The review fixture (OAuth 2.0 + PKCE, 15 nodes, a SPA with ten links, half
 of them answers) lives with the review page, not in `examples/`.
 
+**The author's pick: a hybrid.** A panel for a group, folded or open, and
+for a box that stands outside any group; discs for a box inside one. A's
+panel over an inner box "did not work": it sat on the group's head strip, and
+the pointer on its way up to it crossed the strip, which took the hover and
+closed the panel. Inside a group, discs cost nothing in the corridor; a
+group's head and a lone box have room above them. The head strip still
+folds the group.
+
+**One speed was not enough.** Asked again from use: short edges looked fast
+and long ones slow, with the speed already equal (measured: 137 screen px/s
+on a 48px link and on a 1376px rail at 98%). A single token on a short link
+came round three times a second and read as fast; one on a long rail took
+ten seconds to cross and read as slow. Every lit edge is now a conveyor: a
+token leaves it every 1.2s and runs at 140 world-px/s, so a long edge carries
+several, 168px apart (at most 12, then they spread out), and a short one
+rests between departures, hidden at the far end by a discrete `opacity`
+animation. Phases come from negative `begin` offsets.
+
 ## Workflow
 
 `templates/lesson.next.html` and `examples/*/index.next.html` are **not**
